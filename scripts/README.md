@@ -6,3 +6,4 @@ Place lightweight utility scripts here for:
 - sample import
 - state inspection
 - one-off developer workflows
+- manual input flow recording
