@@ -10,6 +10,7 @@ if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
 from ipm_bot.actuator.adb import AdbActionActuator, AdbActuatorConfig, TapPoint
+from ipm_bot.actuator.boundary import ActuatorExecutionError
 
 
 class AdbActuatorTests(unittest.TestCase):
@@ -27,7 +28,7 @@ class AdbActuatorTests(unittest.TestCase):
             command_runner=runner,
         )
 
-        actuator.execute("activate_ad_boost")
+        metadata = actuator.execute("activate_ad_boost")
 
         self.assertEqual(
             runner.commands,
@@ -54,6 +55,16 @@ class AdbActuatorTests(unittest.TestCase):
                 ],
             ],
         )
+        self.assertEqual(metadata.actuator_type, "adb")
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertEqual(metadata.actuator_command_count, 2)
+        self.assertEqual(
+            metadata.actuator_command_summary,
+            [
+                "adb -s emulator-5554 shell am start -n com.example.idleplanetminer/MainActivity",
+                "adb -s emulator-5554 shell input tap 111 222",
+            ],
+        )
 
     def test_claim_ark_reward_emits_expected_commands(self) -> None:
         runner = RecordingCommandRunner()
@@ -68,7 +79,7 @@ class AdbActuatorTests(unittest.TestCase):
             command_runner=runner,
         )
 
-        actuator.execute("claim_ark_reward")
+        metadata = actuator.execute("claim_ark_reward")
 
         self.assertEqual(
             runner.commands,
@@ -97,6 +108,8 @@ class AdbActuatorTests(unittest.TestCase):
                 ],
             ],
         )
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertEqual(metadata.actuator_command_count, 2)
 
     def test_idle_emits_no_commands(self) -> None:
         runner = RecordingCommandRunner()
@@ -105,9 +118,33 @@ class AdbActuatorTests(unittest.TestCase):
             command_runner=runner,
         )
 
-        actuator.execute("idle")
+        metadata = actuator.execute("idle")
 
         self.assertEqual(runner.commands, [])
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertEqual(metadata.actuator_command_count, 0)
+        self.assertEqual(metadata.actuator_command_summary, [])
+
+    def test_command_runner_failure_raises_classified_error(self) -> None:
+        runner = FailingCommandRunner()
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                app_package="com.example.idleplanetminer",
+                app_activity="MainActivity",
+            ),
+            command_runner=runner,
+        )
+
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("activate_ad_boost")
+
+        self.assertEqual(context.exception.metadata.actuator_type, "adb")
+        self.assertEqual(context.exception.metadata.actuator_execution_status, "FAILED")
+        self.assertEqual(context.exception.metadata.actuator_command_count, 1)
+        self.assertEqual(
+            context.exception.metadata.actuator_command_summary,
+            ["adb shell am start -n com.example.idleplanetminer/MainActivity"],
+        )
 
 
 class RecordingCommandRunner:
@@ -116,6 +153,11 @@ class RecordingCommandRunner:
 
     def run(self, command: list[str]) -> None:
         self.commands.append(list(command))
+
+
+class FailingCommandRunner:
+    def run(self, command: list[str]) -> None:
+        raise RuntimeError(f"command failed: {' '.join(command)}")
 
 
 if __name__ == "__main__":

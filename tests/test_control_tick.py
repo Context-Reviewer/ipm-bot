@@ -19,6 +19,7 @@ from ipm_bot.actuator.runner import (
     FailureReason,
     ReceiptRuntimeContext,
 )
+from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import ExitCode, main
@@ -52,6 +53,7 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(payloads[0]["runtime_context"]["exit_code"], int(ExitCode.PASS))
         self.assertTrue(payloads[0]["planner_decision"]["actuation_required"])
         self.assertTrue(payloads[0]["actuation_attempted"])
+        self.assertEqual(payloads[0]["actuator_execution"]["actuator_type"], "stub")
         self.assertIn("Selected action: activate_ad_boost", stdout_value)
         self.assertIn("Final status: PASS", stdout_value)
 
@@ -133,6 +135,8 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(payloads[0]["planner_decision"]["decision_reason"], "no_action_needed")
         self.assertFalse(payloads[0]["planner_decision"]["actuation_required"])
         self.assertFalse(payloads[0]["actuation_attempted"])
+        self.assertEqual(payloads[0]["actuator_execution"]["actuator_execution_status"], "NOT_REQUIRED")
+        self.assertEqual(payloads[0]["actuator_execution"]["actuator_command_count"], 0)
         self.assertIn("Selected action: idle", stdout_value)
 
 
@@ -219,6 +223,14 @@ def _sample_receipt(
             receipt_schema_version=2,
             poll_interval_seconds=0.5,
             timeout_seconds=30.0,
+        ),
+        actuator_execution=ActuatorExecutionMetadata(
+            actuator_type="stub",
+            actuator_execution_status=(
+                "NOT_REQUIRED" if action == "idle" else "COMPLETED"
+            ),
+            actuator_command_count=(0 if action == "idle" else 1),
+            actuator_command_summary=([] if action == "idle" else [f"stub:{action}"]),
         ),
         verifier_messages=["verification message"],
         planner_decision=resolved_planner_decision,

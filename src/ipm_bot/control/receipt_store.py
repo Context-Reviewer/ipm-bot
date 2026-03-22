@@ -68,6 +68,12 @@ def _serialize_receipt(
             "timeout_seconds": receipt.runtime_context.timeout_seconds,
             "exit_code": receipt.runtime_context.exit_code,
         },
+        "actuator_execution": {
+            "actuator_type": receipt.actuator_execution.actuator_type,
+            "actuator_execution_status": receipt.actuator_execution.actuator_execution_status,
+            "actuator_command_count": receipt.actuator_execution.actuator_command_count,
+            "actuator_command_summary": list(receipt.actuator_execution.actuator_command_summary),
+        },
         "planner_decision": {
             "selected_action": receipt.planner_decision.selected_action,
             "decision_reason": receipt.planner_decision.decision_reason,

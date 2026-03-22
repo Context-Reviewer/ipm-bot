@@ -19,6 +19,7 @@ from ipm_bot.actuator.runner import (
     FailureReason,
     ReceiptRuntimeContext,
 )
+from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import main
@@ -81,6 +82,22 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["runtime_context"]["exit_code"],
                 receipt.runtime_context.exit_code,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["actuator_type"],
+                receipt.actuator_execution.actuator_type,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["actuator_execution_status"],
+                receipt.actuator_execution.actuator_execution_status,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["actuator_command_count"],
+                receipt.actuator_execution.actuator_command_count,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["actuator_command_summary"],
+                receipt.actuator_execution.actuator_command_summary,
             )
             self.assertEqual(
                 payload["planner_decision"]["selected_action"],
@@ -160,6 +177,12 @@ def _sample_receipt() -> ActionAttemptReceipt:
             poll_interval_seconds=0.5,
             timeout_seconds=30.0,
             exit_code=0,
+        ),
+        actuator_execution=ActuatorExecutionMetadata(
+            actuator_type="stub",
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=["stub:activate_ad_boost"],
         ),
         verifier_messages=["Field 'ad_boost_active' matched the expected value: value=True."],
         planner_decision=PlannerDecision(

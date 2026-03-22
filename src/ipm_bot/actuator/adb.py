@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import subprocess
 from typing import Protocol, Sequence
 
-from .boundary import ActionActuator
+from .boundary import ActionActuator, ActuatorExecutionError, ActuatorExecutionMetadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +52,8 @@ class SubprocessCommandRunner(CommandRunner):
 class AdbActionActuator(ActionActuator):
     """Concrete actuator that emits explicit ADB command sequences."""
 
+    actuator_type = "adb"
+
     def __init__(
         self,
         config: AdbActuatorConfig,
@@ -60,13 +62,43 @@ class AdbActionActuator(ActionActuator):
         self._config = config
         self._command_runner = command_runner
 
-    def execute(self, action: str) -> None:
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
         normalized_action = action.strip()
         if not normalized_action:
-            raise ValueError("Action name must not be empty.")
+            raise ActuatorExecutionError(
+                "Action name must not be empty.",
+                ActuatorExecutionMetadata(
+                    actuator_type=self.actuator_type,
+                    actuator_execution_status="FAILED",
+                    actuator_command_count=0,
+                    actuator_command_summary=[],
+                ),
+            )
 
-        for command in self._commands_for_action(normalized_action):
-            self._command_runner.run(command)
+        commands = self._commands_for_action(normalized_action)
+        attempted_summaries: list[str] = []
+        for command in commands:
+            command_summary = self._summarize_command(command)
+            attempted_summaries.append(command_summary)
+            try:
+                self._command_runner.run(command)
+            except Exception as exc:
+                raise ActuatorExecutionError(
+                    f"ADB command execution failed: {command_summary}",
+                    ActuatorExecutionMetadata(
+                        actuator_type=self.actuator_type,
+                        actuator_execution_status="FAILED",
+                        actuator_command_count=len(attempted_summaries),
+                        actuator_command_summary=list(attempted_summaries),
+                    ),
+                ) from exc
+
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=len(attempted_summaries),
+            actuator_command_summary=list(attempted_summaries),
+        )
 
     def _commands_for_action(self, action: str) -> list[list[str]]:
         if action == "idle":
@@ -75,7 +107,15 @@ class AdbActionActuator(ActionActuator):
             return self._action_commands(self._config.activate_ad_boost_tap)
         if action == "claim_ark_reward":
             return self._action_commands(self._config.claim_ark_reward_tap)
-        raise ValueError(f"Unsupported action for ADB actuator: {action}")
+        raise ActuatorExecutionError(
+            f"Unsupported action for ADB actuator: {action}",
+            ActuatorExecutionMetadata(
+                actuator_type=self.actuator_type,
+                actuator_execution_status="FAILED",
+                actuator_command_count=0,
+                actuator_command_summary=[],
+            ),
+        )
 
     def _action_commands(self, tap_point: TapPoint) -> list[list[str]]:
         commands: list[list[str]] = []
@@ -107,3 +147,6 @@ class AdbActionActuator(ActionActuator):
             command.extend(["-s", self._config.device_serial])
         command.extend(command_parts)
         return command
+
+    def _summarize_command(self, command: Sequence[str]) -> str:
+        return " ".join(command)

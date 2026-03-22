@@ -8,7 +8,11 @@ from pathlib import Path
 import time
 from typing import Mapping
 
-from ipm_bot.actuator.boundary import ActionActuator
+from ipm_bot.actuator.boundary import (
+    ActionActuator,
+    ActuatorExecutionError,
+    ActuatorExecutionMetadata,
+)
 from ipm_bot.control.contracts import ActionContract, ActionContractIdentity
 from ipm_bot.planner.planner import PlannerDecision
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
@@ -29,6 +33,7 @@ class FailureReason(StrEnum):
     VERIFICATION_FAILED = "VERIFICATION_FAILED"
     AMBIGUOUS_TRANSITION = "AMBIGUOUS_TRANSITION"
     ACTUATION_ERROR = "ACTUATION_ERROR"
+    COMMAND_EXECUTION_ERROR = "COMMAND_EXECUTION_ERROR"
     SAVE_WATCH_ERROR = "SAVE_WATCH_ERROR"
 
 
@@ -63,6 +68,7 @@ class ActionAttemptReceipt:
     final_candidate_hash: str | None
     contract_identity: ActionContractIdentity
     runtime_context: ReceiptRuntimeContext
+    actuator_execution: ActuatorExecutionMetadata
     verifier_messages: list[str]
     planner_decision: PlannerDecision | None = None
     actuation_attempted: bool | None = None
@@ -121,6 +127,12 @@ def run_action_until_verified(
     started_at = time.monotonic()
     candidate_hashes: list[str] = []
     last_verifier_messages: list[str] = []
+    actuator_execution = ActuatorExecutionMetadata(
+        actuator_type=actuator.actuator_type,
+        actuator_execution_status="NOT_REQUIRED",
+        actuator_command_count=0,
+        actuator_command_summary=[],
+    )
 
     if action == "idle":
         return _build_receipt(
@@ -132,13 +144,29 @@ def run_action_until_verified(
             contract=contract,
             effective_timeout_s=effective_timeout_s,
             poll_interval_s=poll_interval_s,
+            actuator_execution=actuator_execution,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=["Idle action selected; no actuation or verification loop required."],
         )
 
     try:
-        actuator.execute(action)
+        actuator_execution = actuator.execute(action)
+    except ActuatorExecutionError as exc:
+        return _build_receipt(
+            action=action,
+            save_path=resolved_save_path,
+            baseline_hash=initial_baseline_hash,
+            final_status="FAIL",
+            failure_reason=FailureReason.COMMAND_EXECUTION_ERROR,
+            contract=contract,
+            effective_timeout_s=effective_timeout_s,
+            poll_interval_s=poll_interval_s,
+            actuator_execution=exc.metadata,
+            started_at=started_at,
+            candidate_hashes=candidate_hashes,
+            verifier_messages=[f"Action '{action}' failed before verification: {exc}"],
+        )
     except Exception as exc:
         return _build_receipt(
             action=action,
@@ -149,6 +177,12 @@ def run_action_until_verified(
             contract=contract,
             effective_timeout_s=effective_timeout_s,
             poll_interval_s=poll_interval_s,
+            actuator_execution=ActuatorExecutionMetadata(
+                actuator_type=actuator.actuator_type,
+                actuator_execution_status="FAILED",
+                actuator_command_count=0,
+                actuator_command_summary=[],
+            ),
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=[f"Action '{action}' failed before verification: {exc}"],
@@ -178,6 +212,7 @@ def run_action_until_verified(
                 contract=contract,
                 effective_timeout_s=effective_timeout_s,
                 poll_interval_s=poll_interval_s,
+                actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=last_verifier_messages + [f"Save watcher error: {exc}"],
@@ -204,6 +239,7 @@ def run_action_until_verified(
                 contract=contract,
                 effective_timeout_s=effective_timeout_s,
                 poll_interval_s=poll_interval_s,
+                actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=evaluation.verification.messages,
@@ -219,6 +255,7 @@ def run_action_until_verified(
                 contract=contract,
                 effective_timeout_s=effective_timeout_s,
                 poll_interval_s=poll_interval_s,
+                actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=evaluation.verification.messages,
@@ -236,6 +273,7 @@ def run_action_until_verified(
             contract=contract,
             effective_timeout_s=effective_timeout_s,
             poll_interval_s=poll_interval_s,
+            actuator_execution=actuator_execution,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=last_verifier_messages,
@@ -250,6 +288,7 @@ def run_action_until_verified(
         contract=contract,
         effective_timeout_s=effective_timeout_s,
         poll_interval_s=poll_interval_s,
+        actuator_execution=actuator_execution,
         started_at=started_at,
         candidate_hashes=candidate_hashes,
         verifier_messages=[],
@@ -418,6 +457,7 @@ def _build_receipt(
     contract: ActionContract,
     effective_timeout_s: float,
     poll_interval_s: float,
+    actuator_execution: ActuatorExecutionMetadata,
     started_at: float,
     candidate_hashes: list[str],
     verifier_messages: list[str],
@@ -438,6 +478,7 @@ def _build_receipt(
             poll_interval_seconds=poll_interval_s,
             timeout_seconds=effective_timeout_s,
         ),
+        actuator_execution=actuator_execution,
         verifier_messages=list(verifier_messages),
     )
 

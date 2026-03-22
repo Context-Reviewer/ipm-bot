@@ -4,22 +4,46 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .boundary import ActionActuator
+from .boundary import ActionActuator, ActuatorExecutionError, ActuatorExecutionMetadata
 
 
 class StubActionActuator(ActionActuator):
     """Local stub actuator that logs the action instead of driving ADB."""
 
-    def execute(self, action: str) -> None:
+    actuator_type = "stub"
+
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
         normalized_action = action.strip()
         if not normalized_action:
-            raise ValueError("Action name must not be empty.")
+            raise ActuatorExecutionError(
+                "Action name must not be empty.",
+                ActuatorExecutionMetadata(
+                    actuator_type=self.actuator_type,
+                    actuator_execution_status="FAILED",
+                    actuator_command_count=0,
+                    actuator_command_summary=[],
+                ),
+            )
 
         handler = _ACTION_HANDLERS.get(normalized_action)
         if handler is None:
-            raise ValueError(f"Unsupported action: {normalized_action}")
+            raise ActuatorExecutionError(
+                f"Unsupported action: {normalized_action}",
+                ActuatorExecutionMetadata(
+                    actuator_type=self.actuator_type,
+                    actuator_execution_status="FAILED",
+                    actuator_command_count=0,
+                    actuator_command_summary=[],
+                ),
+            )
 
         handler()
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=[f"stub:{normalized_action}"],
+        )
 
 
 def _execute_activate_ad_boost() -> None:
