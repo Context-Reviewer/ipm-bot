@@ -9,6 +9,8 @@ from pathlib import Path
 import sys
 from typing import Sequence
 
+from ipm_bot.actuator.adb import AdbActionActuator, AdbActuatorConfig, SubprocessCommandRunner, TapPoint
+from ipm_bot.actuator.boundary import ActionActuator
 from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
 from ipm_bot.actuator.stub import StubActionActuator
 from ipm_bot.control.contracts import get_action_contract
@@ -37,10 +39,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     try:
         args = parser.parse_args(argv)
+        actuator = _build_actuator(args)
         action, receipt, receipt_path = run_single_control_tick(
             save_path=args.save_path,
             timeout_seconds=args.timeout_seconds,
             poll_interval_seconds=args.poll_interval_seconds,
+            actuator=actuator,
         )
     except SystemExit:
         return int(ExitCode.ERROR)
@@ -56,6 +60,7 @@ def run_single_control_tick(
     save_path: Path,
     timeout_seconds: float | None,
     poll_interval_seconds: float,
+    actuator: ActionActuator,
 ) -> tuple[str, ActionAttemptReceipt, Path]:
     """Execute exactly one governed control tick and persist its receipt."""
 
@@ -74,7 +79,7 @@ def run_single_control_tick(
         save_path=save_path,
         snapshot_before=snapshot_before,
         contract=contract,
-        actuator=StubActionActuator(),
+        actuator=actuator,
         poll_interval_s=poll_interval_seconds,
         timeout_s=timeout_seconds,
     )
@@ -118,6 +123,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("save_path", type=Path, help="Path to the current playerInfo.dat save.")
     parser.add_argument(
+        "--actuator",
+        choices=("stub", "adb"),
+        default="stub",
+        help="Concrete actuator implementation to use for this control tick.",
+    )
+    parser.add_argument(
         "--timeout-seconds",
         type=float,
         default=None,
@@ -129,7 +140,68 @@ def _build_parser() -> argparse.ArgumentParser:
         default=0.5,
         help="Polling interval used while waiting for a new parseable save.",
     )
+    parser.add_argument(
+        "--adb-path",
+        default="adb",
+        help="ADB executable path when --actuator adb is selected.",
+    )
+    parser.add_argument(
+        "--adb-serial",
+        default=None,
+        help="Optional ADB device serial when --actuator adb is selected.",
+    )
+    parser.add_argument(
+        "--app-package",
+        default=None,
+        help="Optional Android package name to foreground before action taps.",
+    )
+    parser.add_argument(
+        "--app-activity",
+        default=None,
+        help="Optional Android activity name paired with --app-package.",
+    )
+    parser.add_argument(
+        "--activate-ad-boost-tap",
+        default="540,960",
+        help="Tap coordinates for activate_ad_boost as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--claim-ark-reward-tap",
+        default="540,780",
+        help="Tap coordinates for claim_ark_reward as X,Y when using the ADB actuator.",
+    )
     return parser
+
+
+def _build_actuator(args: argparse.Namespace) -> ActionActuator:
+    if args.actuator == "stub":
+        return StubActionActuator()
+    if args.actuator != "adb":
+        raise ValueError(f"Unsupported actuator type: {args.actuator}")
+
+    return AdbActionActuator(
+        config=AdbActuatorConfig(
+            adb_path=args.adb_path,
+            device_serial=args.adb_serial,
+            app_package=args.app_package,
+            app_activity=args.app_activity,
+            activate_ad_boost_tap=_parse_tap_point(args.activate_ad_boost_tap),
+            claim_ark_reward_tap=_parse_tap_point(args.claim_ark_reward_tap),
+        ),
+        command_runner=SubprocessCommandRunner(),
+    )
+
+
+def _parse_tap_point(raw_value: str) -> TapPoint:
+    parts = [part.strip() for part in raw_value.split(",")]
+    if len(parts) != 2:
+        raise ValueError(f"Invalid tap coordinate value: {raw_value!r}")
+    try:
+        x = int(parts[0])
+        y = int(parts[1])
+    except ValueError as exc:
+        raise ValueError(f"Invalid tap coordinate value: {raw_value!r}") from exc
+    return TapPoint(x=x, y=y)
 
 
 def _load_snapshot(save_path: Path) -> PlayerSnapshot:
