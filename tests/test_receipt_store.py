@@ -22,6 +22,7 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import main
+from ipm_bot.planner.planner import PlannerDecision
 
 
 class ReceiptStoreTests(unittest.TestCase):
@@ -80,6 +81,22 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["runtime_context"]["exit_code"],
                 receipt.runtime_context.exit_code,
+            )
+            self.assertEqual(
+                payload["planner_decision"]["selected_action"],
+                receipt.planner_decision.selected_action,
+            )
+            self.assertEqual(
+                payload["planner_decision"]["decision_reason"],
+                receipt.planner_decision.decision_reason,
+            )
+            self.assertEqual(
+                payload["planner_decision"]["actuation_required"],
+                receipt.planner_decision.actuation_required,
+            )
+            self.assertEqual(
+                payload["actuation_attempted"],
+                receipt.actuation_attempted,
             )
             self.assertEqual(payload["verifier_messages"], receipt.verifier_messages)
 
@@ -145,6 +162,12 @@ def _sample_receipt() -> ActionAttemptReceipt:
             exit_code=0,
         ),
         verifier_messages=["Field 'ad_boost_active' matched the expected value: value=True."],
+        planner_decision=PlannerDecision(
+            selected_action="activate_ad_boost",
+            decision_reason="ad_boost_inactive",
+            actuation_required=True,
+        ),
+        actuation_attempted=True,
     )
 
 

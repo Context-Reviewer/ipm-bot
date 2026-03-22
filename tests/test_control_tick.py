@@ -22,6 +22,7 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import ExitCode, main
+from ipm_bot.planner.planner import PlannerDecision
 
 
 class ControlTickTests(unittest.TestCase):
@@ -49,6 +50,8 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
         self.assertEqual(len(written_files), 1)
         self.assertEqual(payloads[0]["runtime_context"]["exit_code"], int(ExitCode.PASS))
+        self.assertTrue(payloads[0]["planner_decision"]["actuation_required"])
+        self.assertTrue(payloads[0]["actuation_attempted"])
         self.assertIn("Selected action: activate_ad_boost", stdout_value)
         self.assertIn("Final status: PASS", stdout_value)
 
@@ -98,6 +101,40 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_ark_reward")
         self.assertIn("Failure reason: AMBIGUOUS_TRANSITION", stdout_value)
 
+    def test_idle_planner_decision_is_persisted_with_no_actuation_required(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": False,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="idle",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+            planner_decision=PlannerDecision(
+                selected_action="idle",
+                decision_reason="no_action_needed",
+                actuation_required=False,
+            ),
+            actuation_attempted=False,
+        )
+
+        exit_code, stdout_value, runner_mock, _, payloads = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "idle")
+        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "idle")
+        self.assertEqual(payloads[0]["planner_decision"]["decision_reason"], "no_action_needed")
+        self.assertFalse(payloads[0]["planner_decision"]["actuation_required"])
+        self.assertFalse(payloads[0]["actuation_attempted"])
+        self.assertIn("Selected action: idle", stdout_value)
+
 
 def _run_main_with_receipt(
     *,
@@ -138,8 +175,35 @@ def _sample_receipt(
     action: str,
     final_status: str,
     failure_reason: FailureReason,
+    planner_decision: PlannerDecision | None = None,
+    actuation_attempted: bool | None = None,
 ) -> ActionAttemptReceipt:
     contract = get_action_contract(action)
+    resolved_planner_decision = planner_decision
+    if resolved_planner_decision is None:
+        if action == "claim_ark_reward":
+            resolved_planner_decision = PlannerDecision(
+                selected_action=action,
+                decision_reason="ark_reward_ready_to_claim",
+                actuation_required=True,
+            )
+        elif action == "activate_ad_boost":
+            resolved_planner_decision = PlannerDecision(
+                selected_action=action,
+                decision_reason="ad_boost_inactive",
+                actuation_required=True,
+            )
+        else:
+            resolved_planner_decision = PlannerDecision(
+                selected_action=action,
+                decision_reason="no_action_needed",
+                actuation_required=False,
+            )
+    resolved_actuation_attempted = (
+        resolved_planner_decision.actuation_required
+        if actuation_attempted is None
+        else actuation_attempted
+    )
     return ActionAttemptReceipt(
         action=action,
         save_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
@@ -157,6 +221,8 @@ def _sample_receipt(
             timeout_seconds=30.0,
         ),
         verifier_messages=["verification message"],
+        planner_decision=resolved_planner_decision,
+        actuation_attempted=resolved_actuation_attempted,
     )
 
 

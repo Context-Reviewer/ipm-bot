@@ -41,6 +41,11 @@ def _serialize_receipt(
     receipt: ActionAttemptReceipt,
     receipt_written_at_utc: str,
 ) -> dict[str, object]:
+    if receipt.planner_decision is None:
+        raise ValueError("Receipt planner_decision must be populated before persistence.")
+    if receipt.actuation_attempted is None:
+        raise ValueError("Receipt actuation_attempted must be populated before persistence.")
+
     return {
         "action": receipt.action,
         "save_path": receipt.save_path,
@@ -63,6 +68,12 @@ def _serialize_receipt(
             "timeout_seconds": receipt.runtime_context.timeout_seconds,
             "exit_code": receipt.runtime_context.exit_code,
         },
+        "planner_decision": {
+            "selected_action": receipt.planner_decision.selected_action,
+            "decision_reason": receipt.planner_decision.decision_reason,
+            "actuation_required": receipt.planner_decision.actuation_required,
+        },
+        "actuation_attempted": receipt.actuation_attempted,
         "receipt_written_at_utc": receipt_written_at_utc,
         "verifier_messages": list(receipt.verifier_messages),
     }

@@ -12,7 +12,7 @@ from typing import Sequence
 from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
-from ipm_bot.planner.planner import decide_next_action
+from ipm_bot.planner.planner import PlannerDecision, decide_next_action_details
 from ipm_bot.save import PlayerSnapshot, parse_player_snapshot
 
 
@@ -64,7 +64,8 @@ def run_single_control_tick(
         raise ValueError("--poll-interval-seconds must be greater than zero.")
 
     snapshot_before = _load_snapshot(save_path)
-    action = decide_next_action(snapshot_before)
+    planner_decision = decide_next_action_details(snapshot_before)
+    action = planner_decision.selected_action
     contract = get_action_contract(action)
 
     receipt = run_action_until_verified(
@@ -76,9 +77,10 @@ def run_single_control_tick(
         timeout_s=timeout_seconds,
     )
     exit_code = exit_code_for_status(receipt.final_status)
-    receipt = replace(
-        receipt,
-        runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
+    receipt = _enrich_tick_receipt(
+        receipt=receipt,
+        planner_decision=planner_decision,
+        exit_code=exit_code,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -91,6 +93,19 @@ def exit_code_for_status(status: str) -> ExitCode:
     if exit_code is None:
         raise ValueError(f"Unsupported terminal status for exit-code mapping: {status}")
     return exit_code
+
+
+def _enrich_tick_receipt(
+    receipt: ActionAttemptReceipt,
+    planner_decision: PlannerDecision,
+    exit_code: ExitCode,
+) -> ActionAttemptReceipt:
+    return replace(
+        receipt,
+        planner_decision=planner_decision,
+        actuation_attempted=planner_decision.actuation_required,
+        runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
