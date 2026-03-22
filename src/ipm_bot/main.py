@@ -15,6 +15,14 @@ from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verif
 from ipm_bot.actuator.stub import StubActionActuator
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.control.save_source import (
+    AdbPulledSaveSource,
+    AdbPulledSaveSourceConfig,
+    DEFAULT_PULLED_SAVE_PATH,
+    LocalSaveSource,
+    SaveSource,
+    SaveSourceMetadata,
+)
 from ipm_bot.planner.planner import PlannerDecision, decide_next_action_details
 from ipm_bot.save import PlayerSnapshot, parse_player_snapshot
 
@@ -40,11 +48,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         args = parser.parse_args(argv)
         actuator = _build_actuator(args)
+        save_source = _build_save_source(args)
         action, receipt, receipt_path = run_single_control_tick(
             save_path=args.save_path,
             timeout_seconds=args.timeout_seconds,
             poll_interval_seconds=args.poll_interval_seconds,
             actuator=actuator,
+            save_source=save_source,
         )
     except SystemExit:
         return int(ExitCode.ERROR)
@@ -61,6 +71,7 @@ def run_single_control_tick(
     timeout_seconds: float | None,
     poll_interval_seconds: float,
     actuator: ActionActuator,
+    save_source: SaveSource,
 ) -> tuple[str, ActionAttemptReceipt, Path]:
     """Execute exactly one governed control tick and persist its receipt."""
 
@@ -69,14 +80,16 @@ def run_single_control_tick(
     if poll_interval_seconds <= 0:
         raise ValueError("--poll-interval-seconds must be greater than zero.")
 
-    snapshot_before = _load_snapshot(save_path)
+    save_source_metadata = save_source.prepare(save_path)
+    prepared_save_path = Path(save_source_metadata.prepared_local_path)
+    snapshot_before = _load_snapshot(prepared_save_path)
     planner_decision = decide_next_action_details(snapshot_before)
     action = planner_decision.selected_action
     contract = get_action_contract(action)
 
     receipt = run_action_until_verified(
         action=action,
-        save_path=save_path,
+        save_path=prepared_save_path,
         snapshot_before=snapshot_before,
         contract=contract,
         actuator=actuator,
@@ -88,6 +101,7 @@ def run_single_control_tick(
         receipt=receipt,
         planner_decision=planner_decision,
         exit_code=exit_code,
+        save_source_metadata=save_source_metadata,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -106,11 +120,13 @@ def _enrich_tick_receipt(
     receipt: ActionAttemptReceipt,
     planner_decision: PlannerDecision,
     exit_code: ExitCode,
+    save_source_metadata: SaveSourceMetadata,
 ) -> ActionAttemptReceipt:
     return replace(
         receipt,
         planner_decision=planner_decision,
         actuation_attempted=planner_decision.actuation_required,
+        save_source_metadata=save_source_metadata,
         runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
     )
 
@@ -122,6 +138,12 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Run one governed single control tick against a parsed save."
     )
     parser.add_argument("save_path", type=Path, help="Path to the current playerInfo.dat save.")
+    parser.add_argument(
+        "--save-source",
+        choices=("local", "adb-pull"),
+        default="local",
+        help="Save-source implementation used to prepare the local save for this control tick.",
+    )
     parser.add_argument(
         "--actuator",
         choices=("stub", "adb"),
@@ -139,6 +161,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.5,
         help="Polling interval used while waiting for a new parseable save.",
+    )
+    parser.add_argument(
+        "--prepared-save-path",
+        type=Path,
+        default=DEFAULT_PULLED_SAVE_PATH,
+        help="Local path used when --save-source adb-pull prepares the save.",
     )
     parser.add_argument(
         "--adb-path",
@@ -187,6 +215,22 @@ def _build_actuator(args: argparse.Namespace) -> ActionActuator:
             app_activity=args.app_activity,
             activate_ad_boost_tap=_parse_tap_point(args.activate_ad_boost_tap),
             claim_ark_reward_tap=_parse_tap_point(args.claim_ark_reward_tap),
+        ),
+        command_runner=SubprocessCommandRunner(),
+    )
+
+
+def _build_save_source(args: argparse.Namespace) -> SaveSource:
+    if args.save_source == "local":
+        return LocalSaveSource()
+    if args.save_source != "adb-pull":
+        raise ValueError(f"Unsupported save source type: {args.save_source}")
+
+    return AdbPulledSaveSource(
+        config=AdbPulledSaveSourceConfig(
+            adb_path=args.adb_path,
+            device_serial=args.adb_serial,
+            prepared_local_path=args.prepared_save_path,
         ),
         command_runner=SubprocessCommandRunner(),
     )

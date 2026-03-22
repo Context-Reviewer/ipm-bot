@@ -22,6 +22,7 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.control.save_source import SaveSourceMetadata
 from ipm_bot.main import ExitCode, main
 from ipm_bot.planner.planner import PlannerDecision
 
@@ -54,6 +55,8 @@ class ControlTickTests(unittest.TestCase):
         self.assertTrue(payloads[0]["planner_decision"]["actuation_required"])
         self.assertTrue(payloads[0]["actuation_attempted"])
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_type"], "stub")
+        self.assertEqual(payloads[0]["save_source"]["save_source_type"], "local")
+        self.assertFalse(payloads[0]["save_source"]["preparation_performed"])
         self.assertIn("Selected action: activate_ad_boost", stdout_value)
         self.assertIn("Final status: PASS", stdout_value)
 
@@ -235,6 +238,12 @@ def _sample_receipt(
         verifier_messages=["verification message"],
         planner_decision=resolved_planner_decision,
         actuation_attempted=resolved_actuation_attempted,
+        save_source_metadata=SaveSourceMetadata(
+            save_source_type="local",
+            original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
+            prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+            preparation_performed=False,
+        ),
     )
 
 

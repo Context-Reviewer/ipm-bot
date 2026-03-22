@@ -45,6 +45,8 @@ def _serialize_receipt(
         raise ValueError("Receipt planner_decision must be populated before persistence.")
     if receipt.actuation_attempted is None:
         raise ValueError("Receipt actuation_attempted must be populated before persistence.")
+    if receipt.save_source_metadata is None:
+        raise ValueError("Receipt save_source_metadata must be populated before persistence.")
 
     return {
         "action": receipt.action,
@@ -80,6 +82,12 @@ def _serialize_receipt(
             "actuation_required": receipt.planner_decision.actuation_required,
         },
         "actuation_attempted": receipt.actuation_attempted,
+        "save_source": {
+            "save_source_type": receipt.save_source_metadata.save_source_type,
+            "original_requested_path": receipt.save_source_metadata.original_requested_path,
+            "prepared_local_path": receipt.save_source_metadata.prepared_local_path,
+            "preparation_performed": receipt.save_source_metadata.preparation_performed,
+        },
         "receipt_written_at_utc": receipt_written_at_utc,
         "verifier_messages": list(receipt.verifier_messages),
     }

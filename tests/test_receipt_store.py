@@ -22,6 +22,7 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.control.save_source import SaveSourceMetadata
 from ipm_bot.main import main
 from ipm_bot.planner.planner import PlannerDecision
 
@@ -115,6 +116,22 @@ class ReceiptStoreTests(unittest.TestCase):
                 payload["actuation_attempted"],
                 receipt.actuation_attempted,
             )
+            self.assertEqual(
+                payload["save_source"]["save_source_type"],
+                receipt.save_source_metadata.save_source_type,
+            )
+            self.assertEqual(
+                payload["save_source"]["original_requested_path"],
+                receipt.save_source_metadata.original_requested_path,
+            )
+            self.assertEqual(
+                payload["save_source"]["prepared_local_path"],
+                receipt.save_source_metadata.prepared_local_path,
+            )
+            self.assertEqual(
+                payload["save_source"]["preparation_performed"],
+                receipt.save_source_metadata.preparation_performed,
+            )
             self.assertEqual(payload["verifier_messages"], receipt.verifier_messages)
 
     def test_main_writes_receipt_and_prints_path(self) -> None:
@@ -191,6 +208,12 @@ def _sample_receipt() -> ActionAttemptReceipt:
             actuation_required=True,
         ),
         actuation_attempted=True,
+        save_source_metadata=SaveSourceMetadata(
+            save_source_type="local",
+            original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
+            prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+            preparation_performed=False,
+        ),
     )
 
 
