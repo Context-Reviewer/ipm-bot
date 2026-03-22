@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+
+# Local outputs
+logs/
+data/captures/
+data/reports/
+archive/
+
+# OS
+Thumbs.db
+Desktop.ini

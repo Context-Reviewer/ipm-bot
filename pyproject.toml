@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipm-bot"
+version = "0.1.0"
+description = "Save-driven automation tooling for Idle Planet Miner"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "lwpar" }
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
