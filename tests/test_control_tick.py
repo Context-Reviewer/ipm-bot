@@ -1,0 +1,144 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import io
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+
+PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(PROJECT_SRC) not in sys.path:
+    sys.path.insert(0, str(PROJECT_SRC))
+
+from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason
+from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.main import ExitCode, main
+
+
+class ControlTickTests(unittest.TestCase):
+    def test_pass_returns_exit_code_zero_and_writes_receipt(self) -> None:
+        save_payload = {
+            "adBoostActive": False,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": False,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="activate_ad_boost",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+        )
+
+        exit_code, stdout_value, runner_mock, written_files = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
+        self.assertEqual(len(written_files), 1)
+        self.assertIn("Selected action: activate_ad_boost", stdout_value)
+        self.assertIn("Final status: PASS", stdout_value)
+
+    def test_fail_returns_exit_code_one(self) -> None:
+        save_payload = {
+            "adBoostActive": False,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": False,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="activate_ad_boost",
+            final_status="FAIL",
+            failure_reason=FailureReason.TIMEOUT_NO_SAVE_CHANGE,
+        )
+
+        exit_code, _, runner_mock, _ = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.FAIL))
+        self.assertEqual(runner_mock.call_count, 1)
+
+    def test_ambiguous_returns_exit_code_two(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="claim_ark_reward",
+            final_status="AMBIGUOUS",
+            failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
+        )
+
+        exit_code, stdout_value, runner_mock, _ = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.AMBIGUOUS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_ark_reward")
+        self.assertIn("Failure reason: AMBIGUOUS_TRANSITION", stdout_value)
+
+
+def _run_main_with_receipt(
+    *,
+    save_payload: dict[str, object],
+    receipt: ActionAttemptReceipt,
+) -> tuple[int, str, object, list[Path]]:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        save_path = root / "save.json"
+        save_path.write_text(json.dumps(save_payload), encoding="utf-8")
+        output_dir = root / "logs" / "receipts"
+        stdout = io.StringIO()
+
+        def _write_to_temp(receipt_to_write: ActionAttemptReceipt) -> Path:
+            return write_receipt(
+                receipt_to_write,
+                output_dir=output_dir,
+                written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+            )
+
+        with (
+            patch("sys.stdout", stdout),
+            patch("ipm_bot.main.run_action_until_verified", return_value=receipt) as runner_mock,
+            patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp),
+        ):
+            exit_code = main([str(save_path)])
+
+        return exit_code, stdout.getvalue(), runner_mock, list(output_dir.glob("*.json"))
+
+
+def _sample_receipt(
+    *,
+    action: str,
+    final_status: str,
+    failure_reason: FailureReason,
+) -> ActionAttemptReceipt:
+    return ActionAttemptReceipt(
+        action=action,
+        baseline_hash="abc123",
+        final_status=final_status,
+        failure_reason=failure_reason,
+        elapsed_seconds=1.25,
+        changed_save_count=1,
+        candidate_hashes=["def456"],
+        verifier_messages=["verification message"],
+    )
+
+
+if __name__ == "__main__":
+    unittest.main()
