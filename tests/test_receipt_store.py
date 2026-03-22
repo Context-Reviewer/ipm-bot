@@ -14,7 +14,12 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason
+from ipm_bot.actuator.runner import (
+    ActionAttemptReceipt,
+    FailureReason,
+    ReceiptRuntimeContext,
+)
+from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import main
 
@@ -46,6 +51,36 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(payload["elapsed_seconds"], receipt.elapsed_seconds)
             self.assertEqual(payload["changed_save_count"], receipt.changed_save_count)
             self.assertEqual(payload["candidate_hashes"], receipt.candidate_hashes)
+            self.assertEqual(payload["save_path"], receipt.save_path)
+            self.assertEqual(payload["final_candidate_hash"], receipt.final_candidate_hash)
+            self.assertEqual(
+                payload["receipt_written_at_utc"],
+                "2026-03-22T14-31-05Z",
+            )
+            self.assertEqual(
+                payload["contract_identity"]["action"],
+                receipt.contract_identity.action,
+            )
+            self.assertEqual(
+                payload["contract_identity"]["required_expected_values"],
+                receipt.contract_identity.required_expected_values,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["receipt_schema_version"],
+                receipt.runtime_context.receipt_schema_version,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["poll_interval_seconds"],
+                receipt.runtime_context.poll_interval_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["timeout_seconds"],
+                receipt.runtime_context.timeout_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["exit_code"],
+                receipt.runtime_context.exit_code,
+            )
             self.assertEqual(payload["verifier_messages"], receipt.verifier_messages)
 
     def test_main_writes_receipt_and_prints_path(self) -> None:
@@ -91,14 +126,24 @@ class ReceiptStoreTests(unittest.TestCase):
 
 
 def _sample_receipt() -> ActionAttemptReceipt:
+    contract = get_action_contract("activate_ad_boost")
     return ActionAttemptReceipt(
         action="activate_ad_boost",
+        save_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
         baseline_hash="abc123",
         final_status="PASS",
         failure_reason=FailureReason.NONE,
         elapsed_seconds=1.25,
         changed_save_count=1,
         candidate_hashes=["def456"],
+        final_candidate_hash="def456",
+        contract_identity=contract.identity("activate_ad_boost"),
+        runtime_context=ReceiptRuntimeContext(
+            receipt_schema_version=2,
+            poll_interval_seconds=0.5,
+            timeout_seconds=30.0,
+            exit_code=0,
+        ),
         verifier_messages=["Field 'ad_boost_active' matched the expected value: value=True."],
     )
 

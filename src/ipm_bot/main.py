@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from enum import IntEnum
 from pathlib import Path
 import sys
@@ -73,6 +74,11 @@ def run_single_control_tick(
         contract=contract,
         poll_interval_s=poll_interval_seconds,
         timeout_s=timeout_seconds,
+    )
+    exit_code = exit_code_for_status(receipt.final_status)
+    receipt = replace(
+        receipt,
+        runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path

@@ -8,7 +8,7 @@ from pathlib import Path
 import time
 from typing import Callable, Mapping
 
-from ipm_bot.control.contracts import ActionContract
+from ipm_bot.control.contracts import ActionContract, ActionContractIdentity
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
 from ipm_bot.save.models import PlayerSnapshot
 from ipm_bot.verifier.verifier import VerificationResult, VerificationStatus, verify_transition
@@ -31,19 +31,43 @@ class FailureReason(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ReceiptRuntimeContext:
+    receipt_schema_version: int
+    poll_interval_seconds: float
+    timeout_seconds: float
+    exit_code: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.receipt_schema_version <= 0:
+            raise ValueError("Receipt schema version must be greater than zero.")
+        if self.poll_interval_seconds <= 0:
+            raise ValueError("Poll interval must be greater than zero.")
+        if self.timeout_seconds <= 0:
+            raise ValueError("Timeout must be greater than zero.")
+        if self.exit_code is not None and self.exit_code < 0:
+            raise ValueError("Exit code must be non-negative when provided.")
+
+
+@dataclass(frozen=True, slots=True)
 class ActionAttemptReceipt:
     action: str
+    save_path: str
     baseline_hash: str
     final_status: VerificationStatus
     failure_reason: FailureReason
     elapsed_seconds: float
     changed_save_count: int
     candidate_hashes: list[str]
+    final_candidate_hash: str | None
+    contract_identity: ActionContractIdentity
+    runtime_context: ReceiptRuntimeContext
     verifier_messages: list[str]
 
     def __post_init__(self) -> None:
         if not self.action:
             raise ValueError("Receipt action must not be empty.")
+        if not self.save_path:
+            raise ValueError("Receipt save_path must not be empty.")
         if not self.baseline_hash:
             raise ValueError("Receipt baseline_hash must not be empty.")
         if self.elapsed_seconds < 0:
@@ -53,6 +77,14 @@ class ActionAttemptReceipt:
         if self.changed_save_count != len(self.candidate_hashes):
             raise ValueError(
                 "Receipt changed_save_count must match the number of candidate hashes."
+            )
+        if self.changed_save_count == 0 and self.final_candidate_hash is not None:
+            raise ValueError(
+                "Receipt final_candidate_hash must be None when no candidate saves were observed."
+            )
+        if self.changed_save_count > 0 and self.final_candidate_hash != self.candidate_hashes[-1]:
+            raise ValueError(
+                "Receipt final_candidate_hash must match the most recent candidate hash."
             )
         if self.final_status == "PASS" and self.failure_reason is not FailureReason.NONE:
             raise ValueError("Passing receipts must use failure reason NONE.")
@@ -89,6 +121,7 @@ def run_action_until_verified(
     effective_timeout_s = contract.default_timeout_seconds if timeout_s is None else timeout_s
     if effective_timeout_s <= 0:
         raise ValueError("timeout_s must be greater than zero.")
+    resolved_save_path = str(save_path.resolve())
 
     baseline_hash = get_save_fingerprint(save_path).sha256
     initial_baseline_hash = baseline_hash
@@ -99,9 +132,13 @@ def run_action_until_verified(
     if action == "idle":
         return _build_receipt(
             action=action,
+            save_path=resolved_save_path,
             baseline_hash=initial_baseline_hash,
             final_status="PASS",
             failure_reason=FailureReason.NONE,
+            contract=contract,
+            effective_timeout_s=effective_timeout_s,
+            poll_interval_s=poll_interval_s,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=["Idle action selected; no actuation or verification loop required."],
@@ -112,9 +149,13 @@ def run_action_until_verified(
     except Exception as exc:
         return _build_receipt(
             action=action,
+            save_path=resolved_save_path,
             baseline_hash=initial_baseline_hash,
             final_status="FAIL",
             failure_reason=FailureReason.ACTUATION_ERROR,
+            contract=contract,
+            effective_timeout_s=effective_timeout_s,
+            poll_interval_s=poll_interval_s,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=[f"Action '{action}' failed before verification: {exc}"],
@@ -137,9 +178,13 @@ def run_action_until_verified(
         except Exception as exc:
             return _build_receipt(
                 action=action,
+                save_path=resolved_save_path,
                 baseline_hash=initial_baseline_hash,
                 final_status="FAIL",
                 failure_reason=FailureReason.SAVE_WATCH_ERROR,
+                contract=contract,
+                effective_timeout_s=effective_timeout_s,
+                poll_interval_s=poll_interval_s,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=last_verifier_messages + [f"Save watcher error: {exc}"],
@@ -159,9 +204,13 @@ def run_action_until_verified(
         if evaluation.verification.status == "PASS":
             return _build_receipt(
                 action=action,
+                save_path=resolved_save_path,
                 baseline_hash=initial_baseline_hash,
                 final_status="PASS",
                 failure_reason=FailureReason.NONE,
+                contract=contract,
+                effective_timeout_s=effective_timeout_s,
+                poll_interval_s=poll_interval_s,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=evaluation.verification.messages,
@@ -170,9 +219,13 @@ def run_action_until_verified(
         if evaluation.terminal_failure_reason is not None:
             return _build_receipt(
                 action=action,
+                save_path=resolved_save_path,
                 baseline_hash=initial_baseline_hash,
                 final_status=evaluation.verification.status,
                 failure_reason=evaluation.terminal_failure_reason,
+                contract=contract,
+                effective_timeout_s=effective_timeout_s,
+                poll_interval_s=poll_interval_s,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
                 verifier_messages=evaluation.verification.messages,
@@ -183,9 +236,13 @@ def run_action_until_verified(
     if candidate_hashes:
         return _build_receipt(
             action=action,
+            save_path=resolved_save_path,
             baseline_hash=initial_baseline_hash,
             final_status="FAIL",
             failure_reason=FailureReason.TIMEOUT_AFTER_SAVE_CHANGES,
+            contract=contract,
+            effective_timeout_s=effective_timeout_s,
+            poll_interval_s=poll_interval_s,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
             verifier_messages=last_verifier_messages,
@@ -193,9 +250,13 @@ def run_action_until_verified(
 
     return _build_receipt(
         action=action,
+        save_path=resolved_save_path,
         baseline_hash=initial_baseline_hash,
         final_status="FAIL",
         failure_reason=FailureReason.TIMEOUT_NO_SAVE_CHANGE,
+        contract=contract,
+        effective_timeout_s=effective_timeout_s,
+        poll_interval_s=poll_interval_s,
         started_at=started_at,
         candidate_hashes=candidate_hashes,
         verifier_messages=[],
@@ -357,21 +418,33 @@ def _unmet_expected_values(
 
 def _build_receipt(
     action: str,
+    save_path: str,
     baseline_hash: str,
     final_status: VerificationStatus,
     failure_reason: FailureReason,
+    contract: ActionContract,
+    effective_timeout_s: float,
+    poll_interval_s: float,
     started_at: float,
     candidate_hashes: list[str],
     verifier_messages: list[str],
 ) -> ActionAttemptReceipt:
     return ActionAttemptReceipt(
         action=action,
+        save_path=save_path,
         baseline_hash=baseline_hash,
         final_status=final_status,
         failure_reason=failure_reason,
         elapsed_seconds=time.monotonic() - started_at,
         changed_save_count=len(candidate_hashes),
         candidate_hashes=list(candidate_hashes),
+        final_candidate_hash=candidate_hashes[-1] if candidate_hashes else None,
+        contract_identity=contract.identity(action),
+        runtime_context=ReceiptRuntimeContext(
+            receipt_schema_version=2,
+            poll_interval_seconds=poll_interval_s,
+            timeout_seconds=effective_timeout_s,
+        ),
         verifier_messages=list(verifier_messages),
     )
 

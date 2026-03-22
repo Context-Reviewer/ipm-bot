@@ -31,21 +31,39 @@ def write_receipt(
         action=_sanitize_action_name(receipt.action),
     )
     receipt_path.write_text(
-        json.dumps(_serialize_receipt(receipt), indent=2),
+        json.dumps(_serialize_receipt(receipt, timestamp), indent=2, sort_keys=True),
         encoding="utf-8",
     )
     return receipt_path
 
 
-def _serialize_receipt(receipt: ActionAttemptReceipt) -> dict[str, object]:
+def _serialize_receipt(
+    receipt: ActionAttemptReceipt,
+    receipt_written_at_utc: str,
+) -> dict[str, object]:
     return {
         "action": receipt.action,
+        "save_path": receipt.save_path,
         "baseline_hash": receipt.baseline_hash,
         "final_status": receipt.final_status,
         "failure_reason": receipt.failure_reason,
         "elapsed_seconds": receipt.elapsed_seconds,
         "changed_save_count": receipt.changed_save_count,
         "candidate_hashes": list(receipt.candidate_hashes),
+        "final_candidate_hash": receipt.final_candidate_hash,
+        "contract_identity": {
+            "action": receipt.contract_identity.action,
+            "expectation_keys": list(receipt.contract_identity.expectation_keys),
+            "required_expected_values": dict(receipt.contract_identity.required_expected_values),
+            "supporting_fields": list(receipt.contract_identity.supporting_fields),
+        },
+        "runtime_context": {
+            "receipt_schema_version": receipt.runtime_context.receipt_schema_version,
+            "poll_interval_seconds": receipt.runtime_context.poll_interval_seconds,
+            "timeout_seconds": receipt.runtime_context.timeout_seconds,
+            "exit_code": receipt.runtime_context.exit_code,
+        },
+        "receipt_written_at_utc": receipt_written_at_utc,
         "verifier_messages": list(receipt.verifier_messages),
     }
 

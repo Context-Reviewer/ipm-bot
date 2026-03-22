@@ -14,7 +14,12 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason
+from ipm_bot.actuator.runner import (
+    ActionAttemptReceipt,
+    FailureReason,
+    ReceiptRuntimeContext,
+)
+from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.main import ExitCode, main
 
@@ -34,7 +39,7 @@ class ControlTickTests(unittest.TestCase):
             failure_reason=FailureReason.NONE,
         )
 
-        exit_code, stdout_value, runner_mock, written_files = _run_main_with_receipt(
+        exit_code, stdout_value, runner_mock, written_files, payloads = _run_main_with_receipt(
             save_payload=save_payload,
             receipt=receipt,
         )
@@ -43,6 +48,7 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(runner_mock.call_count, 1)
         self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
         self.assertEqual(len(written_files), 1)
+        self.assertEqual(payloads[0]["runtime_context"]["exit_code"], int(ExitCode.PASS))
         self.assertIn("Selected action: activate_ad_boost", stdout_value)
         self.assertIn("Final status: PASS", stdout_value)
 
@@ -60,7 +66,7 @@ class ControlTickTests(unittest.TestCase):
             failure_reason=FailureReason.TIMEOUT_NO_SAVE_CHANGE,
         )
 
-        exit_code, _, runner_mock, _ = _run_main_with_receipt(
+        exit_code, _, runner_mock, _, _ = _run_main_with_receipt(
             save_payload=save_payload,
             receipt=receipt,
         )
@@ -82,7 +88,7 @@ class ControlTickTests(unittest.TestCase):
             failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
         )
 
-        exit_code, stdout_value, runner_mock, _ = _run_main_with_receipt(
+        exit_code, stdout_value, runner_mock, _, _ = _run_main_with_receipt(
             save_payload=save_payload,
             receipt=receipt,
         )
@@ -97,7 +103,7 @@ def _run_main_with_receipt(
     *,
     save_payload: dict[str, object],
     receipt: ActionAttemptReceipt,
-) -> tuple[int, str, object, list[Path]]:
+) -> tuple[int, str, object, list[Path], list[dict[str, object]]]:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
         save_path = root / "save.json"
@@ -119,7 +125,12 @@ def _run_main_with_receipt(
         ):
             exit_code = main([str(save_path)])
 
-        return exit_code, stdout.getvalue(), runner_mock, list(output_dir.glob("*.json"))
+        written_files = list(output_dir.glob("*.json"))
+        payloads = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in written_files
+        ]
+        return exit_code, stdout.getvalue(), runner_mock, written_files, payloads
 
 
 def _sample_receipt(
@@ -128,14 +139,23 @@ def _sample_receipt(
     final_status: str,
     failure_reason: FailureReason,
 ) -> ActionAttemptReceipt:
+    contract = get_action_contract(action)
     return ActionAttemptReceipt(
         action=action,
+        save_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
         baseline_hash="abc123",
         final_status=final_status,
         failure_reason=failure_reason,
         elapsed_seconds=1.25,
         changed_save_count=1,
         candidate_hashes=["def456"],
+        final_candidate_hash="def456",
+        contract_identity=contract.identity(action),
+        runtime_context=ReceiptRuntimeContext(
+            receipt_schema_version=2,
+            poll_interval_seconds=0.5,
+            timeout_seconds=30.0,
+        ),
         verifier_messages=["verification message"],
     )
 
