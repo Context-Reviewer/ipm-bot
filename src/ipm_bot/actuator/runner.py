@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 import time
-from typing import Callable, Mapping
+from typing import Mapping
 
+from ipm_bot.actuator.boundary import ActionActuator
 from ipm_bot.control.contracts import ActionContract, ActionContractIdentity
+from ipm_bot.planner.planner import PlannerDecision
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
 from ipm_bot.save.models import PlayerSnapshot
 from ipm_bot.verifier.verifier import VerificationResult, VerificationStatus, verify_transition
@@ -62,6 +64,8 @@ class ActionAttemptReceipt:
     contract_identity: ActionContractIdentity
     runtime_context: ReceiptRuntimeContext
     verifier_messages: list[str]
+    planner_decision: PlannerDecision | None = None
+    actuation_attempted: bool | None = None
 
     def __post_init__(self) -> None:
         if not self.action:
@@ -90,20 +94,8 @@ class ActionAttemptReceipt:
             raise ValueError("Passing receipts must use failure reason NONE.")
         if self.final_status != "PASS" and self.failure_reason is FailureReason.NONE:
             raise ValueError("Non-passing receipts must use a non-NONE failure reason.")
-
-
-def run_action(action: str) -> None:
-    """Execute a named action through the placeholder actuator layer."""
-
-    normalized_action = action.strip()
-    if not normalized_action:
-        raise ValueError("Action name must not be empty.")
-
-    handler = _ACTION_HANDLERS.get(normalized_action)
-    if handler is None:
-        raise ValueError(f"Unsupported action: {normalized_action}")
-
-    handler()
+        if self.planner_decision is not None and self.planner_decision.selected_action != self.action:
+            raise ValueError("Receipt planner decision action must match receipt action.")
 
 
 def run_action_until_verified(
@@ -111,6 +103,7 @@ def run_action_until_verified(
     save_path: Path,
     snapshot_before: PlayerSnapshot,
     contract: ActionContract,
+    actuator: ActionActuator,
     poll_interval_s: float,
     timeout_s: float | None = None,
 ) -> ActionAttemptReceipt:
@@ -145,7 +138,7 @@ def run_action_until_verified(
         )
 
     try:
-        run_action(action)
+        actuator.execute(action)
     except Exception as exc:
         return _build_receipt(
             action=action,
@@ -471,22 +464,3 @@ def _require_int_field(fields: Mapping[str, object], field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"Field '{field_name}' must be an int for action classification.")
     return value
-
-
-def _execute_activate_ad_boost() -> None:
-    print("Executing action: activate_ad_boost")
-
-
-def _execute_claim_ark_reward() -> None:
-    print("Executing action: claim_ark_reward")
-
-
-def _execute_idle() -> None:
-    print("Executing action: idle")
-
-
-_ACTION_HANDLERS: dict[str, Callable[[], None]] = {
-    "activate_ad_boost": _execute_activate_ad_boost,
-    "claim_ark_reward": _execute_claim_ark_reward,
-    "idle": _execute_idle,
-}

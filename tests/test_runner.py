@@ -8,7 +8,6 @@ import tempfile
 import threading
 import time
 import unittest
-from unittest.mock import patch
 
 
 PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
@@ -25,6 +24,7 @@ class RunnerReceiptTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=False,
@@ -49,15 +49,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             update_thread.start()
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="activate_ad_boost",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("activate_ad_boost"),
-                    poll_interval_s=0.05,
-                    timeout_s=1.0,
-                )
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
 
             update_thread.join()
 
@@ -65,12 +65,14 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.failure_reason, FailureReason.NONE)
             self.assertEqual(receipt.changed_save_count, 1)
             self.assertEqual(len(receipt.candidate_hashes), 1)
+            self.assertEqual(actuator.actions, ["activate_ad_boost"])
             self.assertTrue(receipt.verifier_messages)
 
     def test_pass_receipt_for_claim_ark_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=True,
@@ -95,15 +97,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             update_thread.start()
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="claim_ark_reward",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("claim_ark_reward"),
-                    poll_interval_s=0.05,
-                    timeout_s=1.0,
-                )
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
 
             update_thread.join()
 
@@ -111,12 +113,14 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.failure_reason, FailureReason.NONE)
             self.assertEqual(receipt.changed_save_count, 1)
             self.assertEqual(len(receipt.candidate_hashes), 1)
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertTrue(receipt.verifier_messages)
 
     def test_timeout_no_save_change_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=False,
@@ -126,15 +130,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             snapshot_before = parse_player_snapshot(save_path)
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="activate_ad_boost",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("activate_ad_boost"),
-                    poll_interval_s=0.05,
-                    timeout_s=0.25,
-                )
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.25,
+            )
 
             self.assertEqual(receipt.final_status, "FAIL")
             self.assertEqual(
@@ -143,12 +147,14 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             self.assertEqual(receipt.changed_save_count, 0)
             self.assertEqual(receipt.candidate_hashes, [])
+            self.assertEqual(actuator.actions, ["activate_ad_boost"])
             self.assertEqual(receipt.verifier_messages, [])
 
     def test_timeout_no_save_change_receipt_for_claim_ark_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=True,
@@ -158,15 +164,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             snapshot_before = parse_player_snapshot(save_path)
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="claim_ark_reward",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("claim_ark_reward"),
-                    poll_interval_s=0.05,
-                    timeout_s=0.25,
-                )
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.25,
+            )
 
             self.assertEqual(receipt.final_status, "FAIL")
             self.assertEqual(
@@ -175,12 +181,14 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             self.assertEqual(receipt.changed_save_count, 0)
             self.assertEqual(receipt.candidate_hashes, [])
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertEqual(receipt.verifier_messages, [])
 
     def test_timeout_after_save_changes_receipt_for_claim_ark_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=False,
@@ -205,15 +213,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             update_thread.start()
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="claim_ark_reward",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("claim_ark_reward"),
-                    poll_interval_s=0.05,
-                    timeout_s=0.4,
-                )
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.4,
+            )
 
             update_thread.join()
 
@@ -224,12 +232,14 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             self.assertEqual(receipt.changed_save_count, 1)
             self.assertEqual(len(receipt.candidate_hashes), 1)
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertTrue(receipt.verifier_messages)
 
     def test_ambiguous_transition_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=False,
@@ -254,15 +264,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             update_thread.start()
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="activate_ad_boost",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("activate_ad_boost"),
-                    poll_interval_s=0.05,
-                    timeout_s=1.0,
-                )
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
 
             update_thread.join()
 
@@ -272,12 +282,14 @@ class RunnerReceiptTests(unittest.TestCase):
                 FailureReason.AMBIGUOUS_TRANSITION,
             )
             self.assertEqual(receipt.changed_save_count, 1)
+            self.assertEqual(actuator.actions, ["activate_ad_boost"])
             self.assertTrue(receipt.verifier_messages)
 
     def test_ambiguous_transition_receipt_for_claim_ark_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
             _write_save(
                 save_path,
                 ad_boost_active=True,
@@ -302,15 +314,15 @@ class RunnerReceiptTests(unittest.TestCase):
             )
             update_thread.start()
 
-            with patch("ipm_bot.actuator.runner.run_action"):
-                receipt = run_action_until_verified(
-                    action="claim_ark_reward",
-                    save_path=save_path,
-                    snapshot_before=snapshot_before,
-                    contract=get_action_contract("claim_ark_reward"),
-                    poll_interval_s=0.05,
-                    timeout_s=1.0,
-                )
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
 
             update_thread.join()
 
@@ -320,7 +332,35 @@ class RunnerReceiptTests(unittest.TestCase):
                 FailureReason.AMBIGUOUS_TRANSITION,
             )
             self.assertEqual(receipt.changed_save_count, 1)
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertTrue(receipt.verifier_messages)
+
+    def test_idle_does_not_invoke_actuator(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            actuator = RecordingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                ark_reward_ready_to_claim=False,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            receipt = run_action_until_verified(
+                action="idle",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("idle"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.25,
+            )
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertEqual(actuator.actions, [])
 
 
 def _delayed_write(path: Path, delay_s: float, payload: dict[str, object]) -> None:
@@ -345,6 +385,14 @@ def _write_save(
         "playerLevel": player_level,
     }
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+class RecordingActuator:
+    def __init__(self) -> None:
+        self.actions: list[str] = []
+
+    def execute(self, action: str) -> None:
+        self.actions.append(action)
 
 
 if __name__ == "__main__":

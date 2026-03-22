@@ -10,6 +10,7 @@ import sys
 from typing import Sequence
 
 from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
+from ipm_bot.actuator.stub import StubActionActuator
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.planner.planner import PlannerDecision, decide_next_action_details
@@ -73,6 +74,7 @@ def run_single_control_tick(
         save_path=save_path,
         snapshot_before=snapshot_before,
         contract=contract,
+        actuator=StubActionActuator(),
         poll_interval_s=poll_interval_seconds,
         timeout_s=timeout_seconds,
     )
