@@ -51,6 +51,20 @@ class SaveCommandRunner(Protocol):
         """Execute one command or raise on failure."""
 
 
+@dataclass(frozen=True, slots=True)
+class SevenZipCommandResult:
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+class SevenZipCommandRunner(Protocol):
+    """Thin command boundary for 7z extraction commands."""
+
+    def run(self, command: Sequence[str]) -> SevenZipCommandResult:
+        """Execute one 7z command and return the completed result."""
+
+
 class VhdxExtractor(Protocol):
     """Boundary for extracting one file from an offline BlueStacks VHDX image."""
 
@@ -149,10 +163,17 @@ class VhdxSaveSourceConfig:
 class SevenZipVhdxExtractor:
     """Read-only VHDX extractor backed by the 7z command-line tool."""
 
-    def __init__(self, seven_zip_path: str = "7z") -> None:
+    def __init__(
+        self,
+        seven_zip_path: str = "7z",
+        command_runner: SevenZipCommandRunner | None = None,
+    ) -> None:
         if not seven_zip_path.strip():
             raise ValueError("seven_zip_path must not be empty.")
         self._seven_zip_path = seven_zip_path
+        self._command_runner = (
+            SubprocessSevenZipCommandRunner() if command_runner is None else command_runner
+        )
 
     def extract_file(self, image_path: Path, member_path: str, output_path: Path) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -166,32 +187,51 @@ class SevenZipVhdxExtractor:
                 "-y",
             ]
             try:
-                subprocess.run(
-                    command,
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                )
+                result = self._command_runner.run(command)
             except FileNotFoundError as exc:
                 raise RuntimeError(
                     f"7z executable was not found: {self._seven_zip_path!r}."
                 ) from exc
-            except subprocess.CalledProcessError as exc:
-                stderr = exc.stderr.strip()
-                stdout = exc.stdout.strip()
-                details = stderr or stdout or f"exit code {exc.returncode}"
+            except Exception as exc:
                 raise RuntimeError(
-                    f"7z failed to extract {member_path!r} from {image_path}: {details}"
+                    f"7z failed to extract {member_path!r} from {image_path}: {exc}"
                 ) from exc
 
             extracted_path = extract_root.joinpath(*PureWindowsPath(member_path).parts)
-            if not extracted_path.is_file():
-                raise FileNotFoundError(
-                    f"Extracted member was not found after 7z completed: {member_path}"
-                )
+            if extracted_path.is_file():
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(extracted_path, output_path)
+                return
 
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(extracted_path, output_path)
+            details = self._format_7z_details(result)
+            raise FileNotFoundError(
+                "7z did not materialize the selected save from the VHDX image: "
+                f"{member_path}. {details}"
+            )
+
+    @staticmethod
+    def _format_7z_details(result: SevenZipCommandResult) -> str:
+        stderr = result.stderr.strip()
+        stdout = result.stdout.strip()
+        detail = stderr or stdout or f"exit code {result.returncode}"
+        return f"returncode={result.returncode}; details={detail}"
+
+
+class SubprocessSevenZipCommandRunner:
+    """Default subprocess-backed command runner for 7z extraction commands."""
+
+    def run(self, command: Sequence[str]) -> SevenZipCommandResult:
+        completed = subprocess.run(
+            list(command),
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        return SevenZipCommandResult(
+            returncode=completed.returncode,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+        )
 
 
 class VhdxSaveSource:

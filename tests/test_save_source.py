@@ -18,6 +18,8 @@ from ipm_bot.control.save_source import (
     AdbPulledSaveSourceConfig,
     LocalSaveSource,
     SaveSourcePreparationError,
+    SevenZipCommandResult,
+    SevenZipVhdxExtractor,
     VHDX_SAVE_MEMBER_PATHS,
     VhdxSaveSource,
     VhdxSaveSourceConfig,
@@ -211,6 +213,89 @@ class SaveSourceTests(unittest.TestCase):
             self.assertIn(str(missing_vhdx_path.resolve()), str(context.exception))
             self.assertEqual(extractor.calls, [])
 
+    def test_seven_zip_vhdx_extractor_accepts_warning_result_when_member_is_materialized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            image_path = root / "Data.vhdx"
+            image_path.write_bytes(b"vhdx")
+            output_path = root / "prepared" / "playerInfo.dat"
+            member_path = VHDX_SAVE_MEMBER_PATHS["playerInfo.dat"]
+            runner = RecordingSevenZipCommandRunner(
+                results=[
+                    SevenZipCommandResult(
+                        returncode=2,
+                        stdout="Open Errors: 1",
+                        stderr="0.img\r\nERRORS:\r\nHeaders Error\r\n",
+                    )
+                ],
+                materialized_members={member_path: b"primary-save"},
+            )
+            extractor = SevenZipVhdxExtractor(
+                seven_zip_path="C:\\tools\\7z.exe",
+                command_runner=runner,
+            )
+
+            extractor.extract_file(image_path, member_path, output_path)
+
+            self.assertEqual(output_path.read_bytes(), b"primary-save")
+            self.assertEqual(
+                runner.commands,
+                [[
+                    "C:\\tools\\7z.exe",
+                    "x",
+                    str(image_path),
+                    member_path,
+                    f"-o{runner.output_directories[0]}",
+                    "-y",
+                ]],
+            )
+
+    def test_seven_zip_vhdx_extractor_fails_loud_when_member_is_not_materialized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            image_path = root / "Data.vhdx"
+            image_path.write_bytes(b"vhdx")
+            output_path = root / "prepared" / "playerInfo.dat"
+            member_path = VHDX_SAVE_MEMBER_PATHS["playerInfo.dat"]
+            runner = RecordingSevenZipCommandRunner(
+                results=[
+                    SevenZipCommandResult(
+                        returncode=2,
+                        stdout="Open Errors: 1",
+                        stderr="0.img\r\nERRORS:\r\nHeaders Error\r\n",
+                    )
+                ],
+                materialized_members={},
+            )
+            extractor = SevenZipVhdxExtractor(
+                seven_zip_path="C:\\tools\\7z.exe",
+                command_runner=runner,
+            )
+
+            with self.assertRaises(FileNotFoundError) as context:
+                extractor.extract_file(image_path, member_path, output_path)
+
+            self.assertIn("Headers Error", str(context.exception))
+            self.assertFalse(output_path.exists())
+
+    def test_seven_zip_vhdx_extractor_fails_loud_when_seven_zip_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            image_path = root / "Data.vhdx"
+            image_path.write_bytes(b"vhdx")
+            output_path = root / "prepared" / "playerInfo.dat"
+            member_path = VHDX_SAVE_MEMBER_PATHS["playerInfo.dat"]
+            extractor = SevenZipVhdxExtractor(
+                seven_zip_path="C:\\missing\\7z.exe",
+                command_runner=MissingSevenZipCommandRunner(),
+            )
+
+            with self.assertRaises(RuntimeError) as context:
+                extractor.extract_file(image_path, member_path, output_path)
+
+            self.assertIn("7z executable was not found", str(context.exception))
+            self.assertFalse(output_path.exists())
+
     def test_composition_builds_vhdx_save_source_with_explicit_backup_selection(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -289,6 +374,44 @@ class FailingVhdxExtractor:
     def extract_file(self, image_path: Path, member_path: str, output_path: Path) -> None:
         del image_path, member_path, output_path
         raise self._error
+
+
+class RecordingSevenZipCommandRunner:
+    def __init__(
+        self,
+        *,
+        results: list[SevenZipCommandResult],
+        materialized_members: dict[str, bytes],
+    ) -> None:
+        self._results = list(results)
+        self._materialized_members = dict(materialized_members)
+        self.commands: list[list[str]] = []
+        self.output_directories: list[Path] = []
+
+    def run(self, command: list[str]) -> SevenZipCommandResult:
+        self.commands.append(list(command))
+        output_directory = _extract_output_directory(command)
+        self.output_directories.append(output_directory)
+        member_path = command[3]
+        content = self._materialized_members.get(member_path)
+        if content is not None:
+            extracted_path = output_directory.joinpath(*Path(member_path).parts)
+            extracted_path.parent.mkdir(parents=True, exist_ok=True)
+            extracted_path.write_bytes(content)
+        return self._results.pop(0)
+
+
+class MissingSevenZipCommandRunner:
+    def run(self, command: list[str]) -> SevenZipCommandResult:
+        del command
+        raise FileNotFoundError("7z missing")
+
+
+def _extract_output_directory(command: list[str]) -> Path:
+    for part in command:
+        if part.startswith("-o"):
+            return Path(part[2:])
+    raise AssertionError(f"Command did not contain an output directory: {command!r}")
 
 
 if __name__ == "__main__":
