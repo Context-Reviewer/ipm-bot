@@ -27,6 +27,19 @@ class ActuatorExecutionMetadata:
             )
 
 
+@dataclass(frozen=True, slots=True)
+class ActuatorConfigSnapshot:
+    actuator_type: str
+    adb_path: str | None = None
+    adb_serial: str | None = None
+    app_package: str | None = None
+    app_activity: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.actuator_type:
+            raise ValueError("Actuator config snapshot actuator_type must not be empty.")
+
+
 class ActuatorExecutionError(Exception):
     """Raised when a concrete actuator fails while issuing commands."""
 
@@ -43,6 +56,7 @@ class ActionActuator(Protocol):
     """Thin execution boundary for one planned action."""
 
     actuator_type: str
+    config_snapshot: ActuatorConfigSnapshot
 
     def execute(self, action: str) -> ActuatorExecutionMetadata:
         """Execute the requested action or raise on failure."""

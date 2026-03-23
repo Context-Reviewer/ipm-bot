@@ -47,11 +47,14 @@ def _serialize_receipt(
         raise ValueError("Receipt actuation_attempted must be populated before persistence.")
     if receipt.save_source_metadata is None:
         raise ValueError("Receipt save_source_metadata must be populated before persistence.")
+    if receipt.actuator_config_snapshot is None:
+        raise ValueError("Receipt actuator_config_snapshot must be populated before persistence.")
 
     return {
         "action": receipt.action,
         "save_path": receipt.save_path,
         "baseline_hash": receipt.baseline_hash,
+        "prepared_save_hash": receipt.baseline_hash,
         "final_status": receipt.final_status,
         "failure_reason": receipt.failure_reason,
         "elapsed_seconds": receipt.elapsed_seconds,
@@ -76,21 +79,68 @@ def _serialize_receipt(
             "actuator_command_count": receipt.actuator_execution.actuator_command_count,
             "actuator_command_summary": list(receipt.actuator_execution.actuator_command_summary),
         },
+        "actuator_config": _serialize_actuator_config(receipt),
         "planner_decision": {
             "selected_action": receipt.planner_decision.selected_action,
             "decision_reason": receipt.planner_decision.decision_reason,
             "actuation_required": receipt.planner_decision.actuation_required,
         },
         "actuation_attempted": receipt.actuation_attempted,
-        "save_source": {
-            "save_source_type": receipt.save_source_metadata.save_source_type,
-            "original_requested_path": receipt.save_source_metadata.original_requested_path,
-            "prepared_local_path": receipt.save_source_metadata.prepared_local_path,
-            "preparation_performed": receipt.save_source_metadata.preparation_performed,
-        },
+        "save_source": _serialize_save_source(receipt),
         "receipt_written_at_utc": receipt_written_at_utc,
         "verifier_messages": list(receipt.verifier_messages),
     }
+
+
+def _serialize_actuator_config(receipt: ActionAttemptReceipt) -> dict[str, object]:
+    snapshot = receipt.actuator_config_snapshot
+    if snapshot is None:
+        raise ValueError("Receipt actuator_config_snapshot must be populated before persistence.")
+
+    payload: dict[str, object] = {
+        "actuator_type": snapshot.actuator_type,
+    }
+    if snapshot.adb_path is not None:
+        payload["adb_path"] = snapshot.adb_path
+    if snapshot.adb_serial is not None:
+        payload["adb_serial"] = snapshot.adb_serial
+    if snapshot.app_package is not None:
+        payload["app_package"] = snapshot.app_package
+    if snapshot.app_activity is not None:
+        payload["app_activity"] = snapshot.app_activity
+    return payload
+
+
+def _serialize_save_source(receipt: ActionAttemptReceipt) -> dict[str, object]:
+    metadata = receipt.save_source_metadata
+    if metadata is None:
+        raise ValueError("Receipt save_source_metadata must be populated before persistence.")
+
+    snapshot = metadata.config_snapshot
+    payload: dict[str, object] = {
+        "save_source_type": metadata.save_source_type,
+        "preparation_performed": metadata.preparation_performed,
+        "prepared_local_path": metadata.prepared_local_path,
+        "original_requested_path": metadata.original_requested_path,
+    }
+    if snapshot is None:
+        return payload
+
+    if snapshot.local_source_path is not None:
+        payload["local_source_path"] = snapshot.local_source_path
+    if snapshot.adb_path is not None:
+        payload["adb_path"] = snapshot.adb_path
+    if snapshot.adb_serial is not None:
+        payload["adb_serial"] = snapshot.adb_serial
+    if snapshot.remote_save_path is not None:
+        payload["remote_save_path"] = snapshot.remote_save_path
+    if snapshot.vhdx_path is not None:
+        payload["vhdx_path"] = snapshot.vhdx_path
+    if snapshot.vhdx_member_name is not None:
+        payload["vhdx_member_name"] = snapshot.vhdx_member_name
+    if snapshot.seven_zip_path is not None:
+        payload["seven_zip_path"] = snapshot.seven_zip_path
+    return payload
 
 
 def _normalize_timestamp(value: datetime) -> str:

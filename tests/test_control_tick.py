@@ -19,10 +19,14 @@ from ipm_bot.actuator.runner import (
     FailureReason,
     ReceiptRuntimeContext,
 )
-from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
+from ipm_bot.actuator.boundary import (
+    ActuatorConfigSnapshot,
+    ActuatorExecutionMetadata,
+)
 from ipm_bot.control.contracts import get_action_contract
+from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
 from ipm_bot.control.receipt_store import write_receipt
-from ipm_bot.control.save_source import SaveSourceMetadata
+from ipm_bot.control.save_source import SaveSourceConfigSnapshot, SaveSourceMetadata
 from ipm_bot.main import ExitCode, main
 from ipm_bot.planner.planner import PlannerDecision
 
@@ -52,11 +56,21 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
         self.assertEqual(len(written_files), 1)
         self.assertEqual(payloads[0]["runtime_context"]["exit_code"], int(ExitCode.PASS))
+        self.assertEqual(
+            payloads[0]["runtime_context"]["receipt_schema_version"],
+            CURRENT_RECEIPT_SCHEMA_VERSION,
+        )
+        self.assertEqual(payloads[0]["prepared_save_hash"], receipt.baseline_hash)
         self.assertTrue(payloads[0]["planner_decision"]["actuation_required"])
         self.assertTrue(payloads[0]["actuation_attempted"])
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_type"], "stub")
+        self.assertEqual(payloads[0]["actuator_config"]["actuator_type"], "stub")
         self.assertEqual(payloads[0]["save_source"]["save_source_type"], "local")
         self.assertFalse(payloads[0]["save_source"]["preparation_performed"])
+        self.assertEqual(
+            payloads[0]["save_source"]["local_source_path"],
+            payloads[0]["save_source"]["prepared_local_path"],
+        )
         self.assertIn("Selected action: activate_ad_boost", stdout_value)
         self.assertIn("Final status: PASS", stdout_value)
 
@@ -140,6 +154,7 @@ class ControlTickTests(unittest.TestCase):
         self.assertFalse(payloads[0]["actuation_attempted"])
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_execution_status"], "NOT_REQUIRED")
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_command_count"], 0)
+        self.assertEqual(payloads[0]["actuator_config"]["actuator_type"], "stub")
         self.assertIn("Selected action: idle", stdout_value)
 
 
@@ -223,7 +238,7 @@ def _sample_receipt(
         final_candidate_hash="def456",
         contract_identity=contract.identity(action),
         runtime_context=ReceiptRuntimeContext(
-            receipt_schema_version=2,
+            receipt_schema_version=CURRENT_RECEIPT_SCHEMA_VERSION,
             poll_interval_seconds=0.5,
             timeout_seconds=30.0,
         ),
@@ -235,6 +250,7 @@ def _sample_receipt(
             actuator_command_count=(0 if action == "idle" else 1),
             actuator_command_summary=([] if action == "idle" else [f"stub:{action}"]),
         ),
+        actuator_config_snapshot=ActuatorConfigSnapshot(actuator_type="stub"),
         verifier_messages=["verification message"],
         planner_decision=resolved_planner_decision,
         actuation_attempted=resolved_actuation_attempted,
@@ -243,6 +259,13 @@ def _sample_receipt(
             original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
             prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
             preparation_performed=False,
+            config_snapshot=SaveSourceConfigSnapshot(
+                save_source_type="local",
+                preparation_performed=False,
+                prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+                original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
+                local_source_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+            ),
         ),
     )
 

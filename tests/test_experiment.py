@@ -14,11 +14,12 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from ipm_bot.actuator.boundary import ActuatorExecutionMetadata
+from ipm_bot.actuator.boundary import ActuatorConfigSnapshot, ActuatorExecutionMetadata
 from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason, ReceiptRuntimeContext
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.experiment_store import write_experiment_manifest
-from ipm_bot.control.save_source import SaveSourceMetadata
+from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
+from ipm_bot.control.save_source import SaveSourceConfigSnapshot, SaveSourceMetadata
 from ipm_bot.experiment.runner import main
 from ipm_bot.main import ExitCode
 from ipm_bot.planner.planner import PlannerDecision
@@ -122,7 +123,7 @@ def _sample_receipt(
         final_candidate_hash="def456",
         contract_identity=contract.identity(action),
         runtime_context=ReceiptRuntimeContext(
-            receipt_schema_version=2,
+            receipt_schema_version=CURRENT_RECEIPT_SCHEMA_VERSION,
             poll_interval_seconds=0.5,
             timeout_seconds=30.0,
             exit_code=exit_code,
@@ -133,6 +134,7 @@ def _sample_receipt(
             actuator_command_count=1,
             actuator_command_summary=[f"stub:{action}"],
         ),
+        actuator_config_snapshot=ActuatorConfigSnapshot(actuator_type="stub"),
         verifier_messages=["verification message"],
         planner_decision=PlannerDecision(
             selected_action=action,
@@ -145,6 +147,13 @@ def _sample_receipt(
             original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
             prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
             preparation_performed=False,
+            config_snapshot=SaveSourceConfigSnapshot(
+                save_source_type="local",
+                preparation_performed=False,
+                prepared_local_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+                original_requested_path="C:\\dev\\ipm-bot\\data\\save.json",
+                local_source_path=str((Path("C:/dev/ipm-bot/data/save.json")).resolve()),
+            ),
         ),
     )
 

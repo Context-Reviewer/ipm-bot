@@ -97,6 +97,7 @@ def run_single_control_tick(
         planner_decision=planner_decision,
         exit_code=exit_code,
         save_source_metadata=save_source_metadata,
+        actuator=actuator,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -116,12 +117,14 @@ def _enrich_tick_receipt(
     planner_decision: PlannerDecision,
     exit_code: ExitCode,
     save_source_metadata: SaveSourceMetadata,
+    actuator: ActionActuator,
 ) -> ActionAttemptReceipt:
     return replace(
         receipt,
         planner_decision=planner_decision,
         actuation_attempted=planner_decision.actuation_required,
         save_source_metadata=save_source_metadata,
+        actuator_config_snapshot=actuator.config_snapshot,
         runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
     )
 

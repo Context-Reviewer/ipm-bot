@@ -25,11 +25,37 @@ VHDX_SAVE_MEMBER_PATHS = {
 
 
 @dataclass(frozen=True, slots=True)
+class SaveSourceConfigSnapshot:
+    save_source_type: str
+    preparation_performed: bool
+    prepared_local_path: str
+    original_requested_path: str
+    local_source_path: str | None = None
+    adb_path: str | None = None
+    adb_serial: str | None = None
+    remote_save_path: str | None = None
+    vhdx_path: str | None = None
+    vhdx_member_name: str | None = None
+    seven_zip_path: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.save_source_type:
+            raise ValueError("Save source config snapshot type must not be empty.")
+        if not self.prepared_local_path:
+            raise ValueError("Save source config snapshot prepared_local_path must not be empty.")
+        if not self.original_requested_path:
+            raise ValueError(
+                "Save source config snapshot original_requested_path must not be empty."
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class SaveSourceMetadata:
     save_source_type: str
     original_requested_path: str
     prepared_local_path: str
     preparation_performed: bool
+    config_snapshot: SaveSourceConfigSnapshot | None = None
 
     def __post_init__(self) -> None:
         if not self.save_source_type:
@@ -38,6 +64,23 @@ class SaveSourceMetadata:
             raise ValueError("original_requested_path must not be empty.")
         if not self.prepared_local_path:
             raise ValueError("prepared_local_path must not be empty.")
+        if self.config_snapshot is not None:
+            if self.config_snapshot.save_source_type != self.save_source_type:
+                raise ValueError(
+                    "config_snapshot.save_source_type must match save_source_type."
+                )
+            if self.config_snapshot.prepared_local_path != self.prepared_local_path:
+                raise ValueError(
+                    "config_snapshot.prepared_local_path must match prepared_local_path."
+                )
+            if self.config_snapshot.original_requested_path != self.original_requested_path:
+                raise ValueError(
+                    "config_snapshot.original_requested_path must match original_requested_path."
+                )
+            if self.config_snapshot.preparation_performed != self.preparation_performed:
+                raise ValueError(
+                    "config_snapshot.preparation_performed must match preparation_performed."
+                )
 
 
 class SaveSourcePreparationError(Exception):
@@ -87,11 +130,19 @@ class LocalSaveSource:
     save_source_type = "local"
 
     def prepare(self, requested_path: Path) -> SaveSourceMetadata:
+        resolved_path = str(requested_path.resolve())
         return SaveSourceMetadata(
             save_source_type=self.save_source_type,
             original_requested_path=str(requested_path),
-            prepared_local_path=str(requested_path.resolve()),
+            prepared_local_path=resolved_path,
             preparation_performed=False,
+            config_snapshot=SaveSourceConfigSnapshot(
+                save_source_type=self.save_source_type,
+                preparation_performed=False,
+                prepared_local_path=resolved_path,
+                original_requested_path=str(requested_path),
+                local_source_path=resolved_path,
+            ),
         )
 
 
@@ -136,6 +187,15 @@ class AdbPulledSaveSource:
             original_requested_path=remote_path,
             prepared_local_path=str(prepared_local_path),
             preparation_performed=True,
+            config_snapshot=SaveSourceConfigSnapshot(
+                save_source_type=self.save_source_type,
+                preparation_performed=True,
+                prepared_local_path=str(prepared_local_path),
+                original_requested_path=remote_path,
+                adb_path=self._config.adb_path,
+                adb_serial=self._config.device_serial,
+                remote_save_path=remote_path,
+            ),
         )
 
     def _adb_pull_command(self, requested_path: str, prepared_local_path: Path) -> list[str]:
@@ -174,6 +234,10 @@ class SevenZipVhdxExtractor:
         self._command_runner = (
             SubprocessSevenZipCommandRunner() if command_runner is None else command_runner
         )
+
+    @property
+    def seven_zip_path(self) -> str:
+        return self._seven_zip_path
 
     def extract_file(self, image_path: Path, member_path: str, output_path: Path) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -268,4 +332,13 @@ class VhdxSaveSource:
             original_requested_path=f"{vhdx_path}::{member_path}",
             prepared_local_path=str(prepared_local_path),
             preparation_performed=True,
+            config_snapshot=SaveSourceConfigSnapshot(
+                save_source_type=self.save_source_type,
+                preparation_performed=True,
+                prepared_local_path=str(prepared_local_path),
+                original_requested_path=f"{vhdx_path}::{member_path}",
+                vhdx_path=str(vhdx_path),
+                vhdx_member_name=self._config.save_name,
+                seven_zip_path=getattr(self._extractor, "seven_zip_path", None),
+            ),
         )
