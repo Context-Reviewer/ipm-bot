@@ -32,12 +32,6 @@ def decide_next_action_details(snapshot: PlayerSnapshot) -> PlannerDecision:
     ark_reward_ready = snapshot.ad.ark_reward_ready_to_claim
     if ark_reward_ready is None:
         raise ValueError("Missing required snapshot field: ark_reward_ready_to_claim.")
-    if ark_reward_ready:
-        return PlannerDecision(
-            selected_action="claim_ark_reward",
-            decision_reason="ark_reward_ready_to_claim",
-            actuation_required=True,
-        )
 
     ad_boost_active = snapshot.ad.ad_boost_active
     if ad_boost_active is None:
@@ -47,6 +41,16 @@ def decide_next_action_details(snapshot: PlayerSnapshot) -> PlannerDecision:
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",
             actuation_required=True,
+        )
+
+    # Ark remains available for explicit/manual experiments, but production auto-selection
+    # does not choose it because recorded live runs showed incompatible provider-specific
+    # UI paths that are outside the current no-detection/no-branching constraints.
+    if ark_reward_ready:
+        return PlannerDecision(
+            selected_action="idle",
+            decision_reason="no_action_needed",
+            actuation_required=False,
         )
 
     return PlannerDecision(

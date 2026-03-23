@@ -98,14 +98,14 @@ class ControlTickTests(unittest.TestCase):
 
     def test_ambiguous_returns_exit_code_two(self) -> None:
         save_payload = {
-            "adBoostActive": True,
+            "adBoostActive": False,
             "adsWatched": 1,
             "saveTimestamp": "2026-03-22T14:31:05",
             "arkRewardReadyToClaim": True,
             "playerLevel": 5,
         }
         receipt = _sample_receipt(
-            action="claim_ark_reward",
+            action="activate_ad_boost",
             final_status="AMBIGUOUS",
             failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
         )
@@ -117,7 +117,7 @@ class ControlTickTests(unittest.TestCase):
 
         self.assertEqual(exit_code, int(ExitCode.AMBIGUOUS))
         self.assertEqual(runner_mock.call_count, 1)
-        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_ark_reward")
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
         self.assertIn("Failure reason: AMBIGUOUS_TRANSITION", stdout_value)
 
     def test_idle_planner_decision_is_persisted_with_no_actuation_required(self) -> None:
@@ -155,6 +155,40 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_execution_status"], "NOT_REQUIRED")
         self.assertEqual(payloads[0]["actuator_execution"]["actuator_command_count"], 0)
         self.assertEqual(payloads[0]["actuator_config"]["actuator_type"], "stub")
+        self.assertIn("Selected action: idle", stdout_value)
+
+    def test_ark_ready_now_idles_in_control_tick_when_boost_is_already_active(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="idle",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+            planner_decision=PlannerDecision(
+                selected_action="idle",
+                decision_reason="no_action_needed",
+                actuation_required=False,
+            ),
+            actuation_attempted=False,
+        )
+
+        exit_code, stdout_value, runner_mock, _, payloads = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "idle")
+        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "idle")
+        self.assertEqual(payloads[0]["planner_decision"]["decision_reason"], "no_action_needed")
+        self.assertFalse(payloads[0]["planner_decision"]["actuation_required"])
+        self.assertFalse(payloads[0]["actuation_attempted"])
         self.assertIn("Selected action: idle", stdout_value)
 
 
