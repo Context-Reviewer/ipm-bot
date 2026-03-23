@@ -9,3 +9,7 @@ The bot is intentionally state-first:
 5. Verify the resulting save transition.
 
 Computer vision is treated as a fallback, not the primary sensing layer.
+
+Supporting BlueStacks-side artifact notes:
+
+- [`bluestacks_artifacts.md`](C:\dev\ipm-bot\docs\architecture\bluestacks_artifacts.md)

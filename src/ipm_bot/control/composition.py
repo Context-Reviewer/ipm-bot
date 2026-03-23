@@ -10,9 +10,14 @@ from ipm_bot.actuator.stub import StubActionActuator
 from ipm_bot.control.save_source import (
     AdbPulledSaveSource,
     AdbPulledSaveSourceConfig,
+    DEFAULT_BLUESTACKS_VHDX_PATH,
     DEFAULT_PULLED_SAVE_PATH,
     LocalSaveSource,
     SaveSource,
+    SevenZipVhdxExtractor,
+    SUPPORTED_VHDX_SAVE_NAMES,
+    VhdxSaveSource,
+    VhdxSaveSourceConfig,
 )
 
 
@@ -22,7 +27,7 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("save_path", type=_path_type, help="Path to the current playerInfo.dat save.")
     parser.add_argument(
         "--save-source",
-        choices=("local", "adb-pull"),
+        choices=("local", "adb-pull", "vhdx"),
         default="local",
         help="Save-source implementation used to prepare the local save for this control tick.",
     )
@@ -48,7 +53,24 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         "--prepared-save-path",
         type=_path_type,
         default=DEFAULT_PULLED_SAVE_PATH,
-        help="Local path used when --save-source adb-pull prepares the save.",
+        help="Local path used when a non-local save source prepares the save.",
+    )
+    parser.add_argument(
+        "--vhdx-path",
+        type=_path_type,
+        default=DEFAULT_BLUESTACKS_VHDX_PATH,
+        help="BlueStacks Data.vhdx path used by --save-source vhdx. BlueStacks must be closed.",
+    )
+    parser.add_argument(
+        "--vhdx-save-name",
+        choices=SUPPORTED_VHDX_SAVE_NAMES,
+        default="playerInfo.dat",
+        help="Explicit trusted save file selected from Data.vhdx when --save-source vhdx is used.",
+    )
+    parser.add_argument(
+        "--seven-zip-path",
+        default="7z",
+        help="7z executable path used by --save-source vhdx for read-only extraction.",
     )
     parser.add_argument(
         "--adb-path",
@@ -77,8 +99,47 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--claim-ark-reward-tap",
-        default="540,780",
-        help="Tap coordinates for claim_ark_reward as X,Y when using the ADB actuator.",
+        default="852,311",
+        help="Tap coordinates for the Ark entry button as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--claim-ark-watch-tap",
+        default="449,836",
+        help="Tap coordinates for the Ark watch-video button as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--claim-ark-skip-tap",
+        default="50,47",
+        help="Tap coordinates for the fixed in-ad Ark skip/close button as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--claim-ark-final-claim-tap",
+        default="454,968",
+        help="Tap coordinates for the Ark final claim button as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--ark-popup-wait-seconds",
+        type=float,
+        default=1.5,
+        help="Wait time after tapping the Ark entry button before tapping watch-video.",
+    )
+    parser.add_argument(
+        "--ark-ad-wait-seconds",
+        type=float,
+        default=20.0,
+        help="Fixed wait budget before the Ark in-ad skip/close tap.",
+    )
+    parser.add_argument(
+        "--ark-skip-close-wait-seconds",
+        type=float,
+        default=1.0,
+        help="Fixed wait after the Ark in-ad skip/close tap before sending Escape.",
+    )
+    parser.add_argument(
+        "--ark-return-wait-seconds",
+        type=float,
+        default=3.0,
+        help="Wait time after the final Ark ad close attempt before the claim tap.",
     )
 
 
@@ -98,6 +159,13 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             app_activity=args.app_activity,
             activate_ad_boost_tap=parse_tap_point(args.activate_ad_boost_tap),
             claim_ark_reward_tap=parse_tap_point(args.claim_ark_reward_tap),
+            claim_ark_reward_watch_tap=parse_tap_point(args.claim_ark_watch_tap),
+            claim_ark_skip_tap=parse_tap_point(args.claim_ark_skip_tap),
+            claim_ark_reward_final_claim_tap=parse_tap_point(args.claim_ark_final_claim_tap),
+            ark_popup_wait_seconds=args.ark_popup_wait_seconds,
+            ark_ad_wait_seconds=args.ark_ad_wait_seconds,
+            ark_skip_close_wait_seconds=args.ark_skip_close_wait_seconds,
+            ark_return_wait_seconds=args.ark_return_wait_seconds,
         ),
         command_runner=SubprocessCommandRunner(),
     )
@@ -108,17 +176,26 @@ def build_save_source(args: argparse.Namespace) -> SaveSource:
 
     if args.save_source == "local":
         return LocalSaveSource()
-    if args.save_source != "adb-pull":
-        raise ValueError(f"Unsupported save source type: {args.save_source}")
+    if args.save_source == "adb-pull":
+        return AdbPulledSaveSource(
+            config=AdbPulledSaveSourceConfig(
+                adb_path=args.adb_path,
+                device_serial=args.adb_serial,
+                prepared_local_path=args.prepared_save_path,
+            ),
+            command_runner=SubprocessCommandRunner(),
+        )
+    if args.save_source == "vhdx":
+        return VhdxSaveSource(
+            config=VhdxSaveSourceConfig(
+                vhdx_path=args.vhdx_path,
+                save_name=args.vhdx_save_name,
+                prepared_local_path=args.prepared_save_path,
+            ),
+            extractor=SevenZipVhdxExtractor(seven_zip_path=args.seven_zip_path),
+        )
 
-    return AdbPulledSaveSource(
-        config=AdbPulledSaveSourceConfig(
-            adb_path=args.adb_path,
-            device_serial=args.adb_serial,
-            prepared_local_path=args.prepared_save_path,
-        ),
-        command_runner=SubprocessCommandRunner(),
-    )
+    raise ValueError(f"Unsupported save source type: {args.save_source}")
 
 
 def parse_tap_point(raw_value: str) -> TapPoint:
