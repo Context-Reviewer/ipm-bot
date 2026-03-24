@@ -277,6 +277,43 @@ The catalog recursively inventories only within the provided `--output-dir` and 
 
 It links the external output back to either an `il2cpp-input-report` or an `il2cpp-workspace`, propagates the source snapshot path when available, and can persist optional tool metadata and notes. This command is catalog-only and does not perform semantic validation of external reconstruction output.
 
+## IL2CPP name hint report
+
+When an external output tree is too large to inspect manually all at once, use `il2cpp-name-hint-report` to narrow the tree by filename/path metadata only. This command reads only the `il2cpp-output-catalog` manifest and does not open any cataloged files.
+
+Examples:
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-name-hint-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" --term player --term reward
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-name-hint-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" --term Player --case-sensitive --notes "manual narrowing pass"
+```
+
+```powershell
+.\scripts\run_artifact_discovery.ps1 -Command il2cpp-name-hint-report -CatalogDir "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" -Term player,reward
+```
+
+It writes to:
+
+```text
+data/artifacts/il2cpp_name_hint_reports/<timestamp>_il2cpp_name_hint_report_<catalog>/
+```
+
+Each report contains:
+
+- `manifest.json`
+- `summary.txt`
+
+The report records:
+
+- searched terms
+- case sensitivity
+- matching catalog entries with `relative_path`, `matched_terms`, `size_bytes`, and `sha256`
+
+This is a metadata-only narrowing aid for manual analyst inspection. It does not parse file contents and does not make semantic claims about external reconstruction output.
+
 ## Recommended first validation experiment
 
 Use a low-noise settings change first.

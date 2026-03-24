@@ -11,6 +11,7 @@ from .apk_report import DEFAULT_APK_REPORT_ROOT, run_apk_report
 from .diffing import run_diff
 from .discovery import DiscoveryOptions, run_discovery
 from .il2cpp_input_report import run_il2cpp_input_report
+from .il2cpp_name_hint_report import run_il2cpp_name_hint_report
 from .il2cpp_output_catalog import run_il2cpp_output_catalog
 from .il2cpp_workspace import run_il2cpp_workspace
 from .shared import (
@@ -82,6 +83,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 output_root=args.output_root,
                 tool_name=args.tool_name,
                 tool_version=args.tool_version,
+                notes=args.notes,
+            )
+            print(str(output_dir))
+            return 0
+        if args.command == "il2cpp-name-hint-report":
+            output_dir = run_il2cpp_name_hint_report(
+                args.catalog,
+                terms=args.term,
+                case_sensitive=args.case_sensitive,
+                output_root=args.output_root,
                 notes=args.notes,
             )
             print(str(output_dir))
@@ -234,6 +245,39 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_OUTPUT_ROOT,
         help="Base artifact root used for IL2CPP output catalog artifacts.",
+    )
+
+    il2cpp_name_hint_report_parser = subparsers.add_parser(
+        "il2cpp-name-hint-report",
+        help="Filter an il2cpp-output-catalog by filename/path terms without opening file contents.",
+    )
+    il2cpp_name_hint_report_parser.add_argument(
+        "--catalog",
+        type=Path,
+        required=True,
+        help="Path to an existing il2cpp-output-catalog artifact directory.",
+    )
+    il2cpp_name_hint_report_parser.add_argument(
+        "--term",
+        action="append",
+        required=True,
+        help="Search term matched against cataloged relative paths. Repeat for multiple terms.",
+    )
+    il2cpp_name_hint_report_parser.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="Use case-sensitive term matching.",
+    )
+    il2cpp_name_hint_report_parser.add_argument(
+        "--notes",
+        default=None,
+        help="Optional operator notes for this metadata-only narrowing pass.",
+    )
+    il2cpp_name_hint_report_parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Base artifact root used for IL2CPP name hint reports.",
     )
     return parser
 

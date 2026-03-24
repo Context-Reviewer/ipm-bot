@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog")]
+    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog", "il2cpp-name-hint-report")]
     [string]$Command,
 
     [string]$PackageName = "com.TironiumTech.IdlePlanetMiner",
@@ -18,6 +18,9 @@ param(
     [string]$WorkspaceDir = "",
     [string]$InputReportDir = "",
     [string]$OutputDir = "",
+    [string]$CatalogDir = "",
+    [string[]]$Term = @(),
+    [switch]$CaseSensitive,
     [string]$ToolName = "",
     [string]$ToolVersion = "",
     [string]$Notes = ""
@@ -85,6 +88,26 @@ if ($Command -eq "diff") {
     if (-not [string]::IsNullOrWhiteSpace($ToolVersion)) {
         $arguments += @("--tool-version", $ToolVersion)
     }
+    if (-not [string]::IsNullOrWhiteSpace($Notes)) {
+        $arguments += @("--notes", $Notes)
+    }
+} elseif ($Command -eq "il2cpp-name-hint-report") {
+    if ([string]::IsNullOrWhiteSpace($CatalogDir)) {
+        throw "-CatalogDir is required for il2cpp-name-hint-report."
+    }
+    if ($Term.Count -eq 0) {
+        throw "At least one -Term is required for il2cpp-name-hint-report."
+    }
+    $arguments += @("--catalog", $CatalogDir)
+    foreach ($termValue in $Term) {
+        if (-not [string]::IsNullOrWhiteSpace($termValue)) {
+            $arguments += @("--term", $termValue)
+        }
+    }
+    if ($CaseSensitive.IsPresent) {
+        $arguments += "--case-sensitive"
+    }
+    $arguments += @("--output-root", $OutputRoot)
     if (-not [string]::IsNullOrWhiteSpace($Notes)) {
         $arguments += @("--notes", $Notes)
     }
