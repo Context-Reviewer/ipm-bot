@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 from pathlib import Path
 import sys
 import tempfile
@@ -11,7 +12,13 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from ipm_bot.planner.planner import decide_next_action, decide_next_action_details
+from ipm_bot.control.save_source import SavePlanetSnapshot, SaveProductionSlotSnapshot, SaveResourceSnapshot, SaveSnapshot
+from ipm_bot.planner.planner import (
+    decide_from_save_snapshot,
+    decide_next_action,
+    decide_next_action_details,
+    format_active_smelter_lines,
+)
 from ipm_bot.save import parse_player_snapshot
 
 
@@ -54,6 +61,32 @@ class PlannerTests(unittest.TestCase):
         self.assertFalse(decision.actuation_required)
         self.assertEqual(decide_next_action(snapshot), "idle")
 
+    def test_save_snapshot_can_refine_idle_reason_when_smelter_is_near_completion(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=False,
+        )
+        save_snapshot = _save_snapshot(timespan_left_seconds=3.25)
+
+        decision = decide_next_action_details(snapshot, save_snapshot=save_snapshot)
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "smelter_completion_imminent")
+        self.assertFalse(decision.actuation_required)
+
+    def test_save_snapshot_example_helpers_render_active_smelters_and_idle_hint(self) -> None:
+        save_snapshot = _save_snapshot(timespan_left_seconds=12.5)
+
+        decision = decide_from_save_snapshot(save_snapshot)
+        lines = format_active_smelter_lines(save_snapshot)
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "production_in_flight")
+        self.assertEqual(
+            lines,
+            ("slot 0: recipe=4 duration=53.333s left=12.500s",),
+        )
+
 
 def _snapshot(
     *,
@@ -75,6 +108,48 @@ def _snapshot(
             encoding="utf-8",
         )
         return parse_player_snapshot(save_path)
+
+
+def _save_snapshot(*, timespan_left_seconds: float) -> SaveSnapshot:
+    return SaveSnapshot(
+        source_path="C:\\dev\\ipm-bot\\data\\playerInfo.dat",
+        resources=(
+            SaveResourceSnapshot(
+                index=0,
+                discovered=True,
+                count=1.0,
+                gathered_total=1.0,
+                gathered_this_galaxy=1.0,
+                sold_total=0.0,
+                sold_this_galaxy=0.0,
+            ),
+        ),
+        planets=(
+            SavePlanetSnapshot(
+                index=0,
+                unlocked=True,
+                mining_speed_level=1,
+                speed_level=1,
+                cargo_level=1,
+                trip_start_date=None,
+                trip_end_date=None,
+            ),
+        ),
+        smelters=(
+            SaveProductionSlotSnapshot(
+                index=0,
+                on=True,
+                recipe_number=4,
+                start_date=None,
+                end_date=None,
+                original_end_date=None,
+                timespan_left=timedelta(seconds=timespan_left_seconds),
+                seconds_completed=53.333 - timespan_left_seconds,
+                duration_estimate=53.333,
+            ),
+        ),
+        crafters=(),
+    )
 
 
 if __name__ == "__main__":

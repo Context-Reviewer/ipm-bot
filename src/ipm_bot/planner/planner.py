@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Iterable
 
+from ipm_bot.control.save_source import SaveProductionSlotSnapshot, SaveSnapshot
 from ipm_bot.save.models import PlayerSnapshot
 
 
@@ -20,13 +22,19 @@ class PlannerDecision:
             raise ValueError("Planner decision decision_reason must not be empty.")
 
 
-def decide_next_action(snapshot: PlayerSnapshot) -> str:
+def decide_next_action(
+    snapshot: PlayerSnapshot,
+    save_snapshot: SaveSnapshot | None = None,
+) -> str:
     """Choose the next action from the current normalized save state."""
 
-    return decide_next_action_details(snapshot).selected_action
+    return decide_next_action_details(snapshot, save_snapshot=save_snapshot).selected_action
 
 
-def decide_next_action_details(snapshot: PlayerSnapshot) -> PlannerDecision:
+def decide_next_action_details(
+    snapshot: PlayerSnapshot,
+    save_snapshot: SaveSnapshot | None = None,
+) -> PlannerDecision:
     """Choose the next action and expose the deterministic rule that selected it."""
 
     ark_reward_ready = snapshot.ad.ark_reward_ready_to_claim
@@ -47,14 +55,65 @@ def decide_next_action_details(snapshot: PlayerSnapshot) -> PlannerDecision:
     # does not choose it because recorded live runs showed incompatible provider-specific
     # UI paths that are outside the current no-detection/no-branching constraints.
     if ark_reward_ready:
+        return _idle_decision_from_save_snapshot(save_snapshot)
+
+    return _idle_decision_from_save_snapshot(save_snapshot)
+
+
+def decide_from_save_snapshot(save_snapshot: SaveSnapshot) -> PlannerDecision:
+    """Demonstrate a deterministic planner decision driven only by SaveSnapshot timing data."""
+
+    return _idle_decision_from_save_snapshot(save_snapshot)
+
+
+def format_active_smelter_lines(save_snapshot: SaveSnapshot) -> tuple[str, ...]:
+    """Render active smelter timing as stable human-readable lines."""
+
+    return tuple(
+        (
+            f"slot {slot.index}: recipe={slot.recipe_number} "
+            f"duration={slot.duration_estimate:.3f}s "
+            f"left={slot.timespan_left.total_seconds():.3f}s"
+        )
+        for slot in _active_smelters(save_snapshot)
+    )
+
+
+def _idle_decision_from_save_snapshot(
+    save_snapshot: SaveSnapshot | None,
+) -> PlannerDecision:
+    if save_snapshot is None:
         return PlannerDecision(
             selected_action="idle",
             decision_reason="no_action_needed",
             actuation_required=False,
         )
 
+    active_smelters = tuple(_active_smelters(save_snapshot))
+    if not active_smelters:
+        return PlannerDecision(
+            selected_action="idle",
+            decision_reason="no_active_smelters",
+            actuation_required=False,
+        )
+
+    next_completion = min(
+        active_smelters,
+        key=lambda slot: slot.timespan_left.total_seconds(),
+    )
+    if next_completion.timespan_left.total_seconds() <= 5.0:
+        return PlannerDecision(
+            selected_action="idle",
+            decision_reason="smelter_completion_imminent",
+            actuation_required=False,
+        )
+
     return PlannerDecision(
         selected_action="idle",
-        decision_reason="no_action_needed",
+        decision_reason="production_in_flight",
         actuation_required=False,
     )
+
+
+def _active_smelters(save_snapshot: SaveSnapshot) -> Iterable[SaveProductionSlotSnapshot]:
+    return (slot for slot in save_snapshot.smelters if slot.on)

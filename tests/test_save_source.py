@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timedelta
 from pathlib import Path
 import sys
 import tempfile
@@ -17,13 +18,18 @@ from ipm_bot.control.save_source import (
     AdbPulledSaveSource,
     AdbPulledSaveSourceConfig,
     LocalSaveSource,
+    PeriodicSaveRefreshController,
+    SaveSnapshot,
     SaveSourcePreparationError,
     SevenZipCommandResult,
     SevenZipVhdxExtractor,
     VHDX_SAVE_MEMBER_PATHS,
     VhdxSaveSource,
     VhdxSaveSourceConfig,
+    load_save_snapshot,
+    prepare_and_load_save_snapshot,
 )
+from ipm_bot.save.player_data import CrafterSlot, PlanetSlot, PlayerData, ResourceSlot, SmelterSlot
 
 
 class SaveSourceTests(unittest.TestCase):
@@ -72,6 +78,95 @@ class SaveSourceTests(unittest.TestCase):
                 "/sdcard/Android/data/game/files/playerInfo.dat",
             )
             self.assertEqual(metadata.prepared_local_path, str(prepared_local_path.resolve()))
+
+    def test_adb_pulled_save_source_builds_periodic_refresh_controller(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prepared_local_path = Path(tmpdir) / "pulled" / "playerInfo.dat"
+            runner = RecordingCommandRunner()
+            save_source = AdbPulledSaveSource(
+                config=AdbPulledSaveSourceConfig(
+                    adb_path="adb",
+                    device_serial="emulator-5554",
+                    prepared_local_path=prepared_local_path,
+                ),
+                command_runner=runner,
+            )
+            clock = RecordingClock()
+
+            controller = save_source.build_refresh_controller(
+                Path("/sdcard/Android/data/game/files/playerInfo.dat"),
+                refresh_interval_seconds=1.0,
+                monotonic_fn=clock.monotonic,
+            )
+
+            self.assertIsInstance(controller, PeriodicSaveRefreshController)
+            controller.maybe_refresh()
+            controller.maybe_refresh()
+            clock.advance(1.0)
+            controller.maybe_refresh()
+
+            self.assertEqual(
+                runner.commands,
+                [
+                    [
+                        "adb",
+                        "-s",
+                        "emulator-5554",
+                        "pull",
+                        "/sdcard/Android/data/game/files/playerInfo.dat",
+                        str(prepared_local_path.resolve()),
+                    ],
+                    [
+                        "adb",
+                        "-s",
+                        "emulator-5554",
+                        "pull",
+                        "/sdcard/Android/data/game/files/playerInfo.dat",
+                        str(prepared_local_path.resolve()),
+                    ],
+                ],
+            )
+            telemetry = controller.telemetry()
+            self.assertEqual(telemetry.refresh_interval_seconds, 1.0)
+            self.assertEqual(telemetry.refresh_attempt_count, 2)
+            self.assertEqual(telemetry.refresh_failure_count, 0)
+
+    def test_load_save_snapshot_projects_validated_player_data(self) -> None:
+        player_data = _sample_player_data()
+
+        with patch("ipm_bot.control.save_source.load_player_data", return_value=player_data) as loader:
+            snapshot = load_save_snapshot(Path("C:/tmp/playerInfo.dat"))
+
+        loader.assert_called_once()
+        self.assertIsInstance(snapshot, SaveSnapshot)
+        self.assertEqual(snapshot.source_path, str(Path("C:/tmp/playerInfo.dat").resolve()))
+        self.assertEqual(len(snapshot.resources), 1)
+        self.assertEqual(snapshot.resources[0].count, 42.5)
+        self.assertEqual(len(snapshot.planets), 1)
+        self.assertTrue(snapshot.planets[0].unlocked)
+        self.assertEqual(len(snapshot.smelters), 1)
+        self.assertEqual(snapshot.smelters[0].recipe_number, 4)
+        self.assertEqual(snapshot.smelters[0].duration_estimate, 53.333)
+        self.assertEqual(snapshot.smelters[0].timespan_left, timedelta(seconds=34.821))
+        self.assertEqual(len(snapshot.crafters), 1)
+        self.assertEqual(snapshot.crafters[0].duration_estimate, 480.0)
+        self.assertEqual(snapshot.crafters[0].start_date, datetime(2026, 3, 24, 18, 2, 31))
+
+    def test_prepare_and_load_save_snapshot_uses_prepared_local_path(self) -> None:
+        player_data = _sample_player_data()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "playerInfo.dat"
+            save_path.write_bytes(b"save")
+
+            with patch("ipm_bot.control.save_source.load_player_data", return_value=player_data) as loader:
+                metadata, snapshot = prepare_and_load_save_snapshot(LocalSaveSource(), save_path)
+
+        self.assertEqual(metadata.save_source_type, "local")
+        self.assertEqual(metadata.prepared_local_path, str(save_path.resolve()))
+        loader.assert_called_once_with(metadata.prepared_local_path)
+        self.assertEqual(snapshot.source_path, str(save_path.resolve()))
+        self.assertEqual(snapshot.crafters[0].duration_estimate, 480.0)
 
     def test_vhdx_save_source_extracts_primary_save_to_prepared_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -405,6 +500,73 @@ class MissingSevenZipCommandRunner:
     def run(self, command: list[str]) -> SevenZipCommandResult:
         del command
         raise FileNotFoundError("7z missing")
+
+
+class RecordingClock:
+    def __init__(self) -> None:
+        self._value = 0.0
+
+    def monotonic(self) -> float:
+        return self._value
+
+    def advance(self, seconds: float) -> None:
+        self._value += seconds
+
+
+def _sample_player_data() -> PlayerData:
+    return PlayerData(
+        smelters=(
+            SmelterSlot(
+                index=0,
+                on=True,
+                recipe_selected=True,
+                alternate_recipe_selected=False,
+                recipe_number=4,
+                start_date=datetime(2026, 3, 24, 18, 3, 30),
+                end_date=datetime(2026, 3, 24, 18, 4, 23),
+                original_end_date=datetime(2026, 3, 24, 18, 4, 23),
+                timespan_left=timedelta(seconds=34.821),
+                seconds_completed=18.512,
+            ),
+        ),
+        crafters=(
+            CrafterSlot(
+                index=1,
+                on=True,
+                recipe_selected=True,
+                alternate_recipe_selected=False,
+                recipe_number=3,
+                start_date=datetime(2026, 3, 24, 18, 2, 31),
+                end_date=datetime(2026, 3, 24, 18, 10, 31),
+                original_end_date=datetime(2026, 3, 24, 18, 10, 31),
+                timespan_left=timedelta(seconds=455.933),
+                seconds_completed=24.067,
+            ),
+        ),
+        planets=(
+            PlanetSlot(
+                index=0,
+                unlocked=True,
+                mining_speed_level=5,
+                speed_level=4,
+                cargo_level=3,
+                trip_start_date=datetime(2026, 3, 24, 18, 0, 0),
+                trip_end_date=datetime(2026, 3, 24, 18, 0, 30),
+            ),
+        ),
+        resources=(
+            ResourceSlot(
+                index=0,
+                discovered=True,
+                count=42.5,
+                gathered_total=100.0,
+                gathered_this_galaxy=75.0,
+                sold_total=20.0,
+                sold_this_galaxy=10.0,
+            ),
+        ),
+        raw=object(),
+    )
 
 
 def _extract_output_directory(command: list[str]) -> Path:

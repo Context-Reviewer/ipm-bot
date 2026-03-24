@@ -26,9 +26,14 @@ from ipm_bot.actuator.boundary import (
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
 from ipm_bot.control.receipt_store import write_receipt
-from ipm_bot.control.save_source import SaveSourceConfigSnapshot, SaveSourceMetadata
-from ipm_bot.main import ExitCode, main
+from ipm_bot.control.save_source import (
+    LocalSaveSource,
+    SaveSourceConfigSnapshot,
+    SaveSourceMetadata,
+)
+from ipm_bot.main import ExitCode, main, run_single_control_tick
 from ipm_bot.planner.planner import PlannerDecision
+from ipm_bot.actuator.stub import StubActionActuator
 
 
 class ControlTickTests(unittest.TestCase):
@@ -190,6 +195,47 @@ class ControlTickTests(unittest.TestCase):
         self.assertFalse(payloads[0]["planner_decision"]["actuation_required"])
         self.assertFalse(payloads[0]["actuation_attempted"])
         self.assertIn("Selected action: idle", stdout_value)
+
+    def test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "playerInfo.dat"
+            save_path.write_bytes(b"binary-save")
+            receipt = _sample_receipt(
+                action="idle",
+                final_status="PASS",
+                failure_reason=FailureReason.NONE,
+            )
+            player_snapshot = object()
+            save_snapshot = object()
+            planner_decision = PlannerDecision(
+                selected_action="idle",
+                decision_reason="production_in_flight",
+                actuation_required=False,
+            )
+
+            with (
+                patch("ipm_bot.main.load_save_snapshot", return_value=save_snapshot) as save_loader,
+                patch("ipm_bot.main._load_snapshot", return_value=player_snapshot) as player_loader,
+                patch("ipm_bot.main.decide_next_action_details", return_value=planner_decision) as planner,
+                patch("ipm_bot.main.run_action_until_verified", return_value=receipt),
+                patch("ipm_bot.main.write_receipt", return_value=Path(tmpdir) / "receipt.json"),
+            ):
+                action, enriched_receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=None,
+                    poll_interval_seconds=0.5,
+                    actuator=StubActionActuator(),
+                    save_source=LocalSaveSource(),
+                )
+
+        save_loader.assert_called_once_with(save_path.resolve())
+        player_loader.assert_called_once_with(save_path.resolve())
+        planner.assert_called_once_with(
+            player_snapshot,
+            save_snapshot=save_snapshot,
+        )
+        self.assertEqual(action, "idle")
+        self.assertEqual(enriched_receipt.planner_decision.decision_reason, "production_in_flight")
 
 
 def _run_main_with_receipt(

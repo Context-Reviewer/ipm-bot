@@ -15,8 +15,11 @@ from ipm_bot.control.composition import add_tick_composition_arguments, build_ac
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.control.save_source import (
+    SaveRefreshController,
+    SaveSnapshot,
     SaveSource,
     SaveSourceMetadata,
+    load_save_snapshot,
 )
 from ipm_bot.planner.planner import PlannerDecision, decide_next_action_details
 from ipm_bot.save import PlayerSnapshot, parse_player_snapshot
@@ -67,6 +70,10 @@ def run_single_control_tick(
     poll_interval_seconds: float,
     actuator: ActionActuator,
     save_source: SaveSource,
+    action_override: str | None = None,
+    save_refresh_controller: SaveRefreshController | None = None,
+    verification_timeout_starts_after_actuation: bool = False,
+    manual_observation_mode: bool = False,
 ) -> tuple[str, ActionAttemptReceipt, Path]:
     """Execute exactly one governed control tick and persist its receipt."""
 
@@ -77,9 +84,20 @@ def run_single_control_tick(
 
     save_source_metadata = save_source.prepare(save_path)
     prepared_save_path = Path(save_source_metadata.prepared_local_path)
+    save_snapshot = _load_save_snapshot(prepared_save_path)
     snapshot_before = _load_snapshot(prepared_save_path)
-    planner_decision = decide_next_action_details(snapshot_before)
+    planner_decision = decide_next_action_details(
+        snapshot_before,
+        save_snapshot=save_snapshot,
+    )
     action = planner_decision.selected_action
+    if action_override is not None:
+        action = action_override
+        planner_decision = PlannerDecision(
+            selected_action=action_override,
+            decision_reason="experiment_action_override",
+            actuation_required=action_override != "idle",
+        )
     contract = get_action_contract(action)
 
     receipt = run_action_until_verified(
@@ -90,6 +108,9 @@ def run_single_control_tick(
         actuator=actuator,
         poll_interval_s=poll_interval_seconds,
         timeout_s=timeout_seconds,
+        save_refresh_controller=save_refresh_controller,
+        verification_timeout_starts_after_actuation=verification_timeout_starts_after_actuation,
+        manual_observation_mode=manual_observation_mode,
     )
     exit_code = exit_code_for_status(receipt.final_status)
     receipt = _enrich_tick_receipt(
@@ -98,6 +119,8 @@ def run_single_control_tick(
         exit_code=exit_code,
         save_source_metadata=save_source_metadata,
         actuator=actuator,
+        action_override=action_override,
+        manual_observation_mode=manual_observation_mode,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -118,6 +141,8 @@ def _enrich_tick_receipt(
     exit_code: ExitCode,
     save_source_metadata: SaveSourceMetadata,
     actuator: ActionActuator,
+    action_override: str | None = None,
+    manual_observation_mode: bool = False,
 ) -> ActionAttemptReceipt:
     return replace(
         receipt,
@@ -125,7 +150,13 @@ def _enrich_tick_receipt(
         actuation_attempted=planner_decision.actuation_required,
         save_source_metadata=save_source_metadata,
         actuator_config_snapshot=actuator.config_snapshot,
-        runtime_context=replace(receipt.runtime_context, exit_code=int(exit_code)),
+        runtime_context=replace(
+            receipt.runtime_context,
+            exit_code=int(exit_code),
+            action_override_used=action_override is not None,
+            action_override_requested_action=action_override,
+            manual_observation_mode=manual_observation_mode,
+        ),
     )
 
 
@@ -143,6 +174,14 @@ def _load_snapshot(save_path: Path) -> PlayerSnapshot:
     if not save_path.is_file():
         raise FileNotFoundError(f"Save file does not exist: {save_path}")
     return parse_player_snapshot(save_path)
+
+
+def _load_save_snapshot(save_path: Path) -> SaveSnapshot | None:
+    if not save_path.is_file():
+        raise FileNotFoundError(f"Save file does not exist: {save_path}")
+    if save_path.suffix.lower() == ".json":
+        return None
+    return load_save_snapshot(save_path)
 
 
 def _print_control_tick_result(

@@ -1,14 +1,25 @@
-"""Save-source boundary for preparing a local save path before one control tick."""
+"""Save-source boundary for preparing a local save path and loading a read-only snapshot."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from pathlib import PureWindowsPath
 import shutil
 import subprocess
 import tempfile
+import time
 from typing import Protocol, Sequence
+
+from ipm_bot.save.player_data import (
+    CrafterSlot,
+    PlanetSlot,
+    PlayerData,
+    ResourceSlot,
+    SmelterSlot,
+    load_player_data,
+)
 
 
 DEFAULT_PULLED_SAVE_PATH = Path(__file__).resolve().parents[3] / "data" / "pulled" / "playerInfo.dat"
@@ -87,11 +98,129 @@ class SaveSourcePreparationError(Exception):
     """Raised when a save source cannot prepare a local save path."""
 
 
+@dataclass(frozen=True, slots=True)
+class SaveResourceSnapshot:
+    index: int
+    discovered: bool
+    count: float
+    gathered_total: float
+    gathered_this_galaxy: float
+    sold_total: float
+    sold_this_galaxy: float
+
+
+@dataclass(frozen=True, slots=True)
+class SavePlanetSnapshot:
+    index: int
+    unlocked: bool
+    mining_speed_level: int
+    speed_level: int
+    cargo_level: int
+    trip_start_date: datetime | None
+    trip_end_date: datetime | None
+
+
+@dataclass(frozen=True, slots=True)
+class SaveProductionSlotSnapshot:
+    index: int
+    on: bool
+    recipe_number: int
+    start_date: datetime | None
+    end_date: datetime | None
+    original_end_date: datetime | None
+    timespan_left: timedelta
+    seconds_completed: float
+    duration_estimate: float
+
+
+@dataclass(frozen=True, slots=True)
+class SaveSnapshot:
+    source_path: str | None
+    resources: tuple[SaveResourceSnapshot, ...]
+    planets: tuple[SavePlanetSnapshot, ...]
+    smelters: tuple[SaveProductionSlotSnapshot, ...]
+    crafters: tuple[SaveProductionSlotSnapshot, ...]
+
+
 class SaveCommandRunner(Protocol):
     """Thin command boundary for save preparation commands."""
 
     def run(self, command: Sequence[str]) -> None:
         """Execute one command or raise on failure."""
+
+
+@dataclass(frozen=True, slots=True)
+class SaveRefreshTelemetry:
+    refresh_interval_seconds: float | None
+    refresh_attempt_count: int
+    refresh_failure_count: int
+    warning_messages: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.refresh_interval_seconds is not None and self.refresh_interval_seconds <= 0:
+            raise ValueError("refresh_interval_seconds must be greater than zero when provided.")
+        if self.refresh_attempt_count < 0:
+            raise ValueError("refresh_attempt_count must be non-negative.")
+        if self.refresh_failure_count < 0:
+            raise ValueError("refresh_failure_count must be non-negative.")
+
+
+class SaveRefreshController(Protocol):
+    """Boundary for refreshing a prepared local save during one verification loop."""
+
+    def maybe_refresh(self) -> None:
+        """Perform one refresh attempt when the configured interval has elapsed."""
+
+    def telemetry(self) -> SaveRefreshTelemetry:
+        """Return the current refresh telemetry snapshot."""
+
+
+class PeriodicSaveRefreshController:
+    """Time-gated save refresher that records intermittent failure telemetry."""
+
+    def __init__(
+        self,
+        *,
+        refresh_fn,
+        refresh_interval_seconds: float,
+        label: str,
+        monotonic_fn=time.monotonic,
+    ) -> None:
+        if refresh_interval_seconds <= 0:
+            raise ValueError("refresh_interval_seconds must be greater than zero.")
+        self._refresh_fn = refresh_fn
+        self._refresh_interval_seconds = refresh_interval_seconds
+        self._label = label
+        self._monotonic_fn = monotonic_fn
+        self._last_refresh_started_at: float | None = None
+        self._refresh_attempt_count = 0
+        self._refresh_failure_count = 0
+        self._warning_messages: list[str] = []
+
+    def maybe_refresh(self) -> None:
+        now = self._monotonic_fn()
+        if self._last_refresh_started_at is not None:
+            elapsed = now - self._last_refresh_started_at
+            if elapsed < self._refresh_interval_seconds:
+                return
+
+        self._last_refresh_started_at = now
+        self._refresh_attempt_count += 1
+        try:
+            self._refresh_fn()
+        except Exception as exc:
+            self._refresh_failure_count += 1
+            self._warning_messages.append(
+                f"Save refresh attempt {self._refresh_attempt_count} failed for {self._label}: {exc}"
+            )
+
+    def telemetry(self) -> SaveRefreshTelemetry:
+        return SaveRefreshTelemetry(
+            refresh_interval_seconds=self._refresh_interval_seconds,
+            refresh_attempt_count=self._refresh_attempt_count,
+            refresh_failure_count=self._refresh_failure_count,
+            warning_messages=tuple(self._warning_messages),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,6 +325,27 @@ class AdbPulledSaveSource:
                 adb_serial=self._config.device_serial,
                 remote_save_path=remote_path,
             ),
+        )
+
+    def build_refresh_controller(
+        self,
+        requested_path: Path,
+        *,
+        refresh_interval_seconds: float,
+        monotonic_fn=time.monotonic,
+    ) -> SaveRefreshController:
+        prepared_local_path = self._config.prepared_local_path.resolve()
+        remote_path = requested_path.as_posix()
+
+        def _refresh() -> None:
+            prepared_local_path.parent.mkdir(parents=True, exist_ok=True)
+            self._command_runner.run(self._adb_pull_command(remote_path, prepared_local_path))
+
+        return PeriodicSaveRefreshController(
+            refresh_fn=_refresh,
+            refresh_interval_seconds=refresh_interval_seconds,
+            label=remote_path,
+            monotonic_fn=monotonic_fn,
         )
 
     def _adb_pull_command(self, requested_path: str, prepared_local_path: Path) -> list[str]:
@@ -342,3 +492,76 @@ class VhdxSaveSource:
                 seven_zip_path=getattr(self._extractor, "seven_zip_path", None),
             ),
         )
+
+
+def load_save_snapshot(source: str | Path | bytes) -> SaveSnapshot:
+    """Load one save source through PlayerData into the bot-facing snapshot shape."""
+
+    player_data = load_player_data(source)
+    source_path = str(Path(source).resolve()) if isinstance(source, (str, Path)) else None
+    return player_data_to_save_snapshot(player_data, source_path=source_path)
+
+
+def player_data_to_save_snapshot(
+    player_data: PlayerData,
+    *,
+    source_path: str | None = None,
+) -> SaveSnapshot:
+    """Project validated PlayerData into a small immutable bot-facing snapshot."""
+
+    return SaveSnapshot(
+        source_path=source_path,
+        resources=tuple(_resource_snapshot(slot) for slot in player_data.resources),
+        planets=tuple(_planet_snapshot(slot) for slot in player_data.planets),
+        smelters=tuple(_production_snapshot(slot) for slot in player_data.smelters),
+        crafters=tuple(_production_snapshot(slot) for slot in player_data.crafters),
+    )
+
+
+def prepare_and_load_save_snapshot(
+    save_source: SaveSource,
+    requested_path: Path,
+) -> tuple[SaveSourceMetadata, SaveSnapshot]:
+    """Prepare one local save path and immediately load the read-only snapshot from it."""
+
+    metadata = save_source.prepare(requested_path)
+    snapshot = load_save_snapshot(metadata.prepared_local_path)
+    return metadata, snapshot
+
+
+def _resource_snapshot(slot: ResourceSlot) -> SaveResourceSnapshot:
+    return SaveResourceSnapshot(
+        index=slot.index,
+        discovered=slot.discovered,
+        count=slot.count,
+        gathered_total=slot.gathered_total,
+        gathered_this_galaxy=slot.gathered_this_galaxy,
+        sold_total=slot.sold_total,
+        sold_this_galaxy=slot.sold_this_galaxy,
+    )
+
+
+def _planet_snapshot(slot: PlanetSlot) -> SavePlanetSnapshot:
+    return SavePlanetSnapshot(
+        index=slot.index,
+        unlocked=slot.unlocked,
+        mining_speed_level=slot.mining_speed_level,
+        speed_level=slot.speed_level,
+        cargo_level=slot.cargo_level,
+        trip_start_date=slot.trip_start_date,
+        trip_end_date=slot.trip_end_date,
+    )
+
+
+def _production_snapshot(slot: SmelterSlot | CrafterSlot) -> SaveProductionSlotSnapshot:
+    return SaveProductionSlotSnapshot(
+        index=slot.index,
+        on=slot.on,
+        recipe_number=slot.recipe_number,
+        start_date=slot.start_date,
+        end_date=slot.end_date,
+        original_end_date=slot.original_end_date,
+        timespan_left=slot.timespan_left,
+        seconds_completed=slot.seconds_completed,
+        duration_estimate=slot.seconds_completed + slot.timespan_left.total_seconds(),
+    )
