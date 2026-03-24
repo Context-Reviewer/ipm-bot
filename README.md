@@ -14,6 +14,18 @@ The reverse-engineering and experiment tooling remains in:
 
 - `C:\Users\lwpar\Desktop\ipm_project`
 
+## Artifact discovery
+
+The repo now includes a safe artifact discovery CLI for package-focused census/snapshot/diff work:
+
+```text
+python -m ipm_bot.artifacts census
+python -m ipm_bot.artifacts snapshot
+python -m ipm_bot.artifacts diff <before_snapshot_dir> <after_snapshot_dir>
+```
+
+See `docs/architecture/artifact_discovery.md` for the safety model, output structure, and exact Windows commands.
+
 ## Layout
 
 ```text

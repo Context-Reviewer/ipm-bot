@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .byte_diff import diff_binary_files, render_binary_diff
 from .diff import diff_snapshots, render_snapshot_diff
 from .parser import parse_player_snapshot
 
@@ -32,6 +33,13 @@ def main() -> int:
     diff_parser.add_argument("after_path", type=Path)
     diff_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    byte_diff_parser = subparsers.add_parser(
+        "bytes-diff", help="Read two saves and print changed binary spans."
+    )
+    byte_diff_parser.add_argument("before_path", type=Path)
+    byte_diff_parser.add_argument("after_path", type=Path)
+    byte_diff_parser.add_argument("--json", action="store_true", dest="as_json")
+
     args = parser.parse_args()
 
     if args.command == "summary":
@@ -41,6 +49,34 @@ def main() -> int:
             print(json.dumps(payload, indent=2, default=_json_default))
         else:
             print(_render_summary(payload))
+        return 0
+
+    if args.command == "bytes-diff":
+        changes = diff_binary_files(args.before_path, args.after_path)
+        if args.as_json:
+            print(
+                json.dumps(
+                    {
+                        "before_path": str(args.before_path.resolve()),
+                        "after_path": str(args.after_path.resolve()),
+                        "changes": [
+                            {
+                                "start_offset": change.start_offset,
+                                "before_end_offset": change.before_end_offset,
+                                "after_end_offset": change.after_end_offset,
+                                "before_length": change.before_length,
+                                "after_length": change.after_length,
+                                "before_hex": change.before_bytes.hex(),
+                                "after_hex": change.after_bytes.hex(),
+                            }
+                            for change in changes
+                        ],
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(render_binary_diff(changes))
         return 0
 
     before = parse_player_snapshot(args.before_path)

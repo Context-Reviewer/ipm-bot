@@ -7,3 +7,5 @@ Place lightweight utility scripts here for:
 - state inspection
 - one-off developer workflows
 - manual input flow recording
+
+`record_ipm_flow.py` requires manual installation of `pynput` and `pillow`.
