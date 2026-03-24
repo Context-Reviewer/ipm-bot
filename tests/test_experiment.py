@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -19,9 +21,10 @@ from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason, Receipt
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.experiment_store import write_experiment_manifest
 from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
-from ipm_bot.control.save_source import SaveSourceConfigSnapshot, SaveSourceMetadata
+from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.control.save_source import LocalSaveSource, SaveSourceConfigSnapshot, SaveSourceMetadata
 from ipm_bot.experiment.runner import main
-from ipm_bot.main import ExitCode
+from ipm_bot.main import ExitCode, run_single_control_tick
 from ipm_bot.planner.planner import PlannerDecision
 
 
@@ -101,6 +104,131 @@ class ExperimentHarnessTests(unittest.TestCase):
             self.assertEqual(exit_code, int(ExitCode.AMBIGUOUS))
             self.assertEqual(payload["exit_code"], int(ExitCode.AMBIGUOUS))
 
+    def test_run_single_control_tick_honors_experiment_action_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_path = root / "save.json"
+            save_path.write_text(
+                json.dumps(
+                    {
+                        "adBoostActive": False,
+                        "adsWatched": 1,
+                        "saveTimestamp": "2026-03-22T14:31:05",
+                        "arkRewardReadyToClaim": True,
+                        "playerLevel": 5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            output_dir = root / "logs" / "receipts"
+            actuator = RecordingActuator()
+
+            def _delayed_update() -> None:
+                time.sleep(0.1)
+                save_path.write_text(
+                    json.dumps(
+                        {
+                            "adBoostActive": False,
+                            "adsWatched": 1,
+                            "saveTimestamp": "2026-03-22T14:31:15",
+                            "arkRewardReadyToClaim": False,
+                            "playerLevel": 5,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            updater = threading.Thread(target=_delayed_update)
+            updater.start()
+
+            def _write_to_temp(receipt_to_write: ActionAttemptReceipt) -> Path:
+                return write_receipt(
+                    receipt_to_write,
+                    output_dir=output_dir,
+                    written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+                )
+
+            with patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp):
+                action, receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=1.0,
+                    poll_interval_seconds=0.05,
+                    actuator=actuator,
+                    save_source=LocalSaveSource(),
+                    action_override="claim_ark_reward",
+                )
+
+            updater.join()
+
+            self.assertEqual(action, "claim_ark_reward")
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
+            self.assertEqual(receipt.planner_decision.selected_action, "claim_ark_reward")
+            self.assertEqual(receipt.planner_decision.decision_reason, "experiment_action_override")
+            self.assertTrue(receipt.runtime_context.action_override_used)
+            self.assertEqual(receipt.runtime_context.action_override_requested_action, "claim_ark_reward")
+
+    def test_run_single_control_tick_marks_manual_observation_mode_in_runtime_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_path = root / "save.json"
+            save_path.write_text(
+                json.dumps(
+                    {
+                        "adBoostActive": False,
+                        "adsWatched": 1,
+                        "saveTimestamp": "2026-03-22T14:31:05",
+                        "arkRewardReadyToClaim": True,
+                        "playerLevel": 5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            output_dir = root / "logs" / "receipts"
+            actuator = RecordingActuator()
+
+            def _delayed_update() -> None:
+                time.sleep(0.1)
+                save_path.write_text(
+                    json.dumps(
+                        {
+                            "adBoostActive": False,
+                            "adsWatched": 1,
+                            "saveTimestamp": "2026-03-22T14:31:15",
+                            "arkRewardReadyToClaim": False,
+                            "playerLevel": 5,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            updater = threading.Thread(target=_delayed_update)
+            updater.start()
+
+            def _write_to_temp(receipt_to_write: ActionAttemptReceipt) -> Path:
+                return write_receipt(
+                    receipt_to_write,
+                    output_dir=output_dir,
+                    written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+                )
+
+            with patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp):
+                action, receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=1.0,
+                    poll_interval_seconds=0.05,
+                    actuator=actuator,
+                    save_source=LocalSaveSource(),
+                    action_override="claim_ark_reward",
+                    manual_observation_mode=True,
+                )
+
+            updater.join()
+
+            self.assertEqual(action, "claim_ark_reward")
+            self.assertTrue(receipt.runtime_context.manual_observation_mode)
+            self.assertTrue(receipt.runtime_context.action_override_used)
+            self.assertEqual(receipt.runtime_context.action_override_requested_action, "claim_ark_reward")
+
 
 def _sample_receipt(
     *,
@@ -156,6 +284,22 @@ def _sample_receipt(
             ),
         ),
     )
+
+class RecordingActuator:
+    actuator_type = "recording"
+    config_snapshot = ActuatorConfigSnapshot(actuator_type="recording")
+
+    def __init__(self) -> None:
+        self.actions: list[str] = []
+
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
+        self.actions.append(action)
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=[f"recording:{action}"],
+        )
 
 
 if __name__ == "__main__":

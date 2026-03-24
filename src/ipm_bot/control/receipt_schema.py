@@ -1,3 +1,3 @@
 """Centralized receipt schema versioning."""
 
-CURRENT_RECEIPT_SCHEMA_VERSION = 3
+CURRENT_RECEIPT_SCHEMA_VERSION = 11

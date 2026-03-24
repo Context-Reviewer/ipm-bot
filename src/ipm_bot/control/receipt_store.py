@@ -30,8 +30,17 @@ def write_receipt(
         timestamp=timestamp,
         action=_sanitize_action_name(receipt.action),
     )
+    artifact_directory = _artifact_directory_for_receipt(receipt_path)
     receipt_path.write_text(
-        json.dumps(_serialize_receipt(receipt, timestamp), indent=2, sort_keys=True),
+        json.dumps(
+            _serialize_receipt(
+                receipt,
+                receipt_written_at_utc=timestamp,
+                artifact_directory=artifact_directory,
+            ),
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     return receipt_path
@@ -40,6 +49,7 @@ def write_receipt(
 def _serialize_receipt(
     receipt: ActionAttemptReceipt,
     receipt_written_at_utc: str,
+    artifact_directory: Path,
 ) -> dict[str, object]:
     if receipt.planner_decision is None:
         raise ValueError("Receipt planner_decision must be populated before persistence.")
@@ -49,6 +59,11 @@ def _serialize_receipt(
         raise ValueError("Receipt save_source_metadata must be populated before persistence.")
     if receipt.actuator_config_snapshot is None:
         raise ValueError("Receipt actuator_config_snapshot must be populated before persistence.")
+
+    serialized_probe_samples = _serialize_probe_samples(
+        receipt=receipt,
+        artifact_directory=artifact_directory,
+    )
 
     return {
         "action": receipt.action,
@@ -71,13 +86,43 @@ def _serialize_receipt(
             "receipt_schema_version": receipt.runtime_context.receipt_schema_version,
             "poll_interval_seconds": receipt.runtime_context.poll_interval_seconds,
             "timeout_seconds": receipt.runtime_context.timeout_seconds,
+            "timeout_scope": receipt.runtime_context.timeout_scope,
+            "manual_observation_mode": receipt.runtime_context.manual_observation_mode,
+            "save_snapshot_available": receipt.runtime_context.save_snapshot_available,
+            "active_smelters": receipt.runtime_context.active_smelters,
+            "active_crafters": receipt.runtime_context.active_crafters,
+            "nearest_completion_seconds": receipt.runtime_context.nearest_completion_seconds,
             "exit_code": receipt.runtime_context.exit_code,
+            "action_override_used": receipt.runtime_context.action_override_used,
+            "action_override_requested_action": (
+                receipt.runtime_context.action_override_requested_action
+            ),
+            "save_repull_interval_seconds": receipt.runtime_context.save_repull_interval_seconds,
+            "save_repull_count": receipt.runtime_context.save_repull_count,
+            "save_repull_failure_count": receipt.runtime_context.save_repull_failure_count,
+            "actuation_elapsed_seconds": receipt.runtime_context.actuation_elapsed_seconds,
+            "verification_elapsed_seconds": receipt.runtime_context.verification_elapsed_seconds,
+            "verification_started": receipt.runtime_context.verification_started,
+            "verification_starved_by_timeout": (
+                receipt.runtime_context.verification_starved_by_timeout
+            ),
         },
         "actuator_execution": {
             "actuator_type": receipt.actuator_execution.actuator_type,
             "actuator_execution_status": receipt.actuator_execution.actuator_execution_status,
             "actuator_command_count": receipt.actuator_execution.actuator_command_count,
             "actuator_command_summary": list(receipt.actuator_execution.actuator_command_summary),
+            "stage_events": [
+                {
+                    "stage_name": sample.stage_name,
+                    "wall_clock_utc": sample.wall_clock_utc,
+                    "elapsed_seconds": sample.elapsed_seconds,
+                    "detail": sample.detail,
+                    "error": sample.error,
+                }
+                for sample in receipt.actuator_execution.stage_events
+            ],
+            "probe_samples": serialized_probe_samples,
         },
         "actuator_config": _serialize_actuator_config(receipt),
         "planner_decision": {
@@ -108,7 +153,128 @@ def _serialize_actuator_config(receipt: ActionAttemptReceipt) -> dict[str, objec
         payload["app_package"] = snapshot.app_package
     if snapshot.app_activity is not None:
         payload["app_activity"] = snapshot.app_activity
+    if snapshot.manual_observation_mode:
+        payload["manual_observation_mode"] = snapshot.manual_observation_mode
+    if snapshot.manual_observation_window_seconds is not None:
+        payload["manual_observation_window_seconds"] = snapshot.manual_observation_window_seconds
+    if snapshot.manual_observation_probe_interval_seconds is not None:
+        payload["manual_observation_probe_interval_seconds"] = (
+            snapshot.manual_observation_probe_interval_seconds
+        )
+    if snapshot.ark_ad_wait_seconds is not None:
+        payload["ark_ad_wait_seconds"] = snapshot.ark_ad_wait_seconds
+    if snapshot.ark_skip_close_wait_seconds is not None:
+        payload["ark_skip_close_wait_seconds"] = snapshot.ark_skip_close_wait_seconds
+    if snapshot.ark_return_wait_seconds is not None:
+        payload["ark_return_wait_seconds"] = snapshot.ark_return_wait_seconds
+    if snapshot.ark_esc_attempts is not None:
+        payload["ark_esc_attempts"] = snapshot.ark_esc_attempts
+    if snapshot.ark_esc_interval_seconds is not None:
+        payload["ark_esc_interval_seconds"] = snapshot.ark_esc_interval_seconds
+    if snapshot.ark_post_watch_probe_count is not None:
+        payload["ark_post_watch_probe_count"] = snapshot.ark_post_watch_probe_count
+    if snapshot.ark_post_watch_probe_interval_seconds is not None:
+        payload["ark_post_watch_probe_interval_seconds"] = (
+            snapshot.ark_post_watch_probe_interval_seconds
+        )
+    if snapshot.ark_post_watch_ui_dump_max_text_length is not None:
+        payload["ark_post_watch_ui_dump_max_text_length"] = (
+            snapshot.ark_post_watch_ui_dump_max_text_length
+        )
     return payload
+
+
+def _serialize_probe_samples(
+    receipt: ActionAttemptReceipt,
+    artifact_directory: Path,
+) -> list[dict[str, object]]:
+    serialized_samples: list[dict[str, object]] = []
+    for sample_index, sample in enumerate(receipt.actuator_execution.probe_samples, start=1):
+        artifact_paths = _persist_probe_artifacts(
+            sample=sample,
+            artifact_directory=artifact_directory,
+            sample_index=sample_index,
+        )
+        serialized_samples.append(
+            {
+                "sample_offset_seconds": sample.sample_offset_seconds,
+                "sample_context": sample.sample_context,
+                "sample_reference_stage": sample.sample_reference_stage,
+                "esc_attempt_index": sample.esc_attempt_index,
+                "focus_window": sample.focus_window,
+                "focus_package": sample.focus_package,
+                "focus_activity": sample.focus_activity,
+                "ui_text_excerpt": sample.ui_text_excerpt,
+                "ui_text_sha256": sample.ui_text_sha256,
+                "probe_error": sample.probe_error,
+                "artifact_paths": artifact_paths,
+            }
+        )
+    return serialized_samples
+
+
+def _persist_probe_artifacts(
+    *,
+    sample,
+    artifact_directory: Path,
+    sample_index: int,
+) -> dict[str, object]:
+    artifact_paths = {
+        "dumpsys_window_path": sample.dumpsys_window_artifact_path,
+        "dumpsys_activity_path": sample.dumpsys_activity_artifact_path,
+        "ui_dump_xml_path": sample.ui_dump_xml_artifact_path,
+    }
+    file_stem = _probe_artifact_stem(sample_index=sample_index, sample=sample)
+    if sample.dumpsys_window_output is not None:
+        artifact_paths["dumpsys_window_path"] = str(
+            _write_probe_artifact(
+                artifact_directory=artifact_directory,
+                file_stem=file_stem,
+                suffix="dumpsys_window.txt",
+                content=sample.dumpsys_window_output,
+            )
+        )
+    if sample.dumpsys_activity_output is not None:
+        artifact_paths["dumpsys_activity_path"] = str(
+            _write_probe_artifact(
+                artifact_directory=artifact_directory,
+                file_stem=file_stem,
+                suffix="dumpsys_activity.txt",
+                content=sample.dumpsys_activity_output,
+            )
+        )
+    if sample.ui_dump_xml is not None:
+        artifact_paths["ui_dump_xml_path"] = str(
+            _write_probe_artifact(
+                artifact_directory=artifact_directory,
+                file_stem=file_stem,
+                suffix="ui_dump.xml",
+                content=sample.ui_dump_xml,
+            )
+        )
+    return artifact_paths
+
+
+def _probe_artifact_stem(*, sample_index: int, sample) -> str:
+    stem = f"probe_{sample_index:03d}"
+    if sample.sample_context is not None:
+        stem += f"_{sample.sample_context}"
+    if sample.esc_attempt_index is not None:
+        stem += f"_attempt_{sample.esc_attempt_index}"
+    return stem
+
+
+def _write_probe_artifact(
+    *,
+    artifact_directory: Path,
+    file_stem: str,
+    suffix: str,
+    content: str,
+) -> Path:
+    artifact_directory.mkdir(parents=True, exist_ok=True)
+    artifact_path = artifact_directory / f"{file_stem}_{suffix}"
+    artifact_path.write_text(content, encoding="utf-8")
+    return artifact_path
 
 
 def _serialize_save_source(receipt: ActionAttemptReceipt) -> dict[str, object]:
@@ -169,3 +335,7 @@ def _next_available_path(directory: Path, timestamp: str, action: str) -> Path:
         candidate = directory / f"{base_name}_{suffix:02d}.json"
         suffix += 1
     return candidate
+
+
+def _artifact_directory_for_receipt(receipt_path: Path) -> Path:
+    return receipt_path.with_name(f"{receipt_path.stem}_artifacts")

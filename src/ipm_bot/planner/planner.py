@@ -89,22 +89,22 @@ def _idle_decision_from_save_snapshot(
             actuation_required=False,
         )
 
-    active_smelters = tuple(_active_smelters(save_snapshot))
-    if not active_smelters:
+    active_production = tuple(_active_production_slots(save_snapshot))
+    if not active_production:
         return PlannerDecision(
             selected_action="idle",
-            decision_reason="no_active_smelters",
+            decision_reason="no_action_needed",
             actuation_required=False,
         )
 
     next_completion = min(
-        active_smelters,
+        active_production,
         key=lambda slot: slot.timespan_left.total_seconds(),
     )
     if next_completion.timespan_left.total_seconds() <= 5.0:
         return PlannerDecision(
             selected_action="idle",
-            decision_reason="smelter_completion_imminent",
+            decision_reason="production_completion_imminent",
             actuation_required=False,
         )
 
@@ -117,3 +117,11 @@ def _idle_decision_from_save_snapshot(
 
 def _active_smelters(save_snapshot: SaveSnapshot) -> Iterable[SaveProductionSlotSnapshot]:
     return (slot for slot in save_snapshot.smelters if slot.on)
+
+
+def _active_production_slots(save_snapshot: SaveSnapshot) -> Iterable[SaveProductionSlotSnapshot]:
+    return (
+        slot
+        for slot in (*save_snapshot.smelters, *save_snapshot.crafters)
+        if slot.on
+    )

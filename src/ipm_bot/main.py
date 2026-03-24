@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from dataclasses import replace
 from enum import IntEnum
 from pathlib import Path
@@ -37,6 +38,14 @@ EXIT_CODE_BY_STATUS = {
     "FAIL": ExitCode.FAIL,
     "AMBIGUOUS": ExitCode.AMBIGUOUS,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class SaveSnapshotObservability:
+    save_snapshot_available: bool
+    active_smelters: int
+    active_crafters: int
+    nearest_completion_seconds: float | None
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -85,6 +94,7 @@ def run_single_control_tick(
     save_source_metadata = save_source.prepare(save_path)
     prepared_save_path = Path(save_source_metadata.prepared_local_path)
     save_snapshot = _load_save_snapshot(prepared_save_path)
+    save_snapshot_observability = _observe_save_snapshot(save_snapshot)
     snapshot_before = _load_snapshot(prepared_save_path)
     planner_decision = decide_next_action_details(
         snapshot_before,
@@ -121,6 +131,7 @@ def run_single_control_tick(
         actuator=actuator,
         action_override=action_override,
         manual_observation_mode=manual_observation_mode,
+        save_snapshot_observability=save_snapshot_observability,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -143,7 +154,18 @@ def _enrich_tick_receipt(
     actuator: ActionActuator,
     action_override: str | None = None,
     manual_observation_mode: bool = False,
+    save_snapshot_observability: SaveSnapshotObservability | None = None,
 ) -> ActionAttemptReceipt:
+    observability = (
+        SaveSnapshotObservability(
+            save_snapshot_available=False,
+            active_smelters=0,
+            active_crafters=0,
+            nearest_completion_seconds=None,
+        )
+        if save_snapshot_observability is None
+        else save_snapshot_observability
+    )
     return replace(
         receipt,
         planner_decision=planner_decision,
@@ -156,6 +178,10 @@ def _enrich_tick_receipt(
             action_override_used=action_override is not None,
             action_override_requested_action=action_override,
             manual_observation_mode=manual_observation_mode,
+            save_snapshot_available=observability.save_snapshot_available,
+            active_smelters=observability.active_smelters,
+            active_crafters=observability.active_crafters,
+            nearest_completion_seconds=observability.nearest_completion_seconds,
         ),
     )
 
@@ -184,6 +210,33 @@ def _load_save_snapshot(save_path: Path) -> SaveSnapshot | None:
     return load_save_snapshot(save_path)
 
 
+def _observe_save_snapshot(save_snapshot: SaveSnapshot | None) -> SaveSnapshotObservability:
+    if save_snapshot is None:
+        return SaveSnapshotObservability(
+            save_snapshot_available=False,
+            active_smelters=0,
+            active_crafters=0,
+            nearest_completion_seconds=None,
+        )
+
+    active_smelters = tuple(slot for slot in save_snapshot.smelters if slot.on)
+    active_crafters = tuple(slot for slot in save_snapshot.crafters if slot.on)
+    active_slots = (*active_smelters, *active_crafters)
+    nearest_completion_seconds = None
+    if active_slots:
+        nearest_completion_seconds = min(
+            slot.timespan_left.total_seconds()
+            for slot in active_slots
+        )
+
+    return SaveSnapshotObservability(
+        save_snapshot_available=True,
+        active_smelters=len(active_smelters),
+        active_crafters=len(active_crafters),
+        nearest_completion_seconds=nearest_completion_seconds,
+    )
+
+
 def _print_control_tick_result(
     action: str,
     receipt: ActionAttemptReceipt,
@@ -192,6 +245,13 @@ def _print_control_tick_result(
     print(f"Selected action: {action}")
     print(f"Final status: {receipt.final_status}")
     print(f"Failure reason: {receipt.failure_reason}")
+    print(
+        "Save snapshot: "
+        f"available={receipt.runtime_context.save_snapshot_available} "
+        f"active_smelters={receipt.runtime_context.active_smelters} "
+        f"active_crafters={receipt.runtime_context.active_crafters} "
+        f"nearest_completion_seconds={receipt.runtime_context.nearest_completion_seconds}"
+    )
     print(f"Receipt path: {receipt_path}")
 
 

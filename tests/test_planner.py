@@ -71,7 +71,7 @@ class PlannerTests(unittest.TestCase):
         decision = decide_next_action_details(snapshot, save_snapshot=save_snapshot)
 
         self.assertEqual(decision.selected_action, "idle")
-        self.assertEqual(decision.decision_reason, "smelter_completion_imminent")
+        self.assertEqual(decision.decision_reason, "production_completion_imminent")
         self.assertFalse(decision.actuation_required)
 
     def test_save_snapshot_example_helpers_render_active_smelters_and_idle_hint(self) -> None:
@@ -86,6 +86,37 @@ class PlannerTests(unittest.TestCase):
             lines,
             ("slot 0: recipe=4 duration=53.333s left=12.500s",),
         )
+
+    def test_active_crafter_alone_still_counts_as_production_in_flight(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=False,
+        )
+        save_snapshot = SaveSnapshot(
+            source_path="C:\\dev\\ipm-bot\\data\\playerInfo.dat",
+            resources=(),
+            planets=(),
+            smelters=(),
+            crafters=(
+                SaveProductionSlotSnapshot(
+                    index=1,
+                    on=True,
+                    recipe_number=3,
+                    start_date=None,
+                    end_date=None,
+                    original_end_date=None,
+                    timespan_left=timedelta(seconds=25.0),
+                    seconds_completed=455.0,
+                    duration_estimate=480.0,
+                ),
+            ),
+        )
+
+        decision = decide_next_action_details(snapshot, save_snapshot=save_snapshot)
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "production_in_flight")
+        self.assertFalse(decision.actuation_required)
 
 
 def _snapshot(

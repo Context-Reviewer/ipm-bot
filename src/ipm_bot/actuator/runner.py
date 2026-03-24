@@ -10,10 +10,13 @@ from typing import Mapping
 
 from ipm_bot.actuator.boundary import (
     ActionActuator,
+    ActuatorConfigSnapshot,
     ActuatorExecutionError,
     ActuatorExecutionMetadata,
 )
 from ipm_bot.control.contracts import ActionContract, ActionContractIdentity
+from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
+from ipm_bot.control.save_source import SaveRefreshController, SaveRefreshTelemetry, SaveSourceMetadata
 from ipm_bot.planner.planner import PlannerDecision
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
 from ipm_bot.save.models import PlayerSnapshot
@@ -42,7 +45,22 @@ class ReceiptRuntimeContext:
     receipt_schema_version: int
     poll_interval_seconds: float
     timeout_seconds: float
+    timeout_scope: str = "total_run"
+    manual_observation_mode: bool = False
+    save_snapshot_available: bool = False
+    active_smelters: int = 0
+    active_crafters: int = 0
+    nearest_completion_seconds: float | None = None
     exit_code: int | None = None
+    action_override_used: bool = False
+    action_override_requested_action: str | None = None
+    save_repull_interval_seconds: float | None = None
+    save_repull_count: int = 0
+    save_repull_failure_count: int = 0
+    actuation_elapsed_seconds: float = 0.0
+    verification_elapsed_seconds: float = 0.0
+    verification_started: bool = False
+    verification_starved_by_timeout: bool = False
 
     def __post_init__(self) -> None:
         if self.receipt_schema_version <= 0:
@@ -51,8 +69,34 @@ class ReceiptRuntimeContext:
             raise ValueError("Poll interval must be greater than zero.")
         if self.timeout_seconds <= 0:
             raise ValueError("Timeout must be greater than zero.")
+        if self.timeout_scope not in {"total_run", "verification_only_after_actuation"}:
+            raise ValueError("Timeout scope must be one of the supported receipt values.")
+        if self.active_smelters < 0:
+            raise ValueError("Active smelters must be non-negative.")
+        if self.active_crafters < 0:
+            raise ValueError("Active crafters must be non-negative.")
+        if (
+            self.nearest_completion_seconds is not None
+            and self.nearest_completion_seconds < 0
+        ):
+            raise ValueError("Nearest completion seconds must be non-negative when provided.")
         if self.exit_code is not None and self.exit_code < 0:
             raise ValueError("Exit code must be non-negative when provided.")
+        if self.action_override_requested_action is not None and not self.action_override_requested_action:
+            raise ValueError("Action override requested action must not be empty when provided.")
+        if (
+            self.save_repull_interval_seconds is not None
+            and self.save_repull_interval_seconds <= 0
+        ):
+            raise ValueError("Save re-pull interval must be greater than zero when provided.")
+        if self.save_repull_count < 0:
+            raise ValueError("Save re-pull count must be non-negative.")
+        if self.save_repull_failure_count < 0:
+            raise ValueError("Save re-pull failure count must be non-negative.")
+        if self.actuation_elapsed_seconds < 0:
+            raise ValueError("Actuation elapsed seconds must be non-negative.")
+        if self.verification_elapsed_seconds < 0:
+            raise ValueError("Verification elapsed seconds must be non-negative.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,8 +114,10 @@ class ActionAttemptReceipt:
     runtime_context: ReceiptRuntimeContext
     actuator_execution: ActuatorExecutionMetadata
     verifier_messages: list[str]
+    actuator_config_snapshot: ActuatorConfigSnapshot | None = None
     planner_decision: PlannerDecision | None = None
     actuation_attempted: bool | None = None
+    save_source_metadata: SaveSourceMetadata | None = None
 
     def __post_init__(self) -> None:
         if not self.action:
@@ -102,6 +148,13 @@ class ActionAttemptReceipt:
             raise ValueError("Non-passing receipts must use a non-NONE failure reason.")
         if self.planner_decision is not None and self.planner_decision.selected_action != self.action:
             raise ValueError("Receipt planner decision action must match receipt action.")
+        if (
+            self.actuator_config_snapshot is not None
+            and self.actuator_config_snapshot.actuator_type != self.actuator_execution.actuator_type
+        ):
+            raise ValueError(
+                "Receipt actuator_config_snapshot actuator_type must match actuator_execution."
+            )
 
 
 def run_action_until_verified(
@@ -112,6 +165,9 @@ def run_action_until_verified(
     actuator: ActionActuator,
     poll_interval_s: float,
     timeout_s: float | None = None,
+    save_refresh_controller: SaveRefreshController | None = None,
+    verification_timeout_starts_after_actuation: bool = False,
+    manual_observation_mode: bool = False,
 ) -> ActionAttemptReceipt:
     """Execute an action and verify it against successive updated saves."""
 
@@ -125,6 +181,8 @@ def run_action_until_verified(
     baseline_hash = get_save_fingerprint(save_path).sha256
     initial_baseline_hash = baseline_hash
     started_at = time.monotonic()
+    actuation_completed_at = started_at
+    verification_started = False
     candidate_hashes: list[str] = []
     last_verifier_messages: list[str] = []
     actuator_execution = ActuatorExecutionMetadata(
@@ -147,12 +205,28 @@ def run_action_until_verified(
             actuator_execution=actuator_execution,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
-            verifier_messages=["Idle action selected; no actuation or verification loop required."],
+            verifier_messages=_with_refresh_messages(
+                ["Idle action selected; no actuation or verification loop required."],
+                save_refresh_controller,
+            ),
+            save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+            actuation_elapsed_seconds=0.0,
+            verification_elapsed_seconds=0.0,
+            verification_started=False,
+            verification_starved_by_timeout=False,
+            timeout_scope=(
+                "verification_only_after_actuation"
+                if verification_timeout_starts_after_actuation
+                else "total_run"
+            ),
+            manual_observation_mode=manual_observation_mode,
         )
 
     try:
         actuator_execution = actuator.execute(action)
+        actuation_completed_at = time.monotonic()
     except ActuatorExecutionError as exc:
+        actuation_completed_at = time.monotonic()
         return _build_receipt(
             action=action,
             save_path=resolved_save_path,
@@ -165,9 +239,24 @@ def run_action_until_verified(
             actuator_execution=exc.metadata,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
-            verifier_messages=[f"Action '{action}' failed before verification: {exc}"],
+            verifier_messages=_with_refresh_messages(
+                [f"Action '{action}' failed before verification: {exc}"],
+                save_refresh_controller,
+            ),
+            save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+            actuation_elapsed_seconds=actuation_completed_at - started_at,
+            verification_elapsed_seconds=0.0,
+            verification_started=False,
+            verification_starved_by_timeout=False,
+            timeout_scope=(
+                "verification_only_after_actuation"
+                if verification_timeout_starts_after_actuation
+                else "total_run"
+            ),
+            manual_observation_mode=manual_observation_mode,
         )
     except Exception as exc:
+        actuation_completed_at = time.monotonic()
         return _build_receipt(
             action=action,
             save_path=resolved_save_path,
@@ -185,10 +274,30 @@ def run_action_until_verified(
             ),
             started_at=started_at,
             candidate_hashes=candidate_hashes,
-            verifier_messages=[f"Action '{action}' failed before verification: {exc}"],
+            verifier_messages=_with_refresh_messages(
+                [f"Action '{action}' failed before verification: {exc}"],
+                save_refresh_controller,
+            ),
+            save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+            actuation_elapsed_seconds=actuation_completed_at - started_at,
+            verification_elapsed_seconds=0.0,
+            verification_started=False,
+            verification_starved_by_timeout=False,
+            timeout_scope=(
+                "verification_only_after_actuation"
+                if verification_timeout_starts_after_actuation
+                else "total_run"
+            ),
+            manual_observation_mode=manual_observation_mode,
         )
 
-    deadline = started_at + effective_timeout_s
+    verification_started_at = time.monotonic()
+    verification_started = True
+    if verification_timeout_starts_after_actuation:
+        deadline = verification_started_at + effective_timeout_s
+    else:
+        deadline = started_at + effective_timeout_s
+    verification_starved_by_timeout = deadline <= verification_started_at
 
     while True:
         remaining_s = deadline - time.monotonic()
@@ -201,6 +310,11 @@ def run_action_until_verified(
                 baseline_hash=baseline_hash,
                 timeout_s=remaining_s,
                 poll_interval_s=poll_interval_s,
+                before_read=(
+                    save_refresh_controller.maybe_refresh
+                    if save_refresh_controller is not None
+                    else None
+                ),
             )
         except Exception as exc:
             return _build_receipt(
@@ -215,7 +329,21 @@ def run_action_until_verified(
                 actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
-                verifier_messages=last_verifier_messages + [f"Save watcher error: {exc}"],
+                verifier_messages=_with_refresh_messages(
+                    last_verifier_messages + [f"Save watcher error: {exc}"],
+                    save_refresh_controller,
+                ),
+                save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+                actuation_elapsed_seconds=actuation_completed_at - started_at,
+                verification_elapsed_seconds=time.monotonic() - verification_started_at,
+                verification_started=verification_started,
+                verification_starved_by_timeout=verification_starved_by_timeout,
+                timeout_scope=(
+                    "verification_only_after_actuation"
+                    if verification_timeout_starts_after_actuation
+                    else "total_run"
+                ),
+                manual_observation_mode=manual_observation_mode,
             )
 
         if observation is None:
@@ -242,7 +370,21 @@ def run_action_until_verified(
                 actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
-                verifier_messages=evaluation.verification.messages,
+                verifier_messages=_with_refresh_messages(
+                    evaluation.verification.messages,
+                    save_refresh_controller,
+                ),
+                save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+                actuation_elapsed_seconds=actuation_completed_at - started_at,
+                verification_elapsed_seconds=time.monotonic() - verification_started_at,
+                verification_started=verification_started,
+                verification_starved_by_timeout=verification_starved_by_timeout,
+                timeout_scope=(
+                    "verification_only_after_actuation"
+                    if verification_timeout_starts_after_actuation
+                    else "total_run"
+                ),
+                manual_observation_mode=manual_observation_mode,
             )
 
         if evaluation.terminal_failure_reason is not None:
@@ -258,7 +400,21 @@ def run_action_until_verified(
                 actuator_execution=actuator_execution,
                 started_at=started_at,
                 candidate_hashes=candidate_hashes,
-                verifier_messages=evaluation.verification.messages,
+                verifier_messages=_with_refresh_messages(
+                    evaluation.verification.messages,
+                    save_refresh_controller,
+                ),
+                save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+                actuation_elapsed_seconds=actuation_completed_at - started_at,
+                verification_elapsed_seconds=time.monotonic() - verification_started_at,
+                verification_started=verification_started,
+                verification_starved_by_timeout=verification_starved_by_timeout,
+                timeout_scope=(
+                    "verification_only_after_actuation"
+                    if verification_timeout_starts_after_actuation
+                    else "total_run"
+                ),
+                manual_observation_mode=manual_observation_mode,
             )
 
         baseline_hash = observation.fingerprint.sha256
@@ -276,7 +432,24 @@ def run_action_until_verified(
             actuator_execution=actuator_execution,
             started_at=started_at,
             candidate_hashes=candidate_hashes,
-            verifier_messages=last_verifier_messages,
+            verifier_messages=_with_timeout_budget_messages(
+                _with_refresh_messages(
+                    last_verifier_messages,
+                    save_refresh_controller,
+                ),
+                verification_starved_by_timeout=verification_starved_by_timeout,
+            ),
+            save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+            actuation_elapsed_seconds=actuation_completed_at - started_at,
+            verification_elapsed_seconds=max(0.0, time.monotonic() - verification_started_at),
+            verification_started=verification_started,
+            verification_starved_by_timeout=verification_starved_by_timeout,
+            timeout_scope=(
+                "verification_only_after_actuation"
+                if verification_timeout_starts_after_actuation
+                else "total_run"
+            ),
+            manual_observation_mode=manual_observation_mode,
         )
 
     return _build_receipt(
@@ -291,7 +464,24 @@ def run_action_until_verified(
         actuator_execution=actuator_execution,
         started_at=started_at,
         candidate_hashes=candidate_hashes,
-        verifier_messages=[],
+        verifier_messages=_with_timeout_budget_messages(
+            _with_refresh_messages([], save_refresh_controller),
+            verification_starved_by_timeout=verification_starved_by_timeout,
+        ),
+        save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
+        actuation_elapsed_seconds=actuation_completed_at - started_at,
+        verification_elapsed_seconds=max(
+            0.0,
+            (0.0 if not verification_started else time.monotonic() - verification_started_at),
+        ),
+        verification_started=verification_started,
+        verification_starved_by_timeout=verification_starved_by_timeout,
+        timeout_scope=(
+            "verification_only_after_actuation"
+            if verification_timeout_starts_after_actuation
+            else "total_run"
+        ),
+        manual_observation_mode=manual_observation_mode,
     )
 
 
@@ -461,6 +651,13 @@ def _build_receipt(
     started_at: float,
     candidate_hashes: list[str],
     verifier_messages: list[str],
+    save_refresh_telemetry: SaveRefreshTelemetry | None = None,
+    actuation_elapsed_seconds: float = 0.0,
+    verification_elapsed_seconds: float = 0.0,
+    verification_started: bool = False,
+    verification_starved_by_timeout: bool = False,
+    timeout_scope: str = "total_run",
+    manual_observation_mode: bool = False,
 ) -> ActionAttemptReceipt:
     return ActionAttemptReceipt(
         action=action,
@@ -474,13 +671,58 @@ def _build_receipt(
         final_candidate_hash=candidate_hashes[-1] if candidate_hashes else None,
         contract_identity=contract.identity(action),
         runtime_context=ReceiptRuntimeContext(
-            receipt_schema_version=2,
+            receipt_schema_version=CURRENT_RECEIPT_SCHEMA_VERSION,
             poll_interval_seconds=poll_interval_s,
             timeout_seconds=effective_timeout_s,
+            timeout_scope=timeout_scope,
+            manual_observation_mode=manual_observation_mode,
+            save_repull_interval_seconds=(
+                None if save_refresh_telemetry is None else save_refresh_telemetry.refresh_interval_seconds
+            ),
+            save_repull_count=(
+                0 if save_refresh_telemetry is None else save_refresh_telemetry.refresh_attempt_count
+            ),
+            save_repull_failure_count=(
+                0 if save_refresh_telemetry is None else save_refresh_telemetry.refresh_failure_count
+            ),
+            actuation_elapsed_seconds=actuation_elapsed_seconds,
+            verification_elapsed_seconds=verification_elapsed_seconds,
+            verification_started=verification_started,
+            verification_starved_by_timeout=verification_starved_by_timeout,
         ),
         actuator_execution=actuator_execution,
         verifier_messages=list(verifier_messages),
     )
+
+
+def _refresh_telemetry(
+    save_refresh_controller: SaveRefreshController | None,
+) -> SaveRefreshTelemetry | None:
+    if save_refresh_controller is None:
+        return None
+    return save_refresh_controller.telemetry()
+
+
+def _with_refresh_messages(
+    messages: list[str],
+    save_refresh_controller: SaveRefreshController | None,
+) -> list[str]:
+    if save_refresh_controller is None:
+        return list(messages)
+    telemetry = save_refresh_controller.telemetry()
+    return list(messages) + list(telemetry.warning_messages)
+
+
+def _with_timeout_budget_messages(
+    messages: list[str],
+    *,
+    verification_starved_by_timeout: bool,
+) -> list[str]:
+    if not verification_starved_by_timeout:
+        return list(messages)
+    return list(messages) + [
+        "Verification budget was exhausted by actuation before verification polling could begin."
+    ]
 
 
 def _require_field(

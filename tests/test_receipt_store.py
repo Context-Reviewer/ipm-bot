@@ -22,6 +22,8 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.actuator.boundary import (
     ActuatorConfigSnapshot,
     ActuatorExecutionMetadata,
+    ActuatorProbeSample,
+    ActuatorStageEvent,
 )
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
@@ -86,8 +88,64 @@ class ReceiptStoreTests(unittest.TestCase):
                 receipt.runtime_context.timeout_seconds,
             )
             self.assertEqual(
+                payload["runtime_context"]["timeout_scope"],
+                receipt.runtime_context.timeout_scope,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["save_snapshot_available"],
+                receipt.runtime_context.save_snapshot_available,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["active_smelters"],
+                receipt.runtime_context.active_smelters,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["active_crafters"],
+                receipt.runtime_context.active_crafters,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["nearest_completion_seconds"],
+                receipt.runtime_context.nearest_completion_seconds,
+            )
+            self.assertEqual(
                 payload["runtime_context"]["exit_code"],
                 receipt.runtime_context.exit_code,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["action_override_used"],
+                receipt.runtime_context.action_override_used,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["action_override_requested_action"],
+                receipt.runtime_context.action_override_requested_action,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["save_repull_interval_seconds"],
+                receipt.runtime_context.save_repull_interval_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["save_repull_count"],
+                receipt.runtime_context.save_repull_count,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["save_repull_failure_count"],
+                receipt.runtime_context.save_repull_failure_count,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["actuation_elapsed_seconds"],
+                receipt.runtime_context.actuation_elapsed_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["verification_elapsed_seconds"],
+                receipt.runtime_context.verification_elapsed_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["verification_started"],
+                receipt.runtime_context.verification_started,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["verification_starved_by_timeout"],
+                receipt.runtime_context.verification_starved_by_timeout,
             )
             self.assertEqual(
                 payload["actuator_execution"]["actuator_type"],
@@ -104,6 +162,14 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["actuator_execution"]["actuator_command_summary"],
                 receipt.actuator_execution.actuator_command_summary,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["stage_events"],
+                [],
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"],
+                [],
             )
             self.assertEqual(
                 payload["actuator_config"]["actuator_type"],
@@ -189,6 +255,38 @@ class ReceiptStoreTests(unittest.TestCase):
                 payload["actuator_config"]["app_activity"],
                 receipt.actuator_config_snapshot.app_activity,
             )
+            self.assertEqual(
+                payload["actuator_config"]["ark_ad_wait_seconds"],
+                receipt.actuator_config_snapshot.ark_ad_wait_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_skip_close_wait_seconds"],
+                receipt.actuator_config_snapshot.ark_skip_close_wait_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_return_wait_seconds"],
+                receipt.actuator_config_snapshot.ark_return_wait_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_esc_attempts"],
+                receipt.actuator_config_snapshot.ark_esc_attempts,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_esc_interval_seconds"],
+                receipt.actuator_config_snapshot.ark_esc_interval_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_post_watch_probe_count"],
+                receipt.actuator_config_snapshot.ark_post_watch_probe_count,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_post_watch_probe_interval_seconds"],
+                receipt.actuator_config_snapshot.ark_post_watch_probe_interval_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ark_post_watch_ui_dump_max_text_length"],
+                receipt.actuator_config_snapshot.ark_post_watch_ui_dump_max_text_length,
+            )
 
     def test_write_receipt_includes_explicit_adb_pull_save_source_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -215,6 +313,127 @@ class ReceiptStoreTests(unittest.TestCase):
                 payload["save_source"]["remote_save_path"],
                 receipt.save_source_metadata.config_snapshot.remote_save_path,
             )
+
+    def test_write_receipt_marks_manual_observation_mode_and_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "receipts"
+            receipt = _sample_receipt(
+                actuator_kind="adb",
+                with_observability=True,
+                manual_observation=True,
+            )
+
+            written_path = write_receipt(
+                receipt,
+                output_dir=output_dir,
+                written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+            )
+
+            payload = json.loads(written_path.read_text(encoding="utf-8"))
+            self.assertTrue(payload["runtime_context"]["manual_observation_mode"])
+            self.assertTrue(payload["actuator_config"]["manual_observation_mode"])
+            self.assertEqual(
+                payload["actuator_config"]["manual_observation_window_seconds"],
+                20.0,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["manual_observation_probe_interval_seconds"],
+                1.0,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["sample_context"],
+                "manual_observation",
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["sample_reference_stage"],
+                "manual_observation_start",
+            )
+            artifact_paths = payload["actuator_execution"]["probe_samples"][0]["artifact_paths"]
+            self.assertTrue(Path(artifact_paths["dumpsys_window_path"]).is_file())
+            self.assertTrue(Path(artifact_paths["dumpsys_activity_path"]).is_file())
+            self.assertTrue(Path(artifact_paths["ui_dump_xml_path"]).is_file())
+
+    def test_write_receipt_persists_stage_events_probe_samples_and_raw_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "receipts"
+            receipt = _sample_receipt(
+                actuator_kind="adb",
+                with_observability=True,
+            )
+
+            written_path = write_receipt(
+                receipt,
+                output_dir=output_dir,
+                written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+            )
+
+            payload = json.loads(written_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                payload["actuator_execution"]["stage_events"][0]["stage_name"],
+                "ark_watch_tap",
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["focus_package"],
+                "com.google.android.gms",
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["sample_context"],
+                "pre_esc",
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["sample_reference_stage"],
+                "ark_watch_tap",
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["esc_attempt_index"],
+                1,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["probe_samples"][0]["ui_text_excerpt"],
+                "Reward granted | Close ad",
+            )
+            artifact_paths = payload["actuator_execution"]["probe_samples"][0]["artifact_paths"]
+            dumpsys_window_path = Path(artifact_paths["dumpsys_window_path"])
+            dumpsys_activity_path = Path(artifact_paths["dumpsys_activity_path"])
+            ui_dump_xml_path = Path(artifact_paths["ui_dump_xml_path"])
+            self.assertTrue(dumpsys_window_path.is_file())
+            self.assertTrue(dumpsys_activity_path.is_file())
+            self.assertTrue(ui_dump_xml_path.is_file())
+            self.assertIn("pre_esc_attempt_1", dumpsys_window_path.name)
+            self.assertEqual(
+                dumpsys_window_path.read_text(encoding="utf-8"),
+                receipt.actuator_execution.probe_samples[0].dumpsys_window_output,
+            )
+            self.assertEqual(
+                dumpsys_activity_path.read_text(encoding="utf-8"),
+                receipt.actuator_execution.probe_samples[0].dumpsys_activity_output,
+            )
+            self.assertEqual(
+                ui_dump_xml_path.read_text(encoding="utf-8"),
+                receipt.actuator_execution.probe_samples[0].ui_dump_xml,
+            )
+
+    def test_write_receipt_leaves_missing_probe_artifact_paths_null_when_source_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "receipts"
+            receipt = _sample_receipt(
+                actuator_kind="adb",
+                with_observability=True,
+                missing_ui_dump=True,
+            )
+
+            written_path = write_receipt(
+                receipt,
+                output_dir=output_dir,
+                written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+            )
+
+            payload = json.loads(written_path.read_text(encoding="utf-8"))
+            artifact_paths = payload["actuator_execution"]["probe_samples"][0]["artifact_paths"]
+            self.assertIsNotNone(artifact_paths["dumpsys_window_path"])
+            self.assertIsNotNone(artifact_paths["dumpsys_activity_path"])
+            self.assertIsNone(artifact_paths["ui_dump_xml_path"])
+            self.assertIn("ui:", payload["actuator_execution"]["probe_samples"][0]["probe_error"])
 
     def test_main_writes_receipt_and_prints_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -262,6 +481,9 @@ def _sample_receipt(
     *,
     save_source_kind: str = "local",
     actuator_kind: str = "stub",
+    with_observability: bool = False,
+    missing_ui_dump: bool = False,
+    manual_observation: bool = False,
 ) -> ActionAttemptReceipt:
     contract = get_action_contract("activate_ad_boost")
     actuator_config_snapshot = ActuatorConfigSnapshot(actuator_type="stub")
@@ -278,6 +500,17 @@ def _sample_receipt(
             adb_serial="emulator-5554",
             app_package="com.TironiumTech.IdlePlanetMiner",
             app_activity="com.unity3d.player.UnityPlayerActivity",
+            manual_observation_mode=manual_observation,
+            manual_observation_window_seconds=20.0,
+            manual_observation_probe_interval_seconds=1.0,
+            ark_ad_wait_seconds=20.0,
+            ark_skip_close_wait_seconds=1.0,
+            ark_return_wait_seconds=3.0,
+            ark_esc_attempts=2,
+            ark_esc_interval_seconds=1.25,
+            ark_post_watch_probe_count=2,
+            ark_post_watch_probe_interval_seconds=2.0,
+            ark_post_watch_ui_dump_max_text_length=240,
         )
         actuator_execution = ActuatorExecutionMetadata(
             actuator_type="adb",
@@ -285,6 +518,50 @@ def _sample_receipt(
             actuator_command_count=2,
             actuator_command_summary=["adb shell am start -n ...", "adb shell input tap 852 311"],
         )
+        if with_observability:
+            actuator_execution = ActuatorExecutionMetadata(
+                actuator_type="adb",
+                actuator_execution_status="COMPLETED",
+                actuator_command_count=2,
+                actuator_command_summary=["adb shell am start -n ...", "adb shell input tap 852 311"],
+                stage_events=[
+                    ActuatorStageEvent(
+                        stage_name=(
+                            "manual_observation_start" if manual_observation else "ark_watch_tap"
+                        ),
+                        wall_clock_utc="2026-03-22T14:31:05Z",
+                        elapsed_seconds=0.0,
+                    )
+                ],
+                probe_samples=[
+                    ActuatorProbeSample(
+                        sample_offset_seconds=2.0,
+                        sample_context=("manual_observation" if manual_observation else "pre_esc"),
+                        sample_reference_stage=(
+                            "manual_observation_start" if manual_observation else "ark_watch_tap"
+                        ),
+                        esc_attempt_index=(None if manual_observation else 1),
+                        focus_package="com.google.android.gms",
+                        focus_activity="com.google.android.gms.ads.AdActivity",
+                        ui_text_excerpt="Reward granted | Close ad",
+                        ui_text_sha256="abc123def456",
+                        probe_error=("ui:uiautomator unavailable" if missing_ui_dump else None),
+                        dumpsys_window_output=(
+                            "mCurrentFocus=Window{42 u0 "
+                            "com.google.android.gms/com.google.android.gms.ads.AdActivity}"
+                        ),
+                        dumpsys_activity_output="ACTIVITY MANAGER ACTIVITIES",
+                        ui_dump_xml=(
+                            None
+                            if missing_ui_dump
+                            else (
+                                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                                "<hierarchy><node text=\"Reward granted\" content-desc=\"Close ad\" /></hierarchy>"
+                            )
+                        ),
+                    )
+                ],
+            )
 
     save_source_metadata = SaveSourceMetadata(
         save_source_type="local",
@@ -353,7 +630,17 @@ def _sample_receipt(
             receipt_schema_version=CURRENT_RECEIPT_SCHEMA_VERSION,
             poll_interval_seconds=0.5,
             timeout_seconds=30.0,
+            timeout_scope="verification_only_after_actuation",
+            manual_observation_mode=manual_observation,
+            save_snapshot_available=True,
+            active_smelters=4,
+            active_crafters=1,
+            nearest_completion_seconds=6.324,
             exit_code=0,
+            actuation_elapsed_seconds=12.5,
+            verification_elapsed_seconds=4.25,
+            verification_started=True,
+            verification_starved_by_timeout=False,
         ),
         actuator_execution=actuator_execution,
         actuator_config_snapshot=actuator_config_snapshot,

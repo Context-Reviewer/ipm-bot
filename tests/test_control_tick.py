@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import io
 import json
 from pathlib import Path
@@ -28,6 +28,10 @@ from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
 from ipm_bot.control.receipt_store import write_receipt
 from ipm_bot.control.save_source import (
     LocalSaveSource,
+    SaveSnapshot,
+    SavePlanetSnapshot,
+    SaveProductionSlotSnapshot,
+    SaveResourceSnapshot,
     SaveSourceConfigSnapshot,
     SaveSourceMetadata,
 )
@@ -72,6 +76,10 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(payloads[0]["actuator_config"]["actuator_type"], "stub")
         self.assertEqual(payloads[0]["save_source"]["save_source_type"], "local")
         self.assertFalse(payloads[0]["save_source"]["preparation_performed"])
+        self.assertFalse(payloads[0]["runtime_context"]["save_snapshot_available"])
+        self.assertEqual(payloads[0]["runtime_context"]["active_smelters"], 0)
+        self.assertEqual(payloads[0]["runtime_context"]["active_crafters"], 0)
+        self.assertIsNone(payloads[0]["runtime_context"]["nearest_completion_seconds"])
         self.assertEqual(
             payloads[0]["save_source"]["local_source_path"],
             payloads[0]["save_source"]["prepared_local_path"],
@@ -206,7 +214,45 @@ class ControlTickTests(unittest.TestCase):
                 failure_reason=FailureReason.NONE,
             )
             player_snapshot = object()
-            save_snapshot = object()
+            save_snapshot = SaveSnapshot(
+                source_path=str(save_path.resolve()),
+                resources=(
+                    SaveResourceSnapshot(
+                        index=0,
+                        discovered=True,
+                        count=1.0,
+                        gathered_total=1.0,
+                        gathered_this_galaxy=1.0,
+                        sold_total=0.0,
+                        sold_this_galaxy=0.0,
+                    ),
+                ),
+                planets=(
+                    SavePlanetSnapshot(
+                        index=0,
+                        unlocked=True,
+                        mining_speed_level=1,
+                        speed_level=1,
+                        cargo_level=1,
+                        trip_start_date=None,
+                        trip_end_date=None,
+                    ),
+                ),
+                smelters=(),
+                crafters=(
+                    SaveProductionSlotSnapshot(
+                        index=1,
+                        on=True,
+                        recipe_number=3,
+                        start_date=None,
+                        end_date=None,
+                        original_end_date=None,
+                        timespan_left=timedelta(seconds=25.0),
+                        seconds_completed=455.0,
+                        duration_estimate=480.0,
+                    ),
+                ),
+            )
             planner_decision = PlannerDecision(
                 selected_action="idle",
                 decision_reason="production_in_flight",
@@ -236,6 +282,10 @@ class ControlTickTests(unittest.TestCase):
         )
         self.assertEqual(action, "idle")
         self.assertEqual(enriched_receipt.planner_decision.decision_reason, "production_in_flight")
+        self.assertTrue(enriched_receipt.runtime_context.save_snapshot_available)
+        self.assertEqual(enriched_receipt.runtime_context.active_smelters, 0)
+        self.assertEqual(enriched_receipt.runtime_context.active_crafters, 1)
+        self.assertEqual(enriched_receipt.runtime_context.nearest_completion_seconds, 25.0)
 
 
 def _run_main_with_receipt(
