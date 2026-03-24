@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 import time
+from typing import Callable
 
 from ipm_bot.save import SaveParseError, parse_player_snapshot
 from ipm_bot.save.models import PlayerSnapshot
@@ -35,6 +36,7 @@ def wait_for_save_change(
     baseline_hash: str,
     timeout_s: float,
     poll_interval_s: float,
+    before_read: Callable[[], None] | None = None,
 ) -> SaveObservation | None:
     """Poll until the save contents change and the new contents parse successfully."""
 
@@ -49,6 +51,8 @@ def wait_for_save_change(
     last_parse_error: SaveParseError | None = None
 
     while time.monotonic() < deadline:
+        if before_read is not None:
+            before_read()
         data = _read_save_bytes(path)
         fingerprint = _fingerprint_bytes(data)
         if fingerprint.sha256 != baseline_hash:

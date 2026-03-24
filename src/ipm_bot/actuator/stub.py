@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .boundary import ActionActuator, ActuatorExecutionError, ActuatorExecutionMetadata
+from .boundary import (
+    ActionActuator,
+    ActuatorConfigSnapshot,
+    ActuatorExecutionError,
+    ActuatorExecutionMetadata,
+)
 
 
 class StubActionActuator(ActionActuator):
     """Local stub actuator that logs the action instead of driving ADB."""
 
     actuator_type = "stub"
+    config_snapshot = ActuatorConfigSnapshot(actuator_type="stub")
 
     def execute(self, action: str) -> ActuatorExecutionMetadata:
         normalized_action = action.strip()
