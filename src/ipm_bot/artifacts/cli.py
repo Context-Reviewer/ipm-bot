@@ -11,6 +11,7 @@ from .apk_report import DEFAULT_APK_REPORT_ROOT, run_apk_report
 from .diffing import run_diff
 from .discovery import DiscoveryOptions, run_discovery
 from .il2cpp_input_report import run_il2cpp_input_report
+from .il2cpp_output_catalog import run_il2cpp_output_catalog
 from .il2cpp_workspace import run_il2cpp_workspace
 from .shared import (
     DEFAULT_COPY_MAX_BYTES,
@@ -69,6 +70,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             output_dir = run_il2cpp_input_report(
                 args.workspace,
                 output_root=args.output_root,
+                notes=args.notes,
+            )
+            print(str(output_dir))
+            return 0
+        if args.command == "il2cpp-output-catalog":
+            output_dir = run_il2cpp_output_catalog(
+                args.output_dir,
+                input_report_path=args.input_report,
+                workspace_path=args.workspace,
+                output_root=args.output_root,
+                tool_name=args.tool_name,
+                tool_version=args.tool_version,
                 notes=args.notes,
             )
             print(str(output_dir))
@@ -174,6 +187,53 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_OUTPUT_ROOT,
         help="Base artifact root used for IL2CPP input report output.",
+    )
+
+    il2cpp_output_catalog_parser = subparsers.add_parser(
+        "il2cpp-output-catalog",
+        help="Catalog an external IL2CPP reconstruction output directory without validating semantics.",
+    )
+    il2cpp_output_catalog_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Directory containing external IL2CPP reconstruction output to inventory.",
+    )
+    il2cpp_output_catalog_source_group = il2cpp_output_catalog_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    il2cpp_output_catalog_source_group.add_argument(
+        "--input-report",
+        type=Path,
+        default=None,
+        help="Existing il2cpp-input-report artifact linked to this external tool run.",
+    )
+    il2cpp_output_catalog_source_group.add_argument(
+        "--workspace",
+        type=Path,
+        default=None,
+        help="Existing il2cpp-workspace artifact linked to this external tool run.",
+    )
+    il2cpp_output_catalog_parser.add_argument(
+        "--tool-name",
+        default=None,
+        help="Optional external tool name, for example Cpp2IL.",
+    )
+    il2cpp_output_catalog_parser.add_argument(
+        "--tool-version",
+        default=None,
+        help="Optional external tool version string.",
+    )
+    il2cpp_output_catalog_parser.add_argument(
+        "--notes",
+        default=None,
+        help="Optional operator notes about the external tool run.",
+    )
+    il2cpp_output_catalog_parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Base artifact root used for IL2CPP output catalog artifacts.",
     )
     return parser
 

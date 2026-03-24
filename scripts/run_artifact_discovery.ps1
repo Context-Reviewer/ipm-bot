@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report")]
+    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog")]
     [string]$Command,
 
     [string]$PackageName = "com.TironiumTech.IdlePlanetMiner",
@@ -16,6 +16,10 @@ param(
     [string]$AfterSnapshotDir = "",
     [string]$SnapshotDir = "",
     [string]$WorkspaceDir = "",
+    [string]$InputReportDir = "",
+    [string]$OutputDir = "",
+    [string]$ToolName = "",
+    [string]$ToolVersion = "",
     [string]$Notes = ""
 )
 
@@ -55,6 +59,32 @@ if ($Command -eq "diff") {
     }
     $arguments += @("--workspace", $WorkspaceDir)
     $arguments += @("--output-root", $OutputRoot)
+    if (-not [string]::IsNullOrWhiteSpace($Notes)) {
+        $arguments += @("--notes", $Notes)
+    }
+} elseif ($Command -eq "il2cpp-output-catalog") {
+    if ([string]::IsNullOrWhiteSpace($OutputDir)) {
+        throw "-OutputDir is required for il2cpp-output-catalog."
+    }
+    if ([string]::IsNullOrWhiteSpace($InputReportDir) -and [string]::IsNullOrWhiteSpace($WorkspaceDir)) {
+        throw "Either -InputReportDir or -WorkspaceDir is required for il2cpp-output-catalog."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($InputReportDir) -and -not [string]::IsNullOrWhiteSpace($WorkspaceDir)) {
+        throw "Specify only one of -InputReportDir or -WorkspaceDir for il2cpp-output-catalog."
+    }
+    $arguments += @("--output-dir", $OutputDir)
+    if (-not [string]::IsNullOrWhiteSpace($InputReportDir)) {
+        $arguments += @("--input-report", $InputReportDir)
+    } else {
+        $arguments += @("--workspace", $WorkspaceDir)
+    }
+    $arguments += @("--output-root", $OutputRoot)
+    if (-not [string]::IsNullOrWhiteSpace($ToolName)) {
+        $arguments += @("--tool-name", $ToolName)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ToolVersion)) {
+        $arguments += @("--tool-version", $ToolVersion)
+    }
     if (-not [string]::IsNullOrWhiteSpace($Notes)) {
         $arguments += @("--notes", $Notes)
     }

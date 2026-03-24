@@ -234,6 +234,49 @@ The report validates that the specified workspace contains:
 
 This command remains read-only. It records hashes, sizes, and normalized references to the staged files. It can also persist optional operator notes about which external tool run consumed the workspace. It does not execute or validate any Cpp2IL or Il2CppDumper output.
 
+## IL2CPP output catalog
+
+After an external IL2CPP tool has produced files outside the repo pipeline, use `il2cpp-output-catalog` to inventory those outputs without interpreting or validating them.
+
+End-to-end boundary chain:
+
+```text
+snapshot -> apk-report -> il2cpp-workspace -> il2cpp-input-report -> external tool run -> il2cpp-output-catalog
+```
+
+Examples:
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-output-catalog --output-dir "C:\analysis\cpp2il-output" --input-report "C:\dev\ipm-bot\data\artifacts\il2cpp_input_reports\<input_report>"
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-output-catalog --output-dir "C:\analysis\cpp2il-output" --workspace "C:\dev\ipm-bot\data\artifacts\il2cpp_workspaces\<workspace>" --tool-name "Cpp2IL" --tool-version "2026.3.24" --notes "manual analyst run"
+```
+
+```powershell
+.\scripts\run_artifact_discovery.ps1 -Command il2cpp-output-catalog -OutputDir "C:\analysis\cpp2il-output" -InputReportDir "C:\dev\ipm-bot\data\artifacts\il2cpp_input_reports\<input_report>" -ToolName "Cpp2IL" -ToolVersion "2026.3.24" -Notes "manual analyst run"
+```
+
+It writes to:
+
+```text
+data/artifacts/il2cpp_output_catalogs/<timestamp>_il2cpp_output_catalog_<output_dir_name>/
+```
+
+Each catalog contains:
+
+- `manifest.json`
+- `summary.txt`
+
+The catalog recursively inventories only within the provided `--output-dir` and records:
+
+- relative path
+- size
+- SHA-256
+
+It links the external output back to either an `il2cpp-input-report` or an `il2cpp-workspace`, propagates the source snapshot path when available, and can persist optional tool metadata and notes. This command is catalog-only and does not perform semantic validation of external reconstruction output.
+
 ## Recommended first validation experiment
 
 Use a low-noise settings change first.
