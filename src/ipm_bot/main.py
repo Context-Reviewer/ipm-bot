@@ -14,7 +14,7 @@ from ipm_bot.actuator.boundary import ActionActuator
 from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
 from ipm_bot.control.composition import add_tick_composition_arguments, build_actuator, build_save_source
 from ipm_bot.control.contracts import get_action_contract
-from ipm_bot.control.receipt_store import write_receipt
+from ipm_bot.control.receipt_store import check_ad_boost_suppressed, write_receipt
 from ipm_bot.control.save_source import (
     SaveRefreshController,
     SaveSnapshot,
@@ -91,6 +91,9 @@ def run_single_control_tick(
     save_refresh_controller: SaveRefreshController | None = None,
     verification_timeout_starts_after_actuation: bool = False,
     manual_observation_mode: bool = False,
+    unattended_safe: bool = False,
+    ad_boost_suppressed: bool = False,
+    receipt_dir: Path | None = None,
 ) -> tuple[str, ActionAttemptReceipt, Path]:
     """Execute exactly one governed control tick and persist its receipt."""
 
@@ -98,6 +101,9 @@ def run_single_control_tick(
         raise ValueError("--timeout-seconds must be greater than zero.")
     if poll_interval_seconds <= 0:
         raise ValueError("--poll-interval-seconds must be greater than zero.")
+
+    if not ad_boost_suppressed:
+        ad_boost_suppressed = check_ad_boost_suppressed(receipt_dir)
 
     save_source_metadata = save_source.prepare(save_path)
     prepared_save_path = Path(save_source_metadata.prepared_local_path)
@@ -107,6 +113,8 @@ def run_single_control_tick(
     planner_decision = decide_next_action_details(
         snapshot_before,
         save_snapshot=save_snapshot,
+        unattended_safe=unattended_safe,
+        ad_boost_suppressed=ad_boost_suppressed,
     )
     planner_timing_observability = _observe_planner_timing(
         planner_decision=planner_decision,

@@ -144,6 +144,74 @@ class PlannerTests(unittest.TestCase):
         self.assertFalse(decision.actuation_required)
 
 
+    def test_ad_boost_suppressed_returns_idle_when_boost_would_be_selected(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=False,
+            ark_reward_ready_to_claim=False,
+        )
+
+        decision = decide_next_action_details(
+            snapshot,
+            ad_boost_suppressed=True,
+        )
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "ad_boost_suppressed_after_repeated_failures")
+        self.assertFalse(decision.actuation_required)
+
+    def test_ad_boost_suppressed_does_not_affect_idle(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=False,
+        )
+
+        decision = decide_next_action_details(
+            snapshot,
+            ad_boost_suppressed=True,
+        )
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertNotEqual(decision.decision_reason, "ad_boost_suppressed_after_repeated_failures")
+
+    def test_unattended_safe_allows_idle_and_ad_boost(self) -> None:
+        snapshot_idle = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=False,
+        )
+        snapshot_boost = _snapshot(
+            ad_boost_active=False,
+            ark_reward_ready_to_claim=False,
+        )
+
+        decision_idle = decide_next_action_details(
+            snapshot_idle,
+            unattended_safe=True,
+        )
+        decision_boost = decide_next_action_details(
+            snapshot_boost,
+            unattended_safe=True,
+        )
+
+        self.assertEqual(decision_idle.selected_action, "idle")
+        self.assertEqual(decision_boost.selected_action, "activate_ad_boost")
+
+    def test_imminent_completion_takes_precedence_over_suppression(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=False,
+            ark_reward_ready_to_claim=False,
+        )
+        save_snapshot = _save_snapshot(timespan_left_seconds=3.25)
+
+        decision = decide_next_action_details(
+            snapshot,
+            save_snapshot=save_snapshot,
+            ad_boost_suppressed=True,
+        )
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "defer_ad_boost_for_imminent_completion")
+
+
 def _snapshot(
     *,
     ad_boost_active: bool,

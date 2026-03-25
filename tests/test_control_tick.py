@@ -284,6 +284,8 @@ class ControlTickTests(unittest.TestCase):
         planner.assert_called_once_with(
             player_snapshot,
             save_snapshot=save_snapshot,
+            unattended_safe=False,
+            ad_boost_suppressed=False,
         )
         self.assertEqual(action, "idle")
         self.assertEqual(

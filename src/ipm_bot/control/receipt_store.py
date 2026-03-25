@@ -346,3 +346,50 @@ def _next_available_path(directory: Path, timestamp: str, action: str) -> Path:
 
 def _artifact_directory_for_receipt(receipt_path: Path) -> Path:
     return receipt_path.with_name(f"{receipt_path.stem}_artifacts")
+
+
+def check_ad_boost_suppressed(
+    receipt_dir: Path | None = None,
+    *,
+    threshold: int = 3,
+) -> bool:
+    """Return True if recent receipts show enough consecutive failed ad-boost attempts.
+
+    Reads persisted receipt JSON files in reverse chronological order (filenames
+    sort naturally by timestamp).  Counts consecutive ``activate_ad_boost``
+    receipts whose ``final_status`` is not ``"PASS"``.  Returns ``True`` when the
+    count reaches *threshold*.
+
+    Fails open: returns ``False`` if the directory is missing, empty, or any
+    file cannot be read/parsed.
+    """
+
+    if threshold <= 0:
+        raise ValueError("Suppression threshold must be greater than zero.")
+
+    directory = DEFAULT_RECEIPT_DIRECTORY if receipt_dir is None else receipt_dir
+    try:
+        if not directory.is_dir():
+            return False
+        receipt_files = sorted(directory.glob("*.json"), reverse=True)
+    except OSError:
+        return False
+
+    consecutive_failures = 0
+    for receipt_path in receipt_files[:threshold]:
+        try:
+            payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+
+        action = payload.get("action")
+        final_status = payload.get("final_status")
+        if action != "activate_ad_boost":
+            return False
+        if final_status == "PASS":
+            return False
+        consecutive_failures += 1
+        if consecutive_failures >= threshold:
+            return True
+
+    return False
