@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from ipm_bot.control.save_source import SaveProductionSlotSnapshot, SaveSnapshot
+from ipm_bot.control.timing import summarize_production_timing
 from ipm_bot.save.models import PlayerSnapshot
 
 
@@ -88,23 +89,15 @@ def format_active_smelter_lines(save_snapshot: SaveSnapshot) -> tuple[str, ...]:
 def _idle_decision_from_save_snapshot(
     save_snapshot: SaveSnapshot | None,
 ) -> PlannerDecision:
-    if save_snapshot is None:
+    timing = summarize_production_timing(save_snapshot)
+    if not timing.has_active_production:
         return PlannerDecision(
             selected_action="idle",
             decision_reason="no_action_needed",
             actuation_required=False,
         )
 
-    active_production = tuple(_active_production_slots(save_snapshot))
-    if not active_production:
-        return PlannerDecision(
-            selected_action="idle",
-            decision_reason="no_action_needed",
-            actuation_required=False,
-        )
-
-    next_completion_seconds = _nearest_completion_seconds(save_snapshot)
-    if next_completion_seconds is not None and next_completion_seconds <= 5.0:
+    if timing.completion_imminent:
         return PlannerDecision(
             selected_action="idle",
             decision_reason="production_completion_imminent",
@@ -122,25 +115,5 @@ def _active_smelters(save_snapshot: SaveSnapshot) -> Iterable[SaveProductionSlot
     return (slot for slot in save_snapshot.smelters if slot.on)
 
 
-def _active_production_slots(save_snapshot: SaveSnapshot) -> Iterable[SaveProductionSlotSnapshot]:
-    return (
-        slot
-        for slot in (*save_snapshot.smelters, *save_snapshot.crafters)
-        if slot.on
-    )
-
-
 def _should_defer_for_imminent_completion(save_snapshot: SaveSnapshot | None) -> bool:
-    next_completion_seconds = _nearest_completion_seconds(save_snapshot)
-    return next_completion_seconds is not None and next_completion_seconds <= 5.0
-
-
-def _nearest_completion_seconds(save_snapshot: SaveSnapshot | None) -> float | None:
-    if save_snapshot is None:
-        return None
-
-    active_production = tuple(_active_production_slots(save_snapshot))
-    if not active_production:
-        return None
-
-    return min(slot.timespan_left.total_seconds() for slot in active_production)
+    return summarize_production_timing(save_snapshot).completion_imminent

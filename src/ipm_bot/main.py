@@ -22,6 +22,7 @@ from ipm_bot.control.save_source import (
     SaveSourceMetadata,
     load_save_snapshot,
 )
+from ipm_bot.control.timing import summarize_production_timing
 from ipm_bot.planner.planner import PlannerDecision, decide_next_action_details
 from ipm_bot.save import PlayerSnapshot, parse_player_snapshot
 
@@ -240,29 +241,12 @@ def _load_save_snapshot(save_path: Path) -> SaveSnapshot | None:
 
 
 def _observe_save_snapshot(save_snapshot: SaveSnapshot | None) -> SaveSnapshotObservability:
-    if save_snapshot is None:
-        return SaveSnapshotObservability(
-            save_snapshot_available=False,
-            active_smelters=0,
-            active_crafters=0,
-            nearest_completion_seconds=None,
-        )
-
-    active_smelters = tuple(slot for slot in save_snapshot.smelters if slot.on)
-    active_crafters = tuple(slot for slot in save_snapshot.crafters if slot.on)
-    active_slots = (*active_smelters, *active_crafters)
-    nearest_completion_seconds = None
-    if active_slots:
-        nearest_completion_seconds = min(
-            slot.timespan_left.total_seconds()
-            for slot in active_slots
-        )
-
+    timing = summarize_production_timing(save_snapshot)
     return SaveSnapshotObservability(
-        save_snapshot_available=True,
-        active_smelters=len(active_smelters),
-        active_crafters=len(active_crafters),
-        nearest_completion_seconds=nearest_completion_seconds,
+        save_snapshot_available=save_snapshot is not None,
+        active_smelters=timing.active_smelters,
+        active_crafters=timing.active_crafters,
+        nearest_completion_seconds=timing.nearest_completion_seconds,
     )
 
 
