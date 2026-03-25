@@ -51,6 +51,9 @@ class ReceiptRuntimeContext:
     active_smelters: int = 0
     active_crafters: int = 0
     nearest_completion_seconds: float | None = None
+    planner_nearest_completion_seconds: float | None = None
+    planner_save_snapshot_used: bool = False
+    planner_deferred_for_imminent_completion: bool = False
     exit_code: int | None = None
     action_override_used: bool = False
     action_override_requested_action: str | None = None
@@ -80,6 +83,13 @@ class ReceiptRuntimeContext:
             and self.nearest_completion_seconds < 0
         ):
             raise ValueError("Nearest completion seconds must be non-negative when provided.")
+        if (
+            self.planner_nearest_completion_seconds is not None
+            and self.planner_nearest_completion_seconds < 0
+        ):
+            raise ValueError(
+                "Planner nearest completion seconds must be non-negative when provided."
+            )
         if self.exit_code is not None and self.exit_code < 0:
             raise ValueError("Exit code must be non-negative when provided.")
         if self.action_override_requested_action is not None and not self.action_override_requested_action:

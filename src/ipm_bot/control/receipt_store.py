@@ -92,6 +92,13 @@ def _serialize_receipt(
             "active_smelters": receipt.runtime_context.active_smelters,
             "active_crafters": receipt.runtime_context.active_crafters,
             "nearest_completion_seconds": receipt.runtime_context.nearest_completion_seconds,
+            "planner_nearest_completion_seconds": (
+                receipt.runtime_context.planner_nearest_completion_seconds
+            ),
+            "planner_save_snapshot_used": receipt.runtime_context.planner_save_snapshot_used,
+            "planner_deferred_for_imminent_completion": (
+                receipt.runtime_context.planner_deferred_for_imminent_completion
+            ),
             "exit_code": receipt.runtime_context.exit_code,
             "action_override_used": receipt.runtime_context.action_override_used,
             "action_override_requested_action": (

@@ -80,6 +80,11 @@ class ControlTickTests(unittest.TestCase):
         self.assertEqual(payloads[0]["runtime_context"]["active_smelters"], 0)
         self.assertEqual(payloads[0]["runtime_context"]["active_crafters"], 0)
         self.assertIsNone(payloads[0]["runtime_context"]["nearest_completion_seconds"])
+        self.assertIsNone(payloads[0]["runtime_context"]["planner_nearest_completion_seconds"])
+        self.assertFalse(payloads[0]["runtime_context"]["planner_save_snapshot_used"])
+        self.assertFalse(
+            payloads[0]["runtime_context"]["planner_deferred_for_imminent_completion"]
+        )
         self.assertEqual(
             payloads[0]["save_source"]["local_source_path"],
             payloads[0]["save_source"]["prepared_local_path"],
@@ -247,15 +252,15 @@ class ControlTickTests(unittest.TestCase):
                         start_date=None,
                         end_date=None,
                         original_end_date=None,
-                        timespan_left=timedelta(seconds=25.0),
-                        seconds_completed=455.0,
+                        timespan_left=timedelta(seconds=3.0),
+                        seconds_completed=477.0,
                         duration_estimate=480.0,
                     ),
                 ),
             )
             planner_decision = PlannerDecision(
                 selected_action="idle",
-                decision_reason="production_in_flight",
+                decision_reason="defer_ad_boost_for_imminent_completion",
                 actuation_required=False,
             )
 
@@ -281,11 +286,22 @@ class ControlTickTests(unittest.TestCase):
             save_snapshot=save_snapshot,
         )
         self.assertEqual(action, "idle")
-        self.assertEqual(enriched_receipt.planner_decision.decision_reason, "production_in_flight")
+        self.assertEqual(
+            enriched_receipt.planner_decision.decision_reason,
+            "defer_ad_boost_for_imminent_completion",
+        )
         self.assertTrue(enriched_receipt.runtime_context.save_snapshot_available)
         self.assertEqual(enriched_receipt.runtime_context.active_smelters, 0)
         self.assertEqual(enriched_receipt.runtime_context.active_crafters, 1)
-        self.assertEqual(enriched_receipt.runtime_context.nearest_completion_seconds, 25.0)
+        self.assertEqual(enriched_receipt.runtime_context.nearest_completion_seconds, 3.0)
+        self.assertEqual(
+            enriched_receipt.runtime_context.planner_nearest_completion_seconds,
+            3.0,
+        )
+        self.assertTrue(enriched_receipt.runtime_context.planner_save_snapshot_used)
+        self.assertTrue(
+            enriched_receipt.runtime_context.planner_deferred_for_imminent_completion
+        )
 
 
 def _run_main_with_receipt(

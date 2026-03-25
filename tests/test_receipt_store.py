@@ -108,6 +108,18 @@ class ReceiptStoreTests(unittest.TestCase):
                 receipt.runtime_context.nearest_completion_seconds,
             )
             self.assertEqual(
+                payload["runtime_context"]["planner_nearest_completion_seconds"],
+                receipt.runtime_context.planner_nearest_completion_seconds,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["planner_save_snapshot_used"],
+                receipt.runtime_context.planner_save_snapshot_used,
+            )
+            self.assertEqual(
+                payload["runtime_context"]["planner_deferred_for_imminent_completion"],
+                receipt.runtime_context.planner_deferred_for_imminent_completion,
+            )
+            self.assertEqual(
                 payload["runtime_context"]["exit_code"],
                 receipt.runtime_context.exit_code,
             )
@@ -636,6 +648,9 @@ def _sample_receipt(
             active_smelters=4,
             active_crafters=1,
             nearest_completion_seconds=6.324,
+            planner_nearest_completion_seconds=6.324,
+            planner_save_snapshot_used=True,
+            planner_deferred_for_imminent_completion=False,
             exit_code=0,
             actuation_elapsed_seconds=12.5,
             verification_elapsed_seconds=4.25,

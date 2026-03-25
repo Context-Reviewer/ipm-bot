@@ -48,6 +48,13 @@ class SaveSnapshotObservability:
     nearest_completion_seconds: float | None
 
 
+@dataclass(frozen=True, slots=True)
+class PlannerTimingObservability:
+    planner_nearest_completion_seconds: float | None
+    planner_save_snapshot_used: bool
+    planner_deferred_for_imminent_completion: bool
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run one governed single control tick and return a deterministic exit code."""
 
@@ -100,6 +107,10 @@ def run_single_control_tick(
         snapshot_before,
         save_snapshot=save_snapshot,
     )
+    planner_timing_observability = _observe_planner_timing(
+        planner_decision=planner_decision,
+        save_snapshot_observability=save_snapshot_observability,
+    )
     action = planner_decision.selected_action
     if action_override is not None:
         action = action_override
@@ -132,6 +143,7 @@ def run_single_control_tick(
         action_override=action_override,
         manual_observation_mode=manual_observation_mode,
         save_snapshot_observability=save_snapshot_observability,
+        planner_timing_observability=planner_timing_observability,
     )
     receipt_path = write_receipt(receipt)
     return action, receipt, receipt_path
@@ -155,6 +167,7 @@ def _enrich_tick_receipt(
     action_override: str | None = None,
     manual_observation_mode: bool = False,
     save_snapshot_observability: SaveSnapshotObservability | None = None,
+    planner_timing_observability: PlannerTimingObservability | None = None,
 ) -> ActionAttemptReceipt:
     observability = (
         SaveSnapshotObservability(
@@ -165,6 +178,15 @@ def _enrich_tick_receipt(
         )
         if save_snapshot_observability is None
         else save_snapshot_observability
+    )
+    planner_observability = (
+        PlannerTimingObservability(
+            planner_nearest_completion_seconds=None,
+            planner_save_snapshot_used=False,
+            planner_deferred_for_imminent_completion=False,
+        )
+        if planner_timing_observability is None
+        else planner_timing_observability
     )
     return replace(
         receipt,
@@ -182,6 +204,13 @@ def _enrich_tick_receipt(
             active_smelters=observability.active_smelters,
             active_crafters=observability.active_crafters,
             nearest_completion_seconds=observability.nearest_completion_seconds,
+            planner_nearest_completion_seconds=(
+                planner_observability.planner_nearest_completion_seconds
+            ),
+            planner_save_snapshot_used=planner_observability.planner_save_snapshot_used,
+            planner_deferred_for_imminent_completion=(
+                planner_observability.planner_deferred_for_imminent_completion
+            ),
         ),
     )
 
@@ -234,6 +263,20 @@ def _observe_save_snapshot(save_snapshot: SaveSnapshot | None) -> SaveSnapshotOb
         active_smelters=len(active_smelters),
         active_crafters=len(active_crafters),
         nearest_completion_seconds=nearest_completion_seconds,
+    )
+
+
+def _observe_planner_timing(
+    *,
+    planner_decision: PlannerDecision,
+    save_snapshot_observability: SaveSnapshotObservability,
+) -> PlannerTimingObservability:
+    return PlannerTimingObservability(
+        planner_nearest_completion_seconds=save_snapshot_observability.nearest_completion_seconds,
+        planner_save_snapshot_used=save_snapshot_observability.save_snapshot_available,
+        planner_deferred_for_imminent_completion=(
+            planner_decision.decision_reason == "defer_ad_boost_for_imminent_completion"
+        ),
     )
 
 
