@@ -45,6 +45,12 @@ def decide_next_action_details(
     if ad_boost_active is None:
         raise ValueError("Missing required snapshot field: ad_boost_active.")
     if not ad_boost_active:
+        if _should_defer_for_imminent_completion(save_snapshot):
+            return PlannerDecision(
+                selected_action="idle",
+                decision_reason="defer_ad_boost_for_imminent_completion",
+                actuation_required=False,
+            )
         return PlannerDecision(
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",
@@ -97,11 +103,8 @@ def _idle_decision_from_save_snapshot(
             actuation_required=False,
         )
 
-    next_completion = min(
-        active_production,
-        key=lambda slot: slot.timespan_left.total_seconds(),
-    )
-    if next_completion.timespan_left.total_seconds() <= 5.0:
+    next_completion_seconds = _nearest_completion_seconds(save_snapshot)
+    if next_completion_seconds is not None and next_completion_seconds <= 5.0:
         return PlannerDecision(
             selected_action="idle",
             decision_reason="production_completion_imminent",
@@ -125,3 +128,19 @@ def _active_production_slots(save_snapshot: SaveSnapshot) -> Iterable[SaveProduc
         for slot in (*save_snapshot.smelters, *save_snapshot.crafters)
         if slot.on
     )
+
+
+def _should_defer_for_imminent_completion(save_snapshot: SaveSnapshot | None) -> bool:
+    next_completion_seconds = _nearest_completion_seconds(save_snapshot)
+    return next_completion_seconds is not None and next_completion_seconds <= 5.0
+
+
+def _nearest_completion_seconds(save_snapshot: SaveSnapshot | None) -> float | None:
+    if save_snapshot is None:
+        return None
+
+    active_production = tuple(_active_production_slots(save_snapshot))
+    if not active_production:
+        return None
+
+    return min(slot.timespan_left.total_seconds() for slot in active_production)

@@ -36,6 +36,31 @@ class PlannerTests(unittest.TestCase):
         self.assertTrue(decision.actuation_required)
         self.assertEqual(decide_next_action(snapshot), "activate_ad_boost")
 
+    def test_activate_ad_boost_is_deferred_when_completion_is_imminent(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=False,
+            ark_reward_ready_to_claim=False,
+        )
+        save_snapshot = _save_snapshot(timespan_left_seconds=3.25)
+
+        decision = decide_next_action_details(snapshot, save_snapshot=save_snapshot)
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "defer_ad_boost_for_imminent_completion")
+        self.assertFalse(decision.actuation_required)
+
+    def test_activate_ad_boost_is_unchanged_without_save_snapshot(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=False,
+            ark_reward_ready_to_claim=False,
+        )
+
+        decision = decide_next_action_details(snapshot, save_snapshot=None)
+
+        self.assertEqual(decision.selected_action, "activate_ad_boost")
+        self.assertEqual(decision.decision_reason, "ad_boost_inactive")
+        self.assertTrue(decision.actuation_required)
+
     def test_ark_ready_does_not_override_activate_ad_boost_in_production_planner(self) -> None:
         snapshot = _snapshot(
             ad_boost_active=False,
