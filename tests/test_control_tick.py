@@ -267,6 +267,7 @@ class ControlTickTests(unittest.TestCase):
             with (
                 patch("ipm_bot.main.load_save_snapshot", return_value=save_snapshot) as save_loader,
                 patch("ipm_bot.main._load_snapshot", return_value=player_snapshot) as player_loader,
+                patch("ipm_bot.main.check_ad_boost_suppressed", return_value=False),
                 patch("ipm_bot.main.decide_next_action_details", return_value=planner_decision) as planner,
                 patch("ipm_bot.main.run_action_until_verified", return_value=receipt),
                 patch("ipm_bot.main.write_receipt", return_value=Path(tmpdir) / "receipt.json"),
@@ -327,6 +328,7 @@ def _run_main_with_receipt(
 
         with (
             patch("sys.stdout", stdout),
+            patch("ipm_bot.main.check_ad_boost_suppressed", return_value=False),
             patch("ipm_bot.main.run_action_until_verified", return_value=receipt) as runner_mock,
             patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp),
         ):

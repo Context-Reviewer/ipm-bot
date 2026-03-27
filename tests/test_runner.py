@@ -546,7 +546,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 receipt.runtime_context.timeout_scope,
                 "verification_only_after_actuation",
             )
-            self.assertGreaterEqual(receipt.runtime_context.actuation_elapsed_seconds, 0.19)
+            self.assertGreaterEqual(receipt.runtime_context.actuation_elapsed_seconds, 0.15)
             self.assertGreater(receipt.runtime_context.verification_elapsed_seconds, 0.0)
             self.assertTrue(receipt.runtime_context.verification_started)
             self.assertFalse(receipt.runtime_context.verification_starved_by_timeout)

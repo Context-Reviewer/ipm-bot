@@ -11,6 +11,7 @@ from .apk_report import DEFAULT_APK_REPORT_ROOT, run_apk_report
 from .diffing import run_diff
 from .discovery import DiscoveryOptions, run_discovery
 from .il2cpp_input_report import run_il2cpp_input_report
+from .il2cpp_manual_findings_report import run_il2cpp_manual_findings_report
 from .il2cpp_name_hint_report import run_il2cpp_name_hint_report
 from .il2cpp_output_catalog import run_il2cpp_output_catalog
 from .il2cpp_workspace import run_il2cpp_workspace
@@ -94,6 +95,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 case_sensitive=args.case_sensitive,
                 output_root=args.output_root,
                 notes=args.notes,
+            )
+            print(str(output_dir))
+            return 0
+        if args.command == "il2cpp-manual-findings-report":
+            output_dir = run_il2cpp_manual_findings_report(
+                catalog_path=args.catalog,
+                name_hint_report_path=args.name_hint_report,
+                finding_paths=args.finding_path,
+                finding_notes=args.finding_note,
+                finding_symbols=args.finding_symbol,
+                finding_kinds=args.finding_kind,
+                analyst=args.analyst,
+                notes=args.notes,
+                output_root=args.output_root,
             )
             print(str(output_dir))
             return 0
@@ -278,6 +293,66 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_OUTPUT_ROOT,
         help="Base artifact root used for IL2CPP name hint reports.",
+    )
+
+    il2cpp_manual_findings_report_parser = subparsers.add_parser(
+        "il2cpp-manual-findings-report",
+        help="Record human-entered findings tied to a catalog or name-hint-report without validating semantics.",
+    )
+    il2cpp_manual_findings_source_group = il2cpp_manual_findings_report_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    il2cpp_manual_findings_source_group.add_argument(
+        "--catalog",
+        type=Path,
+        default=None,
+        help="Path to an existing il2cpp-output-catalog artifact directory.",
+    )
+    il2cpp_manual_findings_source_group.add_argument(
+        "--name-hint-report",
+        type=Path,
+        default=None,
+        help="Path to an existing il2cpp-name-hint-report artifact directory.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--finding-path",
+        action="append",
+        required=True,
+        help="Catalog relative path for one human finding. Repeat for multiple findings.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--finding-note",
+        action="append",
+        required=True,
+        help="Human note for the corresponding finding-path entry. Repeat in the same order.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--finding-symbol",
+        action="append",
+        default=None,
+        help="Optional symbol label for the corresponding finding-path entry. Repeat in the same order.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--finding-kind",
+        action="append",
+        default=None,
+        help="Optional kind label for the corresponding finding-path entry. Repeat in the same order.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--analyst",
+        default=None,
+        help="Optional analyst identifier for these human-entered findings.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--notes",
+        default=None,
+        help="Optional global notes for this manual findings report.",
+    )
+    il2cpp_manual_findings_report_parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Base artifact root used for IL2CPP manual findings reports.",
     )
     return parser
 

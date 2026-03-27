@@ -11,6 +11,7 @@ from typing import Sequence
 
 from ipm_bot.control.composition import add_tick_composition_arguments, build_actuator, build_save_source
 from ipm_bot.control.experiment_store import ExperimentManifest, normalize_utc_timestamp, write_experiment_manifest
+from ipm_bot.control.save_source import AdbPulledSaveSource
 from ipm_bot.main import ExitCode, run_single_control_tick
 
 
@@ -36,6 +37,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             poll_interval_seconds=args.poll_interval_seconds,
             actuator=actuator,
             save_source=save_source,
+            action_override=args.action_override,
+            save_repull_interval_seconds=args.save_repull_interval_seconds,
+            manual_observation_mode=args.manual_observation_mode,
         )
     except SystemExit:
         return int(ExitCode.ERROR)
@@ -56,16 +60,39 @@ def run_experiment(
     poll_interval_seconds: float,
     actuator,
     save_source,
+    action_override: str | None = None,
+    save_repull_interval_seconds: float = 1.0,
+    manual_observation_mode: bool = False,
 ) -> ExperimentRunResult:
     """Run exactly one control tick and persist a matching experiment manifest."""
+
+    save_refresh_controller = None
+    effective_poll_interval_seconds = poll_interval_seconds
+    if manual_observation_mode and action_override != "claim_ark_reward":
+        raise ValueError(
+            "Manual observation mode currently requires --action-override claim_ark_reward."
+        )
+    if isinstance(save_source, AdbPulledSaveSource):
+        save_refresh_controller = save_source.build_refresh_controller(
+            save_path,
+            refresh_interval_seconds=save_repull_interval_seconds,
+        )
+        effective_poll_interval_seconds = min(
+            poll_interval_seconds,
+            save_repull_interval_seconds,
+        )
 
     started_at = datetime.now(timezone.utc)
     action, receipt, receipt_path = run_single_control_tick(
         save_path=save_path,
         timeout_seconds=timeout_seconds,
-        poll_interval_seconds=poll_interval_seconds,
+        poll_interval_seconds=effective_poll_interval_seconds,
         actuator=actuator,
         save_source=save_source,
+        action_override=action_override,
+        save_refresh_controller=save_refresh_controller,
+        verification_timeout_starts_after_actuation=True,
+        manual_observation_mode=manual_observation_mode,
     )
     completed_at = datetime.now(timezone.utc)
 
@@ -102,4 +129,33 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Run one governed experiment around a single control tick."
     )
     add_tick_composition_arguments(parser)
+    parser.add_argument(
+        "--action-override",
+        choices=("activate_ad_boost", "claim_ark_reward", "idle"),
+        default=None,
+        help="Experiment-only explicit action override that bypasses planner selection.",
+    )
+    parser.add_argument(
+        "--save-repull-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Experiment-only interval for periodic ADB save re-pull during verification.",
+    )
+    parser.add_argument(
+        "--manual-observation-mode",
+        action="store_true",
+        help="Experiment-only Ark signal-discovery mode with no automated Ark taps or Escape input.",
+    )
+    parser.add_argument(
+        "--manual-observation-window-seconds",
+        type=float,
+        default=20.0,
+        help="Observation window used by experiment-only manual observation mode.",
+    )
+    parser.add_argument(
+        "--manual-observation-probe-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Probe interval used by experiment-only manual observation mode.",
+    )
     return parser

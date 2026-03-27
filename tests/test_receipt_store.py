@@ -477,6 +477,7 @@ class ReceiptStoreTests(unittest.TestCase):
             with (
                 patch("sys.argv", ["ipm_bot.main", str(save_path)]),
                 patch("sys.stdout", stdout),
+                patch("ipm_bot.main.check_ad_boost_suppressed", return_value=False),
                 patch("ipm_bot.main.run_action_until_verified", return_value=receipt),
                 patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp),
             ):

@@ -23,18 +23,32 @@ class PlannerDecision:
             raise ValueError("Planner decision decision_reason must not be empty.")
 
 
+_UNATTENDED_SAFE_ACTIONS = frozenset({"idle", "activate_ad_boost"})
+
+
 def decide_next_action(
     snapshot: PlayerSnapshot,
     save_snapshot: SaveSnapshot | None = None,
+    *,
+    unattended_safe: bool = False,
+    ad_boost_suppressed: bool = False,
 ) -> str:
     """Choose the next action from the current normalized save state."""
 
-    return decide_next_action_details(snapshot, save_snapshot=save_snapshot).selected_action
+    return decide_next_action_details(
+        snapshot,
+        save_snapshot=save_snapshot,
+        unattended_safe=unattended_safe,
+        ad_boost_suppressed=ad_boost_suppressed,
+    ).selected_action
 
 
 def decide_next_action_details(
     snapshot: PlayerSnapshot,
     save_snapshot: SaveSnapshot | None = None,
+    *,
+    unattended_safe: bool = False,
+    ad_boost_suppressed: bool = False,
 ) -> PlannerDecision:
     """Choose the next action and expose the deterministic rule that selected it."""
 
@@ -52,6 +66,12 @@ def decide_next_action_details(
                 decision_reason="defer_ad_boost_for_imminent_completion",
                 actuation_required=False,
             )
+        if ad_boost_suppressed:
+            return PlannerDecision(
+                selected_action="idle",
+                decision_reason="ad_boost_suppressed_after_repeated_failures",
+                actuation_required=False,
+            )
         return PlannerDecision(
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",
@@ -61,10 +81,16 @@ def decide_next_action_details(
     # Ark remains available for explicit/manual experiments, but production auto-selection
     # does not choose it because recorded live runs showed incompatible provider-specific
     # UI paths that are outside the current no-detection/no-branching constraints.
-    if ark_reward_ready:
-        return _idle_decision_from_save_snapshot(save_snapshot)
+    decision = _idle_decision_from_save_snapshot(save_snapshot)
 
-    return _idle_decision_from_save_snapshot(save_snapshot)
+    if unattended_safe and decision.selected_action not in _UNATTENDED_SAFE_ACTIONS:
+        return PlannerDecision(
+            selected_action="idle",
+            decision_reason="blocked_by_unattended_safe_policy",
+            actuation_required=False,
+        )
+
+    return decision
 
 
 def decide_from_save_snapshot(save_snapshot: SaveSnapshot) -> PlannerDecision:

@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog", "il2cpp-name-hint-report")]
+    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog", "il2cpp-name-hint-report", "il2cpp-manual-findings-report")]
     [string]$Command,
 
     [string]$PackageName = "com.TironiumTech.IdlePlanetMiner",
@@ -19,7 +19,13 @@ param(
     [string]$InputReportDir = "",
     [string]$OutputDir = "",
     [string]$CatalogDir = "",
+    [string]$NameHintReportDir = "",
     [string[]]$Term = @(),
+    [string[]]$FindingPath = @(),
+    [string[]]$FindingNote = @(),
+    [string[]]$FindingSymbol = @(),
+    [string[]]$FindingKind = @(),
+    [string]$Analyst = "",
     [switch]$CaseSensitive,
     [string]$ToolName = "",
     [string]$ToolVersion = "",
@@ -111,6 +117,49 @@ if ($Command -eq "diff") {
     if (-not [string]::IsNullOrWhiteSpace($Notes)) {
         $arguments += @("--notes", $Notes)
     }
+} elseif ($Command -eq "il2cpp-manual-findings-report") {
+    if ([string]::IsNullOrWhiteSpace($CatalogDir) -and [string]::IsNullOrWhiteSpace($NameHintReportDir)) {
+        throw "Either -CatalogDir or -NameHintReportDir is required for il2cpp-manual-findings-report."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CatalogDir) -and -not [string]::IsNullOrWhiteSpace($NameHintReportDir)) {
+        throw "Specify only one of -CatalogDir or -NameHintReportDir for il2cpp-manual-findings-report."
+    }
+    if ($FindingPath.Count -eq 0 -or $FindingNote.Count -eq 0) {
+        throw "At least one -FindingPath and one matching -FindingNote are required for il2cpp-manual-findings-report."
+    }
+    if ($FindingPath.Count -ne $FindingNote.Count) {
+        throw "-FindingPath and -FindingNote must have the same number of entries."
+    }
+    if ($FindingSymbol.Count -gt 0 -and $FindingSymbol.Count -ne $FindingPath.Count) {
+        throw "-FindingSymbol must be omitted or have the same number of entries as -FindingPath."
+    }
+    if ($FindingKind.Count -gt 0 -and $FindingKind.Count -ne $FindingPath.Count) {
+        throw "-FindingKind must be omitted or have the same number of entries as -FindingPath."
+    }
+    if (-not [string]::IsNullOrWhiteSpace($CatalogDir)) {
+        $arguments += @("--catalog", $CatalogDir)
+    } else {
+        $arguments += @("--name-hint-report", $NameHintReportDir)
+    }
+    foreach ($findingPathValue in $FindingPath) {
+        $arguments += @("--finding-path", $findingPathValue)
+    }
+    foreach ($findingNoteValue in $FindingNote) {
+        $arguments += @("--finding-note", $findingNoteValue)
+    }
+    foreach ($findingSymbolValue in $FindingSymbol) {
+        $arguments += @("--finding-symbol", $findingSymbolValue)
+    }
+    foreach ($findingKindValue in $FindingKind) {
+        $arguments += @("--finding-kind", $findingKindValue)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Analyst)) {
+        $arguments += @("--analyst", $Analyst)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Notes)) {
+        $arguments += @("--notes", $Notes)
+    }
+    $arguments += @("--output-root", $OutputRoot)
 } else {
     $arguments += @("--package-name", $PackageName)
     $arguments += @("--output-root", $OutputRoot)

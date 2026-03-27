@@ -96,6 +96,15 @@ class ActuatorConfigSnapshot:
     ark_post_watch_probe_count: int | None = None
     ark_post_watch_probe_interval_seconds: float | None = None
     ark_post_watch_ui_dump_max_text_length: int | None = None
+    ad_boost_open_timeout_seconds: float | None = None
+    ad_boost_watch_timeout_seconds: float | None = None
+    ad_boost_probe_interval_seconds: float | None = None
+    ad_boost_stabilization_seconds: float | None = None
+    ad_boost_exit_timeout_seconds: float | None = None
+    ad_boost_exit_ui_markers: tuple[str, ...] | None = None
+    ad_boost_exit_keyevent: str | None = None
+    ad_boost_store_max_redirects: int | None = None
+    ad_boost_max_close_actions: int | None = None
 
     def __post_init__(self) -> None:
         if not self.actuator_type:
@@ -139,6 +148,20 @@ class ActuatorConfigSnapshot:
             and self.ark_post_watch_ui_dump_max_text_length <= 0
         ):
             raise ValueError("Actuator config snapshot UI dump max text length must be greater than zero.")
+        if self.ad_boost_open_timeout_seconds is not None and self.ad_boost_open_timeout_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost open timeout must be greater than zero.")
+        if self.ad_boost_watch_timeout_seconds is not None and self.ad_boost_watch_timeout_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost watch timeout must be greater than zero.")
+        if self.ad_boost_probe_interval_seconds is not None and self.ad_boost_probe_interval_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost probe interval must be greater than zero.")
+        if self.ad_boost_stabilization_seconds is not None and self.ad_boost_stabilization_seconds < 0:
+            raise ValueError("Actuator config snapshot ad boost stabilization must be non-negative.")
+        if self.ad_boost_exit_timeout_seconds is not None and self.ad_boost_exit_timeout_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost exit timeout must be greater than zero.")
+        if self.ad_boost_store_max_redirects is not None and self.ad_boost_store_max_redirects < 0:
+            raise ValueError("Actuator config snapshot ad boost store max redirects must be non-negative.")
+        if self.ad_boost_max_close_actions is not None and self.ad_boost_max_close_actions < 0:
+            raise ValueError("Actuator config snapshot ad boost max close actions must be non-negative.")
 
 
 class ActuatorExecutionError(Exception):

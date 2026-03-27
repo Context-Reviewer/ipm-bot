@@ -94,8 +94,13 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--activate-ad-boost-tap",
-        default="540,960",
+        default="848,394",
         help="Tap coordinates for activate_ad_boost as X,Y when using the ADB actuator.",
+    )
+    parser.add_argument(
+        "--activate-ad-boost-watch-tap",
+        default="448,859",
+        help="Tap coordinates for the watch video button of activate_ad_boost as X,Y.",
     )
     parser.add_argument(
         "--claim-ark-reward-tap",
@@ -141,6 +146,91 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         default=3.0,
         help="Wait time after the final Ark ad close attempt before the claim tap.",
     )
+    parser.add_argument(
+        "--ark-esc-attempts",
+        type=int,
+        default=1,
+        help="Deterministic number of Escape attempts sent during the experimental Ark exit sequence.",
+    )
+    parser.add_argument(
+        "--ark-esc-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between deterministic experimental Ark Escape attempts.",
+    )
+    parser.add_argument(
+        "--ark-post-watch-probe-count",
+        type=int,
+        default=0,
+        help="Optional number of passive probe samples to capture after the Ark watch tap.",
+    )
+    parser.add_argument(
+        "--ark-post-watch-probe-interval-seconds",
+        type=float,
+        default=2.0,
+        help="Spacing between passive Ark post-watch probe samples when enabled.",
+    )
+    parser.add_argument(
+        "--ark-post-watch-ui-dump-max-text-length",
+        type=int,
+        default=240,
+        help="Maximum UI text excerpt length persisted per Ark post-watch probe sample.",
+    )
+    parser.add_argument(
+        "--ad-boost-open-timeout-seconds",
+        type=float,
+        default=10.0,
+        help="Wait time for focus to leave game after activating ad boost.",
+    )
+    parser.add_argument(
+        "--ad-boost-watch-timeout-seconds",
+        type=float,
+        default=60.0,
+        help="Wait time for focus to return to game after ad opens.",
+    )
+    parser.add_argument(
+        "--ad-boost-probe-interval-seconds",
+        type=float,
+        default=2.0,
+        help="Polling interval for focus monitoring during ad boost.",
+    )
+    parser.add_argument(
+        "--ad-boost-stabilization-seconds",
+        type=float,
+        default=3.0,
+        help="Wait time after ad boost finishes before verifying.",
+    )
+    parser.add_argument(
+        "--ad-boost-exit-timeout-seconds",
+        type=float,
+        default=120.0,
+        help="Maximum wait time for an exit affordance to appear while an ad is active.",
+    )
+    parser.add_argument(
+        "--ad-boost-exit-ui-markers",
+        type=str,
+        nargs="+",
+        default=["Close Ad", "Skip", "Reward granted"],
+        help="UI text markers that indicate an ad can be closed.",
+    )
+    parser.add_argument(
+        "--ad-boost-exit-keyevent",
+        type=str,
+        default="KEYCODE_BACK",
+        help="Keyevent to send when an ad exit affordance is found.",
+    )
+    parser.add_argument(
+        "--ad-boost-store-max-redirects",
+        type=int,
+        default=3,
+        help="Maximum number of times to escape a Play Store redirect.",
+    )
+    parser.add_argument(
+        "--ad-boost-max-close-actions",
+        type=int,
+        default=3,
+        help="Maximum number of deterministic close actions to send per actively monitored ad session.",
+    )
 
 
 def build_actuator(args: argparse.Namespace) -> ActionActuator:
@@ -157,7 +247,19 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             device_serial=args.adb_serial,
             app_package=args.app_package,
             app_activity=args.app_activity,
+            manual_observation_mode=getattr(args, "manual_observation_mode", False),
+            manual_observation_window_seconds=getattr(
+                args,
+                "manual_observation_window_seconds",
+                20.0,
+            ),
+            manual_observation_probe_interval_seconds=getattr(
+                args,
+                "manual_observation_probe_interval_seconds",
+                1.0,
+            ),
             activate_ad_boost_tap=parse_tap_point(args.activate_ad_boost_tap),
+            activate_ad_boost_watch_tap=parse_tap_point(getattr(args, "activate_ad_boost_watch_tap", "448,859")),
             claim_ark_reward_tap=parse_tap_point(args.claim_ark_reward_tap),
             claim_ark_reward_watch_tap=parse_tap_point(args.claim_ark_watch_tap),
             claim_ark_skip_tap=parse_tap_point(args.claim_ark_skip_tap),
@@ -166,6 +268,20 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             ark_ad_wait_seconds=args.ark_ad_wait_seconds,
             ark_skip_close_wait_seconds=args.ark_skip_close_wait_seconds,
             ark_return_wait_seconds=args.ark_return_wait_seconds,
+            ark_esc_attempts=args.ark_esc_attempts,
+            ark_esc_interval_seconds=args.ark_esc_interval_seconds,
+            ark_post_watch_probe_count=args.ark_post_watch_probe_count,
+            ark_post_watch_probe_interval_seconds=args.ark_post_watch_probe_interval_seconds,
+            ark_post_watch_ui_dump_max_text_length=args.ark_post_watch_ui_dump_max_text_length,
+            ad_boost_open_timeout_seconds=args.ad_boost_open_timeout_seconds,
+            ad_boost_watch_timeout_seconds=args.ad_boost_watch_timeout_seconds,
+            ad_boost_probe_interval_seconds=args.ad_boost_probe_interval_seconds,
+            ad_boost_stabilization_seconds=args.ad_boost_stabilization_seconds,
+            ad_boost_exit_timeout_seconds=args.ad_boost_exit_timeout_seconds,
+            ad_boost_exit_ui_markers=tuple(args.ad_boost_exit_ui_markers),
+            ad_boost_exit_keyevent=args.ad_boost_exit_keyevent,
+            ad_boost_store_max_redirects=args.ad_boost_store_max_redirects,
+            ad_boost_max_close_actions=args.ad_boost_max_close_actions,
         ),
         command_runner=SubprocessCommandRunner(),
     )
