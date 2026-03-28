@@ -1,0 +1,20 @@
+{
+  "receipt_id": "0059",
+  "purpose": "stat_external_storage_emulated",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "stat",
+    "-c",
+    "%F,%s,%Y",
+    "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity"
+  ],
+  "started_at_utc": "2026-03-23T23:18:31Z",
+  "finished_at_utc": "2026-03-23T23:18:31Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0059.stdout.txt",
+  "stderr_path": null
+}

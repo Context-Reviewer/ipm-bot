@@ -60,7 +60,6 @@ class AdbActuatorConfig:
     ark_post_watch_probe_interval_seconds: float = 2.0
     ark_post_watch_ui_dump_max_text_length: int = 240
     ad_boost_open_timeout_seconds: float = 10.0
-    ad_boost_watch_timeout_seconds: float = 60.0
     ad_boost_probe_interval_seconds: float = 2.0
     ad_boost_stabilization_seconds: float = 3.0
     ad_boost_exit_timeout_seconds: float = 120.0
@@ -104,8 +103,6 @@ class AdbActuatorConfig:
             raise ValueError("ark_post_watch_ui_dump_max_text_length must be greater than zero.")
         if self.ad_boost_open_timeout_seconds <= 0:
             raise ValueError("ad_boost_open_timeout_seconds must be greater than zero.")
-        if self.ad_boost_watch_timeout_seconds <= 0:
-            raise ValueError("ad_boost_watch_timeout_seconds must be greater than zero.")
         if self.ad_boost_probe_interval_seconds <= 0:
             raise ValueError("ad_boost_probe_interval_seconds must be greater than zero.")
         if self.ad_boost_stabilization_seconds < 0:
@@ -193,7 +190,6 @@ class AdbActionActuator(ActionActuator):
             ark_post_watch_probe_interval_seconds=config.ark_post_watch_probe_interval_seconds,
             ark_post_watch_ui_dump_max_text_length=config.ark_post_watch_ui_dump_max_text_length,
             ad_boost_open_timeout_seconds=config.ad_boost_open_timeout_seconds,
-            ad_boost_watch_timeout_seconds=config.ad_boost_watch_timeout_seconds,
             ad_boost_probe_interval_seconds=config.ad_boost_probe_interval_seconds,
             ad_boost_stabilization_seconds=config.ad_boost_stabilization_seconds,
             ad_boost_exit_timeout_seconds=config.ad_boost_exit_timeout_seconds,
@@ -758,14 +754,9 @@ class AdbActionActuator(ActionActuator):
                     entry_started_at,
                     sample_context="post_entry",
                     sample_reference_stage="ark_entry_tap",
+                    include_ui_dump=False,
                 )
                 probe_samples.append(entry_probe)
-                self._record_stage_event(
-                    stage_events,
-                    "entry_observation",
-                    elapsed_started_at=entry_started_at,
-                    detail=self._summarize_entry_observation(entry_probe),
-                )
 
             self._run_command(
                 self._adb_command(
@@ -800,6 +791,7 @@ class AdbActionActuator(ActionActuator):
             probe_samples.extend(
                 self._collect_post_watch_probes(
                     wait_budget_seconds=self._config.ark_ad_wait_seconds,
+                    include_ui_dump=False,
                 )
             )
 
@@ -829,6 +821,7 @@ class AdbActionActuator(ActionActuator):
                             sample_context="pre_esc",
                             sample_reference_stage="ark_watch_tap",
                             esc_attempt_index=attempt_index,
+                            include_ui_dump=False,
                         )
                     )
                 self._run_command(
@@ -847,6 +840,7 @@ class AdbActionActuator(ActionActuator):
                             sample_context="post_esc",
                             sample_reference_stage="ark_watch_tap",
                             esc_attempt_index=attempt_index,
+                            include_ui_dump=False,
                         )
                     )
                 if attempt_index < self._config.ark_esc_attempts:
@@ -864,6 +858,7 @@ class AdbActionActuator(ActionActuator):
                         watch_started_at,
                         sample_context="post_esc_settle",
                         sample_reference_stage="ark_watch_tap",
+                        include_ui_dump=False,
                     )
                 )
 
@@ -962,7 +957,12 @@ class AdbActionActuator(ActionActuator):
             probe_samples=list(probe_samples),
         )
 
-    def _collect_post_watch_probes(self, wait_budget_seconds: float) -> list[ActuatorProbeSample]:
+    def _collect_post_watch_probes(
+        self,
+        wait_budget_seconds: float,
+        *,
+        include_ui_dump: bool = True,
+    ) -> list[ActuatorProbeSample]:
         if self._config.ark_post_watch_probe_count <= 0:
             self._sleep_fn(wait_budget_seconds)
             return []
@@ -981,6 +981,7 @@ class AdbActionActuator(ActionActuator):
             offsets_seconds=offsets_seconds,
             sample_context="post_watch",
             sample_reference_stage="ark_watch_tap",
+            include_ui_dump=include_ui_dump,
         )
 
         remaining_wait = wait_budget_seconds - (self._monotonic_fn() - started_at)
@@ -995,6 +996,7 @@ class AdbActionActuator(ActionActuator):
         offsets_seconds: Sequence[float],
         sample_context: str,
         sample_reference_stage: str,
+        include_ui_dump: bool = True,
     ) -> list[ActuatorProbeSample]:
         samples: list[ActuatorProbeSample] = []
         for offset_seconds in offsets_seconds:
@@ -1006,6 +1008,7 @@ class AdbActionActuator(ActionActuator):
                     started_at,
                     sample_context=sample_context,
                     sample_reference_stage=sample_reference_stage,
+                    include_ui_dump=include_ui_dump,
                 )
             )
         return samples
@@ -1117,19 +1120,6 @@ class AdbActionActuator(ActionActuator):
         excerpt = joined_text[: self._config.ark_post_watch_ui_dump_max_text_length]
         digest = hashlib.sha256(joined_text.encode("utf-8")).hexdigest()
         return excerpt, digest
-
-    def _summarize_entry_observation(self, sample: ActuatorProbeSample) -> str:
-        classification = "entry_inconclusive"
-        if sample.ui_text_excerpt == "Game view":
-            classification = "entry_inconclusive_immediate_probe"
-        elif sample.focus_activity is not None and "AdActivity" in sample.focus_activity:
-            classification = "entry_reached_ad_flow"
-        detail_parts = [classification]
-        if sample.focus_activity is not None:
-            detail_parts.append(f"focus_activity={sample.focus_activity}")
-        if sample.ui_text_excerpt is not None:
-            detail_parts.append(f"ui_text_excerpt={sample.ui_text_excerpt}")
-        return "; ".join(detail_parts)
 
     def _run_command(self, command: list[str], attempted_summaries: list[str]) -> None:
         command_summary = self._summarize_command(command)

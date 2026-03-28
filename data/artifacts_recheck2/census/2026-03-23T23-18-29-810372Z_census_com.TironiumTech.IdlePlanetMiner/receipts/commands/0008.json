@@ -1,0 +1,19 @@
+{
+  "receipt_id": "0008",
+  "purpose": "enumerate_external_sdcard",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "find",
+    "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner",
+    "-print"
+  ],
+  "started_at_utc": "2026-03-23T23:18:29Z",
+  "finished_at_utc": "2026-03-23T23:18:29Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0008.stdout.txt",
+  "stderr_path": null
+}

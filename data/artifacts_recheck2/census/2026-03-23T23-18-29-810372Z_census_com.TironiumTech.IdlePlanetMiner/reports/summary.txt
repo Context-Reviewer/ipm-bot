@@ -1,0 +1,25 @@
+snapshot_id: 2026-03-23T23-18-29-810372Z_census_com.TironiumTech.IdlePlanetMiner
+mode: census
+package_name: com.TironiumTech.IdlePlanetMiner
+artifact_count: 43
+file_count: 21
+directory_count: 22
+copied_file_count: 0
+
+method_status:
+- bluestacks_appcache: ok (C:\ProgramData\BlueStacks_nxt\Engine\Pie64\AppCache\AppCache.json)
+- bluestacks_player_log: ok (C:\ProgramData\BlueStacks_nxt\Logs\Player.log)
+- bluestacks_conf: ok (C:\ProgramData\BlueStacks_nxt\bluestacks.conf)
+- adb_version: ok
+- adb_devices: ok
+- adb_get_state: ok
+- pm_path_package: ok
+- dumpsys_package: ok
+- private_run_as_data: blocked (returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted)
+- private_run_as_user0: blocked (returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted)
+- external_sdcard: ok
+- external_storage_emulated: ok
+
+limitations:
+- private_run_as_data blocked or unsupported: returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted
+- private_run_as_user0 blocked or unsupported: returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted

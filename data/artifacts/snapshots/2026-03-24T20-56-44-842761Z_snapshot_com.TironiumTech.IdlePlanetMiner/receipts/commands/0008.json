@@ -1,0 +1,19 @@
+{
+  "receipt_id": "0008",
+  "purpose": "enumerate_external_sdcard",
+  "command": [
+    "C:\\Program Files\\BlueStacks_nxt\\HD-Adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "find",
+    "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner",
+    "-print"
+  ],
+  "started_at_utc": "2026-03-24T20:56:44Z",
+  "finished_at_utc": "2026-03-24T20:56:44Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0008.stdout.txt",
+  "stderr_path": null
+}

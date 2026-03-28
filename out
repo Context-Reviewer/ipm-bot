@@ -1,0 +1,357 @@
+EEEEEEEEEEEEEEEE
+======================================================================
+ERROR: test_activate_ad_boost_aborts_if_ad_does_not_open (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_aborts_if_ad_does_not_open)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 448, in test_activate_ad_boost_aborts_if_ad_does_not_open
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<14 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_aborts_if_exit_affordance_never_appears (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_aborts_if_exit_affordance_never_appears)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 198, in test_activate_ad_boost_aborts_if_exit_affordance_never_appears
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<15 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_aborts_if_game_does_not_return (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_aborts_if_game_does_not_return)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 492, in test_activate_ad_boost_aborts_if_game_does_not_return
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<14 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_aborts_if_game_does_not_return_after_exit_tap (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_aborts_if_game_does_not_return_after_exit_tap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 245, in test_activate_ad_boost_aborts_if_game_does_not_return_after_exit_tap
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<15 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_handles_multi_ad_chains_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_handles_multi_ad_chains_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 378, in test_activate_ad_boost_handles_multi_ad_chains_and_succeeds
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<16 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_handles_store_redirect_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_handles_store_redirect_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 298, in test_activate_ad_boost_handles_store_redirect_and_succeeds
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<17 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_monitors_ad_flow_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_monitors_ad_flow_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 34, in test_activate_ad_boost_monitors_ad_flow_and_succeeds
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<14 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_activate_ad_boost_monitors_same_package_ad_flow_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_monitors_same_package_ad_flow_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 139, in test_activate_ad_boost_monitors_same_package_ad_flow_and_succeeds
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<15 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_claim_ark_reward_collects_probe_samples_when_enabled (tests.test_adb_actuator.AdbActuatorTests.test_claim_ark_reward_collects_probe_samples_when_enabled)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 669, in test_claim_ark_reward_collects_probe_samples_when_enabled
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<17 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_claim_ark_reward_emits_expected_multi_step_commands (tests.test_adb_actuator.AdbActuatorTests.test_claim_ark_reward_emits_expected_multi_step_commands)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 532, in test_claim_ark_reward_emits_expected_multi_step_commands
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<15 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_claim_ark_reward_emits_multiple_escape_attempts_when_configured (tests.test_adb_actuator.AdbActuatorTests.test_claim_ark_reward_emits_multiple_escape_attempts_when_configured)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 744, in test_claim_ark_reward_emits_multiple_escape_attempts_when_configured
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<18 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_claim_ark_reward_labels_entry_probe_when_it_stays_on_game_view (tests.test_adb_actuator.AdbActuatorTests.test_claim_ark_reward_labels_entry_probe_when_it_stays_on_game_view)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 944, in test_claim_ark_reward_labels_entry_probe_when_it_stays_on_game_view
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<17 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_claim_ark_reward_records_probe_error_when_ui_dump_is_unavailable (tests.test_adb_actuator.AdbActuatorTests.test_claim_ark_reward_records_probe_error_when_ui_dump_is_unavailable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 896, in test_claim_ark_reward_records_probe_error_when_ui_dump_is_unavailable
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<16 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_command_runner_failure_raises_classified_error (tests.test_adb_actuator.AdbActuatorTests.test_command_runner_failure_raises_classified_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 1058, in test_command_runner_failure_raises_classified_error
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<3 lines>...
+        command_runner=runner,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_idle_emits_no_commands (tests.test_adb_actuator.AdbActuatorTests.test_idle_emits_no_commands)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 1039, in test_idle_emits_no_commands
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(),
+    ...<2 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+======================================================================
+ERROR: test_manual_observation_mode_skips_ark_commands_and_collects_probes (tests.test_adb_actuator.AdbActuatorTests.test_manual_observation_mode_skips_ark_commands_and_collects_probes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 995, in test_manual_observation_mode_skips_ark_commands_and_collects_probes
+    actuator = AdbActionActuator(
+        config=AdbActuatorConfig(
+    ...<9 lines>...
+        monotonic_fn=clock.monotonic,
+    )
+  File "C:\dev\ipm-bot\src\ipm_bot\actuator\adb.py", line 167, in __init__
+    self.config_snapshot = ActuatorConfigSnapshot(
+                           ~~~~~~~~~~~~~~~~~~~~~~^
+        actuator_type=self.actuator_type,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<24 lines>...
+        ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+TypeError: ActuatorConfigSnapshot.__init__() got an unexpected keyword argument 'ad_boost_verbose_signal_tracing'
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.008s
+
+FAILED (errors=16)

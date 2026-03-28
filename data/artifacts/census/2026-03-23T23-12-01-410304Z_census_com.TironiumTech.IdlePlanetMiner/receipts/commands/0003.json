@@ -1,0 +1,16 @@
+{
+  "receipt_id": "0003",
+  "purpose": "adb_get_state",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "get-state"
+  ],
+  "started_at_utc": "2026-03-23T23:12:01Z",
+  "finished_at_utc": "2026-03-23T23:12:01Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0003.stdout.txt",
+  "stderr_path": null
+}

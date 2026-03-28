@@ -1,0 +1,1 @@
+{"config_etag":"","app_info_hash":2814381492,"app_installed":true,"engine_ver":"2021.3.56f2","app_ver":"2.8.8","registered_events":{}}

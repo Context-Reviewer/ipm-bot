@@ -1,149 +1,98 @@
 # PlayerData Offset Notebook
 
-## Current Model
+> **v2 — Parser-Derived (2026-03-24)**
+> All offsets below are deterministic, produced by `sub_records.py` with 100% file coverage.
+> Manual offset assignments from v1 have been superseded.
 
-- `SaveLoad.PlayerData` is the strongest schema anchor for local `playerInfo.dat`.
-- `0xC1C1 + index` is the strongest current candidate for the persisted `smelterOn` per-index boolean region.
-- `0xC3DD + index` is the strongest current candidate for a parallel smelter companion region.
-- `0xC3F1` and `0xC60D` are the strongest current crafter-state candidates.
-- Larger recurring clusters are treated as timer/progress/date companions until proven otherwise.
+## Format
 
-## Protocol
+- `playerInfo.dat` is a raw .NET `BinaryFormatter` stream (uncompressed).
+- `playerInfoBackup.dat` is a near-synchronous mirror copy (~7ms later), NOT a previous save state.
+- Root class: `SaveLoad+PlayerData`, 478 top-level members, 228 MemberReference sub-records.
 
-- Take a baseline snapshot.
-- Perform exactly one in-game toggle.
-- Wait `50` seconds to cross autosave.
-- Take a second snapshot.
-- Run `artifacts diff`.
-- Run `save bytes-diff` on the copied `playerInfo.dat` files.
+## ⚠ Corrections From v1
 
-## Confirmed Offsets
+| Offset | v1 Assignment (WRONG) | v2 Assignment (CORRECT) |
+|---|---|---|
+| `0xC1C1` | `smelterOn[0]` | **`smeltRecipeSelectedBool[0]`** (ref 63) |
+| `0xC1C2` | `smelterOn[1]` | **`smeltRecipeSelectedBool[1]`** (ref 63) |
+| `0xC3F1` | `crafterOn[0]` | **`craftRecipeSelectedBool[0]`** (ref 72) |
 
-| Feature | Index | Offset | Flip | Confidence | Note |
-|---|---:|---|---|---|---|
-| Smelter | 0 | `0xC1C1` | `00 <-> 01` | High | primary candidate |
-| Smelter | 0 | `0xC3DD` | `00 <-> 01` | High | companion candidate |
-| Smelter | 1 | `0xC1C2` | `00 <-> 01` | High | primary candidate |
-| Smelter | 1 | `0xC3DE` | `00 <-> 01` | High | companion candidate |
-| Crafter | 0 | `0xC3F1` | `00 <-> 01` | High | primary candidate |
-| Crafter | 0 | `0xC60D` | `00 <-> 01` | High | companion candidate |
+**Root cause:** BinaryFormatter serializes sub-records in object-ID order, not field-semantic order.
+"Nearby in file" ≠ "related in meaning". The v1 experiment correctly observed both `0xC1C1` and `0xC3DD`
+flipping together on smelter toggle — but misidentified which was `smelterOn` and which was
+`smeltRecipeSelectedBool`. Both flip because starting a smelter both selects a recipe AND sets on=true.
 
-## Cluster Notes
+## Smelter Arrays (10 slots each)
 
-| Feature | Index | Anchor | Nearby Regions | Repeatability | Hypothesis |
-|---|---:|---|---|---|---|
-| Smelter | 0 | `0xC1C1` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC2xx-C3xx` | reversible on/off | timers/progress/date companions |
-| Smelter | 1 | `0xC1C2` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC2xx-C3xx` | reversible on/off | timers/progress/date companions |
-| Crafter | 0 | `0xC3F1` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC4xx-C6xx` | reversible on/off | timers/progress/date companions |
+| Ref | Type | Base Offset | Size | Field |
+|---:|---|---|---:|---|
+| 63 | BOOLEAN[10] | `0xC1C1` | 10 | `smeltRecipeSelectedBool` |
+| 64 | BOOLEAN[10] | `0xC1D5` | 10 | `alternateSmeltRecipeSelected` |
+| 65 | INT32[10] | `0xC1E9` | 40 | `smeltRecipeNumber` |
+| 66 | DATETIME[10] | `0xC21B` | 80 | `smelterStartDate` |
+| 67 | DATETIME[10] | `0xC275` | 80 | `smelterEndDate` |
+| 68 | DATETIME[10] | `0xC2CF` | 80 | `smelterOriginalEndDate` |
+| 69 | TIMESPAN[10] | `0xC329` | 80 | `smelterTimespanLeft` |
+| 70 | DOUBLE[10] | `0xC383` | 80 | `smelterSecondsCompleted` |
+| **71** | **BOOLEAN[10]** | **`0xC3DD`** | **10** | **`smelterOn`** |
 
-## Evidence Summary
+## Crafter Arrays (10 slots each)
 
-- Smelter 0 on: `0xC1C1`, `0xC3DD` -> `01`
-- Smelter 0 off: `0xC1C1`, `0xC3DD` -> `00`
-- Smelter 1 on: `0xC1C2`, `0xC3DE` -> `01`
-- Smelter 1 off: `0xC1C2`, `0xC3DE` -> `00`
-- Crafter 0 on: `0xC3F1`, `0xC60D` -> `01`
-- Crafter 0 off: `0xC3F1`, `0xC60D` -> `00`
+| Ref | Type | Base Offset | Size | Field |
+|---:|---|---|---:|---|
+| 72 | BOOLEAN[10] | `0xC3F1` | 10 | `craftRecipeSelectedBool` |
+| 73 | BOOLEAN[10] | `0xC405` | 10 | `alternateCraftRecipeSelected` |
+| 74 | INT32[10] | `0xC419` | 40 | `craftRecipeNumber` |
+| 75 | DATETIME[10] | `0xC44B` | 80 | `crafterStartDate` |
+| 76 | DATETIME[10] | `0xC4A5` | 80 | `crafterEndDate` |
+| 77 | DATETIME[10] | `0xC4FF` | 80 | `crafterOriginalEndDate` |
+| 78 | TIMESPAN[10] | `0xC559` | 80 | `crafterTimespanLeft` |
+| 79 | DOUBLE[10] | `0xC5B3` | 80 | `crafterSecondsCompleted` |
+| **80** | **BOOLEAN[10]** | **`0xC60D`** | **10** | **`crafterOn`** |
 
-## Chronological Experiment Log
+## Save-Pipeline Metadata
 
-### Smelter 0 on
+| Offset | Type | Field | Note |
+|---|---|---|---|
+| `0x3648` | DATETIME | save timestamp 1 | ~7ms earlier in active vs backup |
+| `0x3D55` | DATETIME | save timestamp 2 | ~7ms earlier in active vs backup |
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-02-20-524494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-03-30-755494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-04-05-904382Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C1C1: 00 -> 01`
-  - `0x0000C3DD: 00 -> 01`
+## High-Value Resource/Economy Arrays
 
-### Smelter 0 off
+| Ref | Type | Base Offset | Size | Field |
+|---:|---|---|---:|---|
+| 4 | BOOLEAN[120] | `0x4276` | 120 | `resourceDiscovered` |
+| 5 | SINGLE[120] | `0x42F8` | 480 | `resourceCount` |
+| 9 | SINGLE[120] | `0x5900` | 480 | `resourceGatheredTotal` |
+| 11 | SINGLE[120] | `0x5CD4` | 480 | `resourceSoldTotal` |
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-03-30-755494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-07-34-369648Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-07-55-367783Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C1C1: 01 -> 00`
-  - `0x0000C3DD: 01 -> 00`
+## Planet Arrays (76 slots)
 
-### Smelter 1 on
+| Ref | Type | Base Offset | Size | Field |
+|---:|---|---|---:|---|
+| 19 | INT32[76] | `0x6C24` | 304 | `miningSpeedLevel` |
+| 20 | INT32[76] | `0x6D5E` | 304 | `speedLevel` |
+| 21 | INT32[76] | `0x6E98` | 304 | `cargoLevel` |
+| 23 | BOOLEAN[76] | `0x710C` | 76 | `planetUnlocked` |
+| 26 | DATETIME[76] | `0x7506` | 608 | `tripStartDate` |
+| 27 | DATETIME[76] | `0x7770` | 608 | `tripEndDate` |
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-07-34-369648Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-10-34-881346Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-10-54-367302Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C1C2: 00 -> 01`
-  - `0x0000C3DE: 00 -> 01`
+## Element Addressing
 
-### Smelter 1 off
+To address element `[i]` within an array:
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-10-34-881346Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-13-44-187867Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-14-02-944122Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C1C2: 01 -> 00`
-  - `0x0000C3DE: 01 -> 00`
+```
+byte_offset = base_offset + (i * element_size)
+```
 
-### Crafter 0 on
+Element sizes: BOOLEAN=1, INT32=4, SINGLE=4, DOUBLE=8, DATETIME=8, TIMESPAN=8
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-15-40-285124Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-16-45-166633Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-16-59-803209Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C3F1: 00 -> 01`
-  - `0x0000C60D: 00 -> 01`
-- Additional moving candidate:
-  - `0x0000C419: 02 -> 00`
+## Historical Experiment Log
 
-### Crafter 0 off
+Preserved from v1 for provenance. All interpretations below should use v2 field names.
 
-- Before snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-16-45-166633Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- After snapshot:
-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-19-33-788532Z_snapshot_com.TironiumTech.IdlePlanetMiner`
-- Artifact diff:
-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-20-00-272382Z_artifact_diff`
-- Key reversible candidates:
-  - `0x0000C3F1: 01 -> 00`
-  - `0x0000C60D: 01 -> 00`
-- Non-primary companion from on-run did not cleanly behave as a simple mirrored boolean:
-  - `0x0000C419`
-
-## Schema Anchors From Manual IL2CPP Review
-
-- `SaveLoad.PlayerData` contains direct production-state fields:
-  - `smelterOn`
-  - `smelterStartDate`
-  - `smelterEndDate`
-  - `smelterSecondsCompleted`
-  - `crafterOn`
-  - `crafterStartDate`
-  - `crafterEndDate`
-  - `crafterSecondsCompleted`
-- `SaveLoad.PlayerData` also contains persisted ad/reward fields:
-  - `lastAdWatchedDate`
-  - `adsWatched`
-  - `arksClaimed`
-  - `pendingRewardType`
-  - `rewardIsDarkMatterBool`
-  - `arkRewardReadyToClaim`
-
-## Next Experiments
-
-1. Same smelter `on`, compare `+50s` vs `+120s`.
-2. Same smelter `on -> off` with controlled timing.
-3. Second crafter index to test stride behavior.
+- Smelter toggle experiments correctly observed `0xC1C1` and `0xC3DD` flipping together.
+- v1 incorrectly labeled `0xC1C1` as `smelterOn`. Parser proves it is `smeltRecipeSelectedBool`.
+- The "companion" hypothesis is disproven — both offsets are real distinct fields that co-flip on toggle.
+- Crafter experiment observed `0xC419` changing (`02 → 00`), now identified as `craftRecipeNumber[0]`.

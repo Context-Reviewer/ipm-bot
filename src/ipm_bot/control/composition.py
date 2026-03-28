@@ -174,19 +174,13 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         "--ark-post-watch-ui-dump-max-text-length",
         type=int,
         default=240,
-        help="Maximum UI text excerpt length persisted per Ark post-watch probe sample.",
+        help="Maximum UI text excerpt length persisted per manual-observation probe sample.",
     )
     parser.add_argument(
         "--ad-boost-open-timeout-seconds",
         type=float,
         default=10.0,
         help="Wait time for focus to leave game after activating ad boost.",
-    )
-    parser.add_argument(
-        "--ad-boost-watch-timeout-seconds",
-        type=float,
-        default=60.0,
-        help="Wait time for focus to return to game after ad opens.",
     )
     parser.add_argument(
         "--ad-boost-probe-interval-seconds",
@@ -204,7 +198,7 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         "--ad-boost-exit-timeout-seconds",
         type=float,
         default=120.0,
-        help="Maximum wait time for an exit affordance to appear while an ad is active.",
+        help="Maximum bounded time spent monitoring an active ad before failing closed.",
     )
     parser.add_argument(
         "--ad-boost-exit-keyevent",
@@ -227,13 +221,13 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         "--ad-boost-soft-exit-timeout-seconds",
         type=float,
         default=25.0,
-        help="Amount of time sequentially elapsed inside an ad view to trigger a fallback back payload without an affordance.",
+        help="Amount of time sequentially elapsed inside an ad view before sending the first fallback back payload.",
     )
     parser.add_argument(
         "--ad-boost-hard-exit-timeout-seconds",
         type=float,
         default=45.0,
-        help="Absolute final ad-view bounded time sequentially elapsed to issue a second fallback payload without an affordance.",
+        help="Absolute final ad-view bounded time before sending the second fallback back payload.",
     )
     parser.add_argument(
         "--ad-post-reward-claim-tap",
@@ -262,7 +256,7 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--ad-post-reward-auto-claim-disabled",
         action="store_true",
-        help="Explicitly disable the optional post-ad UI reward claim verification and tap step.",
+        help="Explicitly disable the optional bounded post-ad reward claim tap sequence.",
     )
 
 
@@ -307,7 +301,6 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             ark_post_watch_probe_interval_seconds=args.ark_post_watch_probe_interval_seconds,
             ark_post_watch_ui_dump_max_text_length=args.ark_post_watch_ui_dump_max_text_length,
             ad_boost_open_timeout_seconds=args.ad_boost_open_timeout_seconds,
-            ad_boost_watch_timeout_seconds=args.ad_boost_watch_timeout_seconds,
             ad_boost_probe_interval_seconds=args.ad_boost_probe_interval_seconds,
             ad_boost_stabilization_seconds=args.ad_boost_stabilization_seconds,
             ad_boost_exit_timeout_seconds=args.ad_boost_exit_timeout_seconds,

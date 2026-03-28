@@ -1,0 +1,38 @@
+F
+======================================================================
+FAIL: test_activate_ad_boost_handles_soft_timeout_fallback_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_handles_soft_timeout_fallback_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 300, in test_activate_ad_boost_handles_soft_timeout_fallback_and_succeeds
+    self.assertTrue(len(playable_traces) > 0)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'
+MOCK: adb -s emulator-5554 shell dumpsys window windows => 'mCurrentFocus=Window{42 u0 com.example.i'
+MOCK: adb -s emulator-5554 shell dumpsys activity activities => 'ACTIVITY MANAGER ACTIVITIES'
+MOCK: adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml => ''
+MOCK: adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml => '<?xml version="1.0" encoding="UTF-8"?><h'

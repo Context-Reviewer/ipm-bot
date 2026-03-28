@@ -1,0 +1,32 @@
+{
+  "schema_version": "il2cpp-name-hint-report-v1",
+  "command_name": "il2cpp-name-hint-report",
+  "created_at_utc": "2026-03-24T00:27:20Z",
+  "source_catalog_path": "C:\\dev\\ipm-bot\\data\\artifacts\\il2cpp_output_catalogs\\2026-03-24T00-24-59-102223Z_il2cpp_output_catalog_sample_cpp2il_run_2",
+  "source_snapshot_path": "C:\\dev\\ipm-bot\\data\\artifacts\\snapshots\\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner",
+  "terms": [
+    "Assembly",
+    "script"
+  ],
+  "case_sensitive": false,
+  "matching_entries": [
+    {
+      "relative_path": "DummyAssembly/Assembly-CSharp.dll",
+      "matched_terms": [
+        "Assembly"
+      ],
+      "size_bytes": 14,
+      "sha256": "ca167c5ffc8c4e8464a79c62f59b0638596f6144de5ffe1f8c24f8ff8a9bd0d6"
+    },
+    {
+      "relative_path": "script.json",
+      "matched_terms": [
+        "script"
+      ],
+      "size_bytes": 17,
+      "sha256": "e137a9368619e9a2a2cab401b0623bb0063b7cb3958151e9b1ddd55eccfd3214"
+    }
+  ],
+  "notes": "manual narrowing pass",
+  "note": "Filename/path metadata filtering only. This command does not open cataloged files and does not perform semantic interpretation."
+}

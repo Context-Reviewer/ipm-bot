@@ -1,0 +1,12 @@
+report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_manual_findings_reports\2026-03-24T01-31-24-724909Z_il2cpp_manual_findings_report_2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0
+source_catalog_path: C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0
+source_name_hint_report_path: none
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+analyst: lwpar
+finding_count: 1
+
+findings:
+- DummyDll/Assembly-CSharp.dll size_bytes=2179584 sha256=5f98fc7648605ed747537321f4b63072dfbdf37ca64defee56f9a54d7cda4479 note=ClaimableItems is a Firestore-backed model with game-specific reward/change fields including arkResetInt, sellGalaxyChange, disableAdsInt, minerPassInt, cheaterBoolChange, creditsChange, darkMatterChange, reclaimRelicInt, and pushLatestSaveOnCloudInt. symbol=ClaimableItems kind=class
+
+scope_note:
+This report records human semantic interpretation as analyst-supplied notes tied to governed artifacts only.

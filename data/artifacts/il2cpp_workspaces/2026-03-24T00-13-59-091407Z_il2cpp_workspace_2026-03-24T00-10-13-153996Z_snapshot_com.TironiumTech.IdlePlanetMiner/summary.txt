@@ -1,0 +1,18 @@
+workspace_path: C:\dev\ipm-bot\data\artifacts\il2cpp_workspaces\2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+snapshot_source_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+package_name: com.TironiumTech.IdlePlanetMiner
+architecture: arm64-v8a
+
+metadata_source:
+- apk_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner\context\installed_package\base.apk
+- member_path: assets/bin/Data/Managed/Metadata/global-metadata.dat
+- receipt: mode=apk_zip_read, source_path=C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner\context\installed_package\base.apk
+- sha256: a463d6da862e091365043898f90b6065af7f7c572a89a1712ff787c14d458f61
+- size_bytes: 9430316
+
+binary_source:
+- apk_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner\context\installed_package\split_config.arm64_v8a.apk
+- member_path: lib/arm64-v8a/libil2cpp.so
+- receipt: mode=reused_apk_report_extract, source_path=C:\dev\ipm-bot\data\artifacts\apk_reports\2026-03-24T00-10-21-927870Z_apk_report_split_config.arm64_v8a\extracted_members\lib\arm64-v8a\libil2cpp.so
+- sha256: aa4d6feff79f920f296a8b9d16fa323066123f9bf98cfaa824a1db7c2ecf975b
+- size_bytes: 47306632

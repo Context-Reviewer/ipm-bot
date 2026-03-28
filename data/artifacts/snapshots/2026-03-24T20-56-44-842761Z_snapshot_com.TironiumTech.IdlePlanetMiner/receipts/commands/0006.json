@@ -1,0 +1,19 @@
+{
+  "receipt_id": "0006",
+  "purpose": "probe_run_as",
+  "command": [
+    "C:\\Program Files\\BlueStacks_nxt\\HD-Adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "run-as",
+    "com.TironiumTech.IdlePlanetMiner",
+    "pwd"
+  ],
+  "started_at_utc": "2026-03-24T20:56:44Z",
+  "finished_at_utc": "2026-03-24T20:56:44Z",
+  "returncode": 1,
+  "spawn_error": null,
+  "stdout_path": null,
+  "stderr_path": "commands\\0006.stderr.txt"
+}

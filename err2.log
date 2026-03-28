@@ -1,0 +1,82 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\lwpar\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\dev\ipm-bot
+configfile: pyproject.toml
+plugins: anyio-4.10.0, cov-7.0.0
+collecting ... collected 13 items
+
+tests/test_runner.py::RunnerReceiptTests::test_actuator_failure_is_classified_explicitly PASSED [  7%]
+tests/test_runner.py::RunnerReceiptTests::test_ambiguous_transition_receipt PASSED [ 15%]
+tests/test_runner.py::RunnerReceiptTests::test_ambiguous_transition_receipt_for_claim_ark_reward PASSED [ 23%]
+tests/test_runner.py::RunnerReceiptTests::test_idle_does_not_invoke_actuator PASSED [ 30%]
+tests/test_runner.py::RunnerReceiptTests::test_long_actuation_can_still_verify_when_timeout_starts_after_actuation FAILED [ 38%]
+tests/test_runner.py::RunnerReceiptTests::test_pass_receipt_for_activate_ad_boost PASSED [ 46%]
+tests/test_runner.py::RunnerReceiptTests::test_pass_receipt_for_claim_ark_reward PASSED [ 53%]
+tests/test_runner.py::RunnerReceiptTests::test_periodic_refresh_updates_local_file_and_is_observed PASSED [ 61%]
+tests/test_runner.py::RunnerReceiptTests::test_refresh_failures_are_logged_but_do_not_abort_verification PASSED [ 69%]
+tests/test_runner.py::RunnerReceiptTests::test_timeout_after_save_changes_receipt_for_claim_ark_reward PASSED [ 76%]
+tests/test_runner.py::RunnerReceiptTests::test_timeout_no_save_change_receipt PASSED [ 84%]
+tests/test_runner.py::RunnerReceiptTests::test_timeout_no_save_change_receipt_for_claim_ark_reward PASSED [ 92%]
+tests/test_runner.py::RunnerReceiptTests::test_total_run_timeout_can_be_starved_by_long_actuation PASSED [100%]
+
+================================== FAILURES ===================================
+_ RunnerReceiptTests.test_long_actuation_can_still_verify_when_timeout_starts_after_actuation _
+
+self = <test_runner.RunnerReceiptTests testMethod=test_long_actuation_can_still_verify_when_timeout_starts_after_actuation>
+
+    def test_long_actuation_can_still_verify_when_timeout_starts_after_actuation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = SlowActuator(delay_seconds=0.2)
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+    
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.3,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=1,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                    ),
+                ),
+            )
+            update_thread.start()
+    
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.2,
+                verification_timeout_starts_after_actuation=True,
+            )
+    
+            update_thread.join()
+    
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertEqual(
+                receipt.runtime_context.timeout_scope,
+                "verification_only_after_actuation",
+            )
+>           self.assertGreaterEqual(receipt.runtime_context.actuation_elapsed_seconds, 0.19)
+E           AssertionError: 0.18800000002374873 not greater than or equal to 0.19
+
+tests\test_runner.py:549: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_runner.py::RunnerReceiptTests::test_long_actuation_can_still_verify_when_timeout_starts_after_actuation - AssertionError: 0.18800000002374873 not greater than or equal to 0.19
+======================== 1 failed, 12 passed in 2.09s =========================

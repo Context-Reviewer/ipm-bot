@@ -1,0 +1,15 @@
+before_snapshot_dir: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-10-34-881346Z_snapshot_com.TironiumTech.IdlePlanetMiner
+after_snapshot_dir: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-13-44-187867Z_snapshot_com.TironiumTech.IdlePlanetMiner
+new_file_count: 0
+deleted_file_count: 0
+modified_file_count: 7
+high_priority_change_count: 4
+
+most_interesting_changes:
+- score=156 priority=high change=modified path=/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat reasons=mtime_changed,hash_changed
+- score=156 priority=high change=modified path=/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat reasons=mtime_changed,hash_changed
+- score=156 priority=high change=modified path=/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat reasons=mtime_changed,hash_changed
+- score=156 priority=high change=modified path=/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat reasons=mtime_changed,hash_changed
+- score=51 priority=low change=modified path=C:\ProgramData\BlueStacks_nxt\Logs\Player.log reasons=size_changed,mtime_changed
+- score=16 priority=low change=modified path=/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents reasons=mtime_changed
+- score=16 priority=low change=modified path=/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents reasons=mtime_changed

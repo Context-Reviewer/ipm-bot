@@ -1,0 +1,16 @@
+{
+  "receipt_id": "0001",
+  "purpose": "adb_version",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "version"
+  ],
+  "started_at_utc": "2026-03-23T23:18:29Z",
+  "finished_at_utc": "2026-03-23T23:18:29Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0001.stdout.txt",
+  "stderr_path": null
+}

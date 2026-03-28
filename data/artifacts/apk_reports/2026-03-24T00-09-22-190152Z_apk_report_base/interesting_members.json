@@ -1,0 +1,30 @@
+[
+  {
+    "member_path": "AndroidManifest.xml",
+    "file_size": 49036,
+    "compress_size": 9049,
+    "crc32_hex": "96f854c9",
+    "sha256": "8943ab65c9a83ad8b3bb3ea395339f4b839ee0323c2c185fb03a282409a64b87",
+    "extension": ".xml",
+    "classification": "apk_manifest",
+    "interesting": true,
+    "notes": [
+      "package_metadata"
+    ],
+    "extracted_relative_path": "extracted_members\\AndroidManifest.xml"
+  },
+  {
+    "member_path": "assets/bin/Data/Managed/Metadata/global-metadata.dat",
+    "file_size": 9430316,
+    "compress_size": 2679430,
+    "crc32_hex": "3652df7b",
+    "sha256": "a463d6da862e091365043898f90b6065af7f7c572a89a1712ff787c14d458f61",
+    "extension": ".dat",
+    "classification": "il2cpp_metadata",
+    "interesting": true,
+    "notes": [
+      "il2cpp_metadata"
+    ],
+    "extracted_relative_path": "extracted_members\\assets\\bin\\Data\\Managed\\Metadata\\global-metadata.dat"
+  }
+]

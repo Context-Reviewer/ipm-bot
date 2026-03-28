@@ -1,0 +1,92 @@
+{
+  "action": "activate_ad_boost",
+  "actuation_attempted": true,
+  "actuator_config": {
+    "actuator_type": "adb",
+    "adb_path": "C:\\dev\\platform-tools\\adb.exe",
+    "adb_serial": "emulator-5554",
+    "ark_ad_wait_seconds": 20.0,
+    "ark_esc_attempts": 1,
+    "ark_esc_interval_seconds": 1.0,
+    "ark_post_watch_probe_count": 0,
+    "ark_post_watch_probe_interval_seconds": 2.0,
+    "ark_post_watch_ui_dump_max_text_length": 240,
+    "ark_return_wait_seconds": 3.0,
+    "ark_skip_close_wait_seconds": 1.0,
+    "manual_observation_probe_interval_seconds": 1.0,
+    "manual_observation_window_seconds": 20.0
+  },
+  "actuator_execution": {
+    "actuator_command_count": 1,
+    "actuator_command_summary": [
+      "C:\\dev\\platform-tools\\adb.exe -s emulator-5554 shell input tap 540 960"
+    ],
+    "actuator_execution_status": "COMPLETED",
+    "actuator_type": "adb",
+    "probe_samples": [],
+    "stage_events": []
+  },
+  "baseline_hash": "d046c28fc3ff337941be6c63a63f3fbe9c0218667d220dfba61eb727f8a566e6",
+  "candidate_hashes": [],
+  "changed_save_count": 0,
+  "contract_identity": {
+    "action": "activate_ad_boost",
+    "expectation_keys": [
+      "expected_values",
+      "must_not_change"
+    ],
+    "required_expected_values": {
+      "ad_boost_active": true
+    },
+    "supporting_fields": [
+      "ads_watched",
+      "save_timestamp"
+    ]
+  },
+  "elapsed_seconds": 30.000279200001387,
+  "failure_reason": "TIMEOUT_NO_SAVE_CHANGE",
+  "final_candidate_hash": null,
+  "final_status": "FAIL",
+  "planner_decision": {
+    "actuation_required": true,
+    "decision_reason": "ad_boost_inactive",
+    "selected_action": "activate_ad_boost"
+  },
+  "prepared_save_hash": "d046c28fc3ff337941be6c63a63f3fbe9c0218667d220dfba61eb727f8a566e6",
+  "receipt_written_at_utc": "2026-03-26T02-07-38Z",
+  "runtime_context": {
+    "action_override_requested_action": null,
+    "action_override_used": false,
+    "active_crafters": 2,
+    "active_smelters": 3,
+    "actuation_elapsed_seconds": 0.20775920001324266,
+    "exit_code": 1,
+    "manual_observation_mode": false,
+    "nearest_completion_seconds": 9.396508,
+    "planner_deferred_for_imminent_completion": false,
+    "planner_nearest_completion_seconds": 9.396508,
+    "planner_save_snapshot_used": true,
+    "poll_interval_seconds": 0.5,
+    "receipt_schema_version": 11,
+    "save_repull_count": 0,
+    "save_repull_failure_count": 0,
+    "save_repull_interval_seconds": null,
+    "save_snapshot_available": true,
+    "timeout_scope": "total_run",
+    "timeout_seconds": 30.0,
+    "verification_elapsed_seconds": 29.792516299989074,
+    "verification_started": true,
+    "verification_starved_by_timeout": false
+  },
+  "save_path": "C:\\dev\\ipm-bot\\data\\pulled\\playerInfo.dat",
+  "save_source": {
+    "adb_path": "C:\\dev\\platform-tools\\adb.exe",
+    "adb_serial": "emulator-5554",
+    "original_requested_path": "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "preparation_performed": true,
+    "prepared_local_path": "C:\\dev\\ipm-bot\\data\\pulled\\playerInfo.dat",
+    "remote_save_path": "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "save_source_type": "adb_pull"
+  },
+  "verifier_messages": []
+}

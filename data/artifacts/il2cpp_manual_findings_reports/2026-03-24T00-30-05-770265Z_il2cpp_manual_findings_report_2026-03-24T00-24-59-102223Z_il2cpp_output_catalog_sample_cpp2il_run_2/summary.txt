@@ -1,0 +1,15 @@
+report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_manual_findings_reports\2026-03-24T00-30-05-770265Z_il2cpp_manual_findings_report_2026-03-24T00-24-59-102223Z_il2cpp_output_catalog_sample_cpp2il_run_2
+source_catalog_path: C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\2026-03-24T00-24-59-102223Z_il2cpp_output_catalog_sample_cpp2il_run_2
+source_name_hint_report_path: none
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+analyst: lwpar
+finding_count: 1
+
+notes:
+manual review session 1
+
+findings:
+- DummyAssembly/Assembly-CSharp.dll size_bytes=14 sha256=ca167c5ffc8c4e8464a79c62f59b0638596f6144de5ffe1f8c24f8ff8a9bd0d6 note=Potential dummy assembly entry point symbol=Assembly-CSharp kind=filename
+
+scope_note:
+This report records human semantic interpretation as analyst-supplied notes tied to governed artifacts only.

@@ -1,0 +1,1 @@
+run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted

@@ -1,0 +1,131 @@
+{
+  "schema_version": "il2cpp-name-hint-report-v1",
+  "command_name": "il2cpp-name-hint-report",
+  "created_at_utc": "2026-03-24T00:42:05Z",
+  "source_catalog_path": "C:\\dev\\ipm-bot\\data\\artifacts\\il2cpp_output_catalogs\\2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0",
+  "source_snapshot_path": "C:\\dev\\ipm-bot\\data\\artifacts\\snapshots\\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner",
+  "terms": [
+    "tironium",
+    "idleplanet",
+    "planet",
+    "miner",
+    "ark",
+    "galaxy",
+    "ship",
+    "manager",
+    "purchase",
+    "tapjoy",
+    "playfab",
+    "appsflyer",
+    "firebase"
+  ],
+  "case_sensitive": false,
+  "matching_entries": [
+    {
+      "relative_path": "DummyDll/AppsFlyer.dll",
+      "matched_terms": [
+        "appsflyer"
+      ],
+      "size_bytes": 70144,
+      "sha256": "3f52f50f065db8127e42fc0dc2afd712700292b88e7738ae2072475e163af12e"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Analytics.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 20480,
+      "sha256": "dd374f573f981104b972f9832b4e6e07660faeebc7a0135042ee59e194aa5f1b"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.App.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 86016,
+      "sha256": "db64f13d5ede1a994e6a2c90946adf34f50b671d9a5abac8e71092345e62821e"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Auth.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 24064,
+      "sha256": "25a7c9140012eb4497cfb91e83409ad3633dd6292e3774aba59852d6094db5dd"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Database.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 49664,
+      "sha256": "33d4aed1ba932dd29591f1b079ac7657300ed5f3d18b505be038efad3a73b3a1"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Firestore.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 140800,
+      "sha256": "5854b1174d3636fe10db0bb0c17f5af405ec59adc2e7a1c5951315bc1cb7eac7"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Functions.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 22528,
+      "sha256": "f62c414122317b581c7025b58a0a750471a7d3c271b48d67677cad369a16c26a"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.Platform.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 28160,
+      "sha256": "c4cb278d6b7116439f41c9722fac44d446d24eadeca3319d78704e72ba7ae3a7"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.RemoteConfig.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 27648,
+      "sha256": "79d85da04bc87c3f65da876027abc2bf78a678d0cdc0da1c24b2af135057f326"
+    },
+    {
+      "relative_path": "DummyDll/Firebase.TaskExtension.dll",
+      "matched_terms": [
+        "firebase"
+      ],
+      "size_bytes": 4608,
+      "sha256": "ed46b3b97f1682b2c5c5585719f5f545733422c922ef170c50a477ee0df07442"
+    },
+    {
+      "relative_path": "DummyDll/PlayFab.dll",
+      "matched_terms": [
+        "playfab"
+      ],
+      "size_bytes": 1116160,
+      "sha256": "03e068db16eba976659f04f529ec89053d1e1dcca2ddf6583d1101dc9ac0f77c"
+    },
+    {
+      "relative_path": "DummyDll/Tapjoy.Android.dll",
+      "matched_terms": [
+        "tapjoy"
+      ],
+      "size_bytes": 11776,
+      "sha256": "075887e595e041177f8b8ca58dce5ef1ca0e5fe2c9817789b231bda10c6b5d46"
+    },
+    {
+      "relative_path": "DummyDll/Tapjoy.dll",
+      "matched_terms": [
+        "tapjoy"
+      ],
+      "size_bytes": 72704,
+      "sha256": "cbd3a113419d8a54457023b9cc0f93aebda32fac33c867b8dcdfff84daf74262"
+    }
+  ],
+  "notes": null,
+  "note": "Filename/path metadata filtering only. This command does not open cataloged files and does not perform semantic interpretation."
+}

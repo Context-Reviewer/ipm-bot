@@ -1,0 +1,1830 @@
+artifact_key,collector_id,source_kind,source_root,source_path,relative_path,entry_type,accessible,extraction_method,size_bytes,mtime_epoch,mtime_utc,sha256,extension,file_class,text_like,copy_status,copied_relative_path,quick_text_preview,priority,priority_score,notes,errors
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,.,dir,True,adb shell find,0,1774304544,2026-03-23T22:22:24Z,,.idleplanetminer,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/cache,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/cache,cache,dir,True,adb shell find,0,1772316078,2026-02-28T22:01:18Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files,files,dir,True,adb shell find,0,1772316213,2026-02-28T22:03:33Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity,files/Unity,dir,True,adb shell find,0,1772316073,2026-02-28T22:01:13Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,dir,True,adb shell find,0,1772316076,2026-02-28T22:01:16Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,dir,True,adb shell find,0,1772316078,2026-02-28T22:01:18Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,dir,True,adb shell find,0,1774307548,2026-03-23T23:12:28Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,file,True,adb shell find,293,1774304549,2026-03-23T22:22:29Z,83b3f90c4edf1f122c8faf9784ca0aee4dd017c65493ac181c1814211703db96,,unknown,True,hashed_only,,"{""analytics"":{""enabled"":true},""connect"":{""limit_user_tracking"":false,""player_opted_out"":false,""enabled"":true},""performance"":{""enabled"":true},""dynamic"":{""coreBusinessMetrics"":{""enabled"":true,""timeToWaitForUserInfoS"":60},""analytics"":{""shouldCollectAutomation"":true,""timeToWaitForUserInfoS"":60}}}",medium,45,files_path;unity_name;analytics_name;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,file,True,adb shell find,134,1774304549,2026-03-23T22:22:29Z,8119518ac0a966b87097e3225c01336a2da57ff447383d3c7fddfb4e23c3aad5,,unknown,True,hashed_only,,"{""config_etag"":"""",""app_info_hash"":2814381492,""app_installed"":true,""engine_ver"":""2021.3.56f2"",""app_ver"":""2.8.8"",""registered_events"":{}}",medium,45,files_path;unity_name;analytics_name;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,dir,True,adb shell find,0,1772316073,2026-02-28T22:01:13Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp,files/il2cpp,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata,files/il2cpp/Metadata,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata/global-metadata.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata/global-metadata.dat,files/il2cpp/Metadata/global-metadata.dat,file,True,adb shell find,9430316,1772316072,2026-02-28T22:01:12Z,,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage;hash_skipped_above_threshold,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources,files/il2cpp/Resources,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Data.dll-resources.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Data.dll-resources.dat,files/il2cpp/Resources/System.Data.dll-resources.dat,file,True,adb shell find,93718,1772316072,2026-02-28T22:01:12Z,98a7950ec6de3242c2e190dfa630188dfa32511a125542b94baa952d1c757d49,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Drawing.dll-resources.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Drawing.dll-resources.dat,files/il2cpp/Resources/System.Drawing.dll-resources.dat,file,True,adb shell find,25453,1772316072,2026-02-28T22:01:12Z,7c33aa707bc3fdc83991b81a97d6fc622b140762a767300f08f616c2c0a91255,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/mscorlib.dll-resources.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/mscorlib.dll-resources.dat,files/il2cpp/Resources/mscorlib.dll-resources.dat,file,True,adb shell find,337563,1772316072,2026-02-28T22:01:12Z,c5baa176a5b72cd545266340e42102d393a5e43d38c95796bc828918bb95277f,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/unity.ver,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/unity.ver,files/il2cpp/unity.ver,file,True,adb shell find,36,1772316072,2026-02-28T22:01:12Z,2f01b33672201ff6a4aa25e62ec2432ef14b7f95d81cef07f7a87de269a9604b,.ver,unknown,True,hashed_only,,25559e9f-44e5-4084-a123-9f6e2c68fb6b,medium,53,files_path;unity_name;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat,files/playerInfo.dat,file,True,adb shell find,112036,1774307879,2026-03-23T23:17:59Z,a32445529d6c3f0c1d3dff16f7c3d12dd8dd2e3de769e25187a20a4684441fc9,.dat,binary_state_blob,False,hashed_only,,,high,110,binary_blob_extension;files_path;playerinfo_name;external_package_storage,
+adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat,external_sdcard,adb_external,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner,/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat,files/playerInfoBackup.dat,file,True,adb shell find,112036,1774307879,2026-03-23T23:17:59Z,28c3ecb75b5bc22d710462f560dc13b79de08f1355989458f1e3ef2806c4d027,.dat,binary_state_blob,False,hashed_only,,,high,110,binary_blob_extension;files_path;playerinfo_name;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,.,dir,True,adb shell find,0,1774304544,2026-03-23T22:22:24Z,,.idleplanetminer,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/cache,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/cache,cache,dir,True,adb shell find,0,1772316078,2026-02-28T22:01:18Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files,files,dir,True,adb shell find,0,1772316213,2026-02-28T22:03:33Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity,files/Unity,dir,True,adb shell find,0,1772316073,2026-02-28T22:01:13Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb,dir,True,adb shell find,0,1772316076,2026-02-28T22:01:16Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics,dir,True,adb shell find,0,1772316078,2026-02-28T22:01:18Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/ArchivedEvents,dir,True,adb shell find,0,1774307548,2026-03-23T23:12:28Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config,file,True,adb shell find,293,1774304549,2026-03-23T22:22:29Z,83b3f90c4edf1f122c8faf9784ca0aee4dd017c65493ac181c1814211703db96,,unknown,True,hashed_only,,"{""analytics"":{""enabled"":true},""connect"":{""limit_user_tracking"":false,""player_opted_out"":false,""enabled"":true},""performance"":{""enabled"":true},""dynamic"":{""coreBusinessMetrics"":{""enabled"":true,""timeToWaitForUserInfoS"":60},""analytics"":{""shouldCollectAutomation"":true,""timeToWaitForUserInfoS"":60}}}",medium,45,files_path;unity_name;analytics_name;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/values,file,True,adb shell find,134,1774304549,2026-03-23T22:22:29Z,8119518ac0a966b87097e3225c01336a2da57ff447383d3c7fddfb4e23c3aad5,,unknown,True,hashed_only,,"{""config_etag"":"""",""app_info_hash"":2814381492,""app_installed"":true,""engine_ver"":""2021.3.56f2"",""app_ver"":""2.8.8"",""registered_events"":{}}",medium,45,files_path;unity_name;analytics_name;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/PerformanceReporting,dir,True,adb shell find,0,1772316073,2026-02-28T22:01:13Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp,files/il2cpp,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata,files/il2cpp/Metadata,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata/global-metadata.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Metadata/global-metadata.dat,files/il2cpp/Metadata/global-metadata.dat,file,True,adb shell find,9430316,1772316072,2026-02-28T22:01:12Z,,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage;hash_skipped_above_threshold,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources,files/il2cpp/Resources,dir,True,adb shell find,0,1772316072,2026-02-28T22:01:12Z,,,directory,,not_attempted,,,low,0,,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Data.dll-resources.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Data.dll-resources.dat,files/il2cpp/Resources/System.Data.dll-resources.dat,file,True,adb shell find,93718,1772316072,2026-02-28T22:01:12Z,98a7950ec6de3242c2e190dfa630188dfa32511a125542b94baa952d1c757d49,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Drawing.dll-resources.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Drawing.dll-resources.dat,files/il2cpp/Resources/System.Drawing.dll-resources.dat,file,True,adb shell find,25453,1772316072,2026-02-28T22:01:12Z,7c33aa707bc3fdc83991b81a97d6fc622b140762a767300f08f616c2c0a91255,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/mscorlib.dll-resources.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/mscorlib.dll-resources.dat,files/il2cpp/Resources/mscorlib.dll-resources.dat,file,True,adb shell find,337563,1772316072,2026-02-28T22:01:12Z,c5baa176a5b72cd545266340e42102d393a5e43d38c95796bc828918bb95277f,.dat,binary_state_blob,False,hashed_only,,,high,70,binary_blob_extension;files_path;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/unity.ver,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/unity.ver,files/il2cpp/unity.ver,file,True,adb shell find,36,1772316072,2026-02-28T22:01:12Z,2f01b33672201ff6a4aa25e62ec2432ef14b7f95d81cef07f7a87de269a9604b,.ver,unknown,True,hashed_only,,25559e9f-44e5-4084-a123-9f6e2c68fb6b,medium,53,files_path;unity_name;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat,files/playerInfo.dat,file,True,adb shell find,112036,1774307879,2026-03-23T23:17:59Z,a32445529d6c3f0c1d3dff16f7c3d12dd8dd2e3de769e25187a20a4684441fc9,.dat,binary_state_blob,False,hashed_only,,,high,110,binary_blob_extension;files_path;playerinfo_name;external_package_storage,
+adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat,external_storage_emulated,adb_external,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner,/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat,files/playerInfoBackup.dat,file,True,adb shell find,112036,1774307879,2026-03-23T23:17:59Z,28c3ecb75b5bc22d710462f560dc13b79de08f1355989458f1e3ef2806c4d027,.dat,binary_state_blob,False,hashed_only,,,high,110,binary_blob_extension;files_path;playerinfo_name;external_package_storage,
+windows_host|C:\ProgramData\BlueStacks_nxt\Engine\Pie64\AppCache\AppCache.json,bluestacks_appcache,windows_host,C:\ProgramData\BlueStacks_nxt\Engine\Pie64\AppCache,C:\ProgramData\BlueStacks_nxt\Engine\Pie64\AppCache\AppCache.json,AppCache.json,file,True,host_read,4147,1774304545,2026-03-23T22:22:25Z,934a9b10f882125273487150e806efe80cad91840329e8b7c0eec3bf78011443,.json,json_state_or_config,True,hashed_only,,"[
+    {
+        ""activity"": ""com.epicgames.ue4.SplashActivity"",
+        ""appLabel"": ""RL Sideswipe"",
+        ""category"": ""Sports"",
+        ""iconFileName"": ""com.Psyonix.RL2D.png"",
+        ""installDate"": ""14.06.2025"",
+        ""isFirstLaunch"": true,
+        ""isFullScreen"": true,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.Psyonix.RL2D"",
+        ""versionCode"": 504379,
+        ""versionName"": ""1.12.5""
+    },
+    {
+        ""activity"": ""com.unity3d.player.UnityPlayerActivity"",
+        ""appLabel"": ""Idle Planet Miner"",
+        ""category"": ""Simulation"",
+        ""iconFileName"": ""com.TironiumTech.IdlePlanetMiner.png"",
+        ""installDate"": ""28.02.2026"",
+        ""isFirstLaunch"": false,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": true,
+        ""isHomeApp"": false,
+        ""orientation"": ""Portrait"",
+        ""package"": ""com.TironiumTech.IdlePlanetMiner"",
+        ""versionCode"": 640,
+        ""versionName"": ""2.8.8""
+    },
+    {
+        ""activity"": ""com.netease.game.MessiahNativeActivity"",
+        ""appLabel"": ""Immortal"",
+        ""category"": ""Role Playing"",
+        ""iconFileName"": ""com.blizzard.diablo.immortal.png"",
+        ""installDate"": ""09.08.2025"",
+        ""isFirstLaunch"": true,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.blizzard.diablo.immortal"",
+        ""versionCode"": 34431002,
+        ""versionName"": ""4.2.3""
+    },
+    {
+        ""activity"": ""com.unity3d.player.UnityPlayerActivity"",
+        ""appLabel"": ""Physics Lab"",
+        ""category"": ""Education"",
+        ""iconFileName"": ""com.civitas.quantumphysics.png"",
+        ""installDate"": ""10.10.2025"",
+        ""isFirstLaunch"": false,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.civitas.quantumphysics"",
+        ""versionCode"": 180,
+        ""versionName"": ""2.5.2""
+    },
+    {
+        ""activity"": ""com.endgame.everweave.MainActivity"",
+        ""appLabel"": ""Everweave"",
+        ""category"": ""Role Playing"",
+        ""iconFileName"": ""com.endgame.everweave.png"",
+        ""installDate"": ""20.09.2025"",
+        ""isFirstLaunch"": true,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.endgame.everweave"",
+        ""versionCode"": 49,
+        ""versionName"": ""0.10.2""
+    },
+    {
+        ""activity"": ""com.epicgames.portal.ui.MainActivity"",
+        ""appLabel"": ""Epic Games"",
+        ""category"": ""Action"",
+        ""iconFileName"": ""com.epicgames.portal.png"",
+        ""installDate"": ""14.06.2025"",
+        ""isFirstLaunch"": false,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.epicgames.portal"",
+        ""versionCode"": 50060,
+        ""versionName"": ""0.10.0""
+    },
+    {
+        ""activity"": ""com.google.android.gm.ConversationListActivityGmail"",
+        ""appLabel"": ""Gmail"",
+        ""category"": ""Communication"",
+        ""iconFileName"": ""com.google.android.gm.png"",
+        ""installDate"": ""30.08.2025"",
+        ""isFirstLaunch"": true,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.google.android.gm"",
+        ""versionCode"": 65615106,
+        ""versionName"": ""2026.02.23.876771157.Release""
+    },
+    {
+        ""activity"": ""com.google.android.youtube.app.honeycomb.Shell$HomeActivity"",
+        ""appLabel"": ""YouTube"",
+        ""category"": ""Video Players & Editors"",
+        ""iconFileName"": ""com.google.android.youtube.png"",
+        ""installDate"": ""16.12.2025"",
+        ""isFirstLaunch"": true,
+        ""isFullScreen"": false,
+        ""isGameControlsToogleHintShown"": false,
+        ""isHomeApp"": false,
+        ""orientation"": """",
+        ""package"": ""com.google.android.youtube"",
+        ""versionCode"": 1561061152,
+        ""versionName"": ""21.11.483""
+    }
+]
+",medium,32,json_extension;cache_path;bluestacks_host_metadata,
+windows_host|C:\ProgramData\BlueStacks_nxt\Logs\Player.log,bluestacks_player_log,windows_host,C:\ProgramData\BlueStacks_nxt\Logs,C:\ProgramData\BlueStacks_nxt\Logs\Player.log,Player.log,file,True,host_read,8974553,1774307642,2026-03-23T23:14:02Z,,.log,log_or_text,True,hashed_only,,"2026-03-13 11:47:24.635-0400 15516 17156 UI     Pie64 [Ready] E: connection error: GOAWAY invalid stream/error code
+2026-03-13 11:51:30.837-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:51:38.108-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:52:51.556-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:52:51.562-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:55:16.665-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:55:16.669-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:55:17.000-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:55:17.005-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 11:55:38.981-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:00:40.365-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:02:58.731-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:02:58.737-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:04:59.913-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:05:32.005-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:05:32.056-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:05:32.056-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:05:32.056-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:05:32.056-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:05:32.056-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:05:32.056-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:05:46.223-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:06:39.023-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:06:39.073-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:06:39.073-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:06:39.073-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:06:39.073-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:06:39.073-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:06:39.073-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:06:59.530-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:06:59.756-0400 15516 8336  SER    Pie64 [Ready] I: GUEST: [ 1800.000678] init: Could not find service hosting interface android.hardware.radio@1.0::IRadio/slot1
+2026-03-13 12:07:26.691-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:07:26.742-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+2026-03-13 12:07:26.742-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+2026-03-13 12:07:26.742-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:07:26.742-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+2026-03-13 12:07:26.742-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+2026-03-13 12:07:26.742-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:08:50.434-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+
+I made a small rectangle between the two icons for smelting.  I placed the sided f the rectable basically exactly between the icons, touching the last pixel that is colored like the edge of each one.  So, the distances between the two icons is about 67 px
+2026-03-13 12:08:50.434-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1220 | Y: 680 | Right: 1286 | Bottom: 691
+Width: 67 px | Height: 12 px | Area: 804 px | Perimeter: 158 px
+Distance: 66.91 px | Angle: 9.46°
+
+I made a small rectangle between the two icons for smelting.  I placed the sided f the rectable basically exactly between the icons, touching the last pixel that is colored like the edge of each one.  So, the distances between the two icons is about 67 px
+2026-03-13 12:08:50.434-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:09:33.623-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:10:06.783-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:10:06.834-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1199 | Y: 651 | Right: 1311 | Bottom: 702
+Width: 113 px | Height: 52 px | Area: 5876 px | Perimeter: 330 px
+Distance: 123.07 px | Angle: 24.48°
+2026-03-13 12:10:06.834-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1199 | Y: 651 | Right: 1311 | Bottom: 702
+Width: 113 px | Height: 52 px | Area: 5876 px | Perimeter: 330 px
+Distance: 123.07 px | Angle: 24.48°
+2026-03-13 12:10:06.834-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:10:06.834-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1199 | Y: 651 | Right: 1311 | Bottom: 702
+Width: 113 px | Height: 52 px | Area: 5876 px | Perimeter: 330 px
+Distance: 123.07 px | Angle: 24.48°
+2026-03-13 12:10:06.834-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1199 | Y: 651 | Right: 1311 | Bottom: 702
+Width: 113 px | Height: 52 px | Area: 5876 px | Perimeter: 330 px
+Distance: 123.07 px | Angle: 24.48°
+2026-03-13 12:10:06.834-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:10:53.413-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:11:24.838-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:11:24.889-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1197 | Y: 657 | Right: 1311 | Bottom: 700
+Width: 115 px | Height: 44 px | Area: 5060 px | Perimeter: 318 px
+Distance: 121.84 px | Angle: 20.67°
+2026-03-13 12:11:24.889-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1197 | Y: 657 | Right: 1311 | Bottom: 700
+Width: 115 px | Height: 44 px | Area: 5060 px | Perimeter: 318 px
+Distance: 121.84 px | Angle: 20.67°
+2026-03-13 12:11:24.889-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:11:24.889-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1197 | Y: 657 | Right: 1311 | Bottom: 700
+Width: 115 px | Height: 44 px | Area: 5060 px | Perimeter: 318 px
+Distance: 121.84 px | Angle: 20.67°
+2026-03-13 12:11:24.889-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1197 | Y: 657 | Right: 1311 | Bottom: 700
+Width: 115 px | Height: 44 px | Area: 5060 px | Perimeter: 318 px
+Distance: 121.84 px | Angle: 20.67°
+2026-03-13 12:11:24.889-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:12:58.999-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:13:10.611-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:13:10.661-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1303 Y: 442
+2026-03-13 12:13:10.661-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1303 Y: 442
+2026-03-13 12:13:10.661-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:13:10.661-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1303 Y: 442
+2026-03-13 12:13:10.661-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1303 Y: 442
+2026-03-13 12:13:10.661-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:13:27.052-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:13:31.911-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:13:43.147-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:13:43.197-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:13:43.197-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:13:43.197-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:13:43.197-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:13:43.197-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: X: 1086 | Y: 33 | Right: 1646 | Bottom: 1029
+Width: 561 px | Height: 997 px | Area: 559317 px | Perimeter: 3116 px
+Distance: 1142.64 px | Angle: 60.65°
+2026-03-13 12:13:43.197-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:14:13.262-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:19:33.483-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Enabling people with mental health issues to deepen the immersion of their delusion is not something i'd want the Pentagon to spend funding on anyways.  
+Feeding decent food to those who have willingly decided to stand between our civilization and the entropy of multiculturalism?  
+Priceless.
+2026-03-13 12:19:33.483-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Enabling people with mental health issues to deepen the immersion of their delusion is not something i'd want the Pentagon to spend funding on anyways.  
+Feeding decent food to those who have willingly decided to stand between our civilization and the entropy of multiculturalism?  
+Priceless.
+2026-03-13 12:19:33.483-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:20:57.758-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:20:57.763-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:21:15.771-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:21:37.935-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: I fixed the smelt targeting path in [production_overview.py](c:/dev/ipm-ocr-bot/src/ipm/readers/production_overview.py) and updated [test_production_overview_reader.py](c:/dev/ipm-ocr-bot/tests/test_production_overview_reader.py). I did not touch `PlanetsTask`, sell logic, or execution behavior.
+
+What changed:
+- kept the existing card/arrow/localization pipeline
+- added a smelt-specific relational fallback from the localized bar side:
+  - if smelt ore localization is missing but bar localization succeeds, the ore probe window is now estimated from the bar center on the same row using card-local spacing
+- kept strict known-name matching and fail-closed behavior unchanged
+
+Validation commands:
+```powershell
+python -m pytest -q tests\test_production_overview_reader.py
+python -m compileall src\ipm\readers\production_overview.py
+python -m pytest -q tests\test_actions.py tests\test_production_overview_seams.py tests\test_production_overview_reader.py tests\test_production_floor_live_state.py tests\test_inventory_panel_reader.py tests\test_production_floor_advisor.py
+```
+
+Results:
+- focused: `49 passed in 0.71s`
+- compile check: succeeded
+- regression slice: `64 passed in 0.73s`
+
+Live validation:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/manifest.json)
+- smelt now succeeds in the combined live run:
+  - `Copper Bar`
+  - backend: `tooltip_probe_bar_openai`
+- craft still succeeds:
+  - `Copper Wire`
+  - backend: `tooltip_probe_output_windows`
+
+Representative artifacts:
+- smelt ore overlay: [smelt_PRODUCTION_CARD1_ore_center_search_region_overlay.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_ore_center_search_region_overlay.png)
+- smelt ore crop: [smelt_PRODUCTION_CARD1_ore_center_search_region_tooltip.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_ore_center_search_region_tooltip.png)
+- smelt bar overlay: [smelt_PRODUCTION_CARD1_bar_center_search_region_overlay.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_bar_center_search_region_overlay.png)
+
+Bottom line:
+- the smelt test is fixed for this seam
+- the ore path no longer drifts into the wrong neighborhood
+- the combined live tooltip validation now succeeds for both smelt and craft on `PRODUCTION_CARD1`
+
+Remaining uncertainty:
+- this was a narrow top-card live validation, not a full end-to-end production-state rerun across all cards and scroll states
+2026-03-13 12:21:37.935-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: I fixed the smelt targeting path in [production_overview.py](c:/dev/ipm-ocr-bot/src/ipm/readers/production_overview.py) and updated [test_production_overview_reader.py](c:/dev/ipm-ocr-bot/tests/test_production_overview_reader.py). I did not touch `PlanetsTask`, sell logic, or execution behavior.
+
+What changed:
+- kept the existing card/arrow/localization pipeline
+- added a smelt-specific relational fallback from the localized bar side:
+  - if smelt ore localization is missing but bar localization succeeds, the ore probe window is now estimated from the bar center on the same row using card-local spacing
+- kept strict known-name matching and fail-closed behavior unchanged
+
+Validation commands:
+```powershell
+python -m pytest -q tests\test_production_overview_reader.py
+python -m compileall src\ipm\readers\production_overview.py
+python -m pytest -q tests\test_actions.py tests\test_production_overview_seams.py tests\test_production_overview_reader.py tests\test_production_floor_live_state.py tests\test_inventory_panel_reader.py tests\test_production_floor_advisor.py
+```
+
+Results:
+- focused: `49 passed in 0.71s`
+- compile check: succeeded
+- regression slice: `64 passed in 0.73s`
+
+Live validation:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/manifest.json)
+- smelt now succeeds in the combined live run:
+  - `Copper Bar`
+  - backend: `tooltip_probe_bar_openai`
+- craft still succeeds:
+  - `Copper Wire`
+  - backend: `tooltip_probe_output_windows`
+
+Representative artifacts:
+- smelt ore overlay: [smelt_PRODUCTION_CARD1_ore_center_search_region_overlay.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_ore_center_search_region_overlay.png)
+- smelt ore crop: [smelt_PRODUCTION_CARD1_ore_center_search_region_tooltip.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_ore_center_search_region_tooltip.png)
+- smelt bar overlay: [smelt_PRODUCTION_CARD1_bar_center_search_region_overlay.png](c:/dev/ipm-ocr-bot/out/tooltip_local_ocr_live_validation_v4/smelt/smelt_PRODUCTION_CARD1_bar_center_search_region_overlay.png)
+
+Bottom line:
+- the smelt test is fixed for this seam
+- the ore path no longer drifts into the wrong neighborhood
+- the combined live tooltip validation now succeeds for both smelt and craft on `PRODUCTION_CARD1`
+
+Remaining uncertainty:
+- this was a narrow top-card live validation, not a full end-to-end production-state rerun across all cards and scroll states
+2026-03-13 12:21:37.935-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:26:57.246-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: git add src/ipm/readers/production_overview.py tests/test_production_overview_reader.py
+git commit -m ""Add relational smelt fallback from localized bar side""
+2026-03-13 12:26:57.246-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: git add src/ipm/readers/production_overview.py tests/test_production_overview_reader.py
+git commit -m ""Add relational smelt fallback from localized bar side""
+2026-03-13 12:26:57.246-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:27:04.624-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: git tag -a v0.1.0-smelt-tooltip-top-card-green -m ""Top-card live tooltip validation succeeds for smelt and craft""
+git push
+git push --tags
+2026-03-13 12:27:04.624-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: git tag -a v0.1.0-smelt-tooltip-top-card-green -m ""Top-card live tooltip validation succeeds for smelt and craft""
+git push
+git push --tags
+2026-03-13 12:27:04.624-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:27:26.785-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: We now have narrow live success on PRODUCTION_CARD1 for both:
+- smelt: Copper Bar via tooltip_probe_bar_openai
+- craft: Copper Wire via tooltip_probe_output_windows
+
+Recent fix:
+- smelt targeting now has a relational fallback from the localized bar side
+- ore-side drift was corrected without loosening thresholds
+- tests are green
+- this is still a narrow top-card validation only
+
+Next task:
+Run a full production-state validation across top cards, lower cards after scroll, and normal reader flow to determine whether this seam improvement materially improves end-to-end queue population and whether top-latch / scroll restoration still blocks the overall system.
+2026-03-13 12:27:26.785-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: We now have narrow live success on PRODUCTION_CARD1 for both:
+- smelt: Copper Bar via tooltip_probe_bar_openai
+- craft: Copper Wire via tooltip_probe_output_windows
+
+Recent fix:
+- smelt targeting now has a relational fallback from the localized bar side
+- ore-side drift was corrected without loosening thresholds
+- tests are green
+- this is still a narrow top-card validation only
+
+Next task:
+Run a full production-state validation across top cards, lower cards after scroll, and normal reader flow to determine whether this seam improvement materially improves end-to-end queue population and whether top-latch / scroll restoration still blocks the overall system.
+2026-03-13 12:27:26.785-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:27:32.934-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:28:09.954-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:28:09.958-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:29:01.193-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:31:12.914-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: I ran the full live validation without further code changes.
+
+Artifacts:
+- Full live-state run: [production_floor_live_state.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_floor_live_state.json)
+- Production-only normal flow: [production_overview_direct_v2.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_overview_direct_v2.json)
+- Manual top/lower card check: [production_overview_manual_cards.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_overview_manual_cards.json)
+
+Commands run:
+```powershell
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... ProductionFloorLiveStateReader.read() ...
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... ProductionOverviewReader.read_cards(...) ...
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... manual _read_card top/lower check ...
+```
+
+Results:
+- Full normal live-state flow did **not** complete.
+  - blocker: `ValueError('unreadable_page:items:1')`
+- Production-only normal flow also did **not** complete.
+  - `smelt`: `ValueError('production_top_latch_failed')`
+  - `craft`: `ValueError('production_top_latch_failed')`
+
+So the system is still blocked in the normal end-to-end path, and `top-latch` remains a real blocker.
+
+Manual production-only check, bypassing the top-latch gate:
+- `smelt`
+  - top cards: `ValueError('unreadable_active_state:19/1,00K')`
+  - lower cards: `ValueError('smelt_tooltip_fallback_failed:tooltip_probe_no_valid_label;smelt_recipe_popup_fallback_failed:smelt_recipe_popup_not_visible')`
+  - return-to-top: `ValueError('production_scroll_up_failed')`
+- `craft`
+  - top cards: `ValueError('ambiguous_output_match:Copper Wire:0.8517:0.8517')`
+  - lower cards: `ValueError('ambiguous_output_match:Copper Wire:0.8311:0.8311')`
+  - return-to-top: `ValueError('production_scroll_up_failed')`
+
+What this means:
+- The recent tooltip improvement is real for narrow top-card probing.
+- It does **not** yet translate into end-to-end queue population.
+- The current overall blockers are still:
+  - upstream inventory fragility: `unreadable_page:items:1`
+  - production top-latch failure in normal flow
+  - scroll restoration failure: `production_scroll_up_failed`
+
+So the answer is: the seam improvement helped narrow top-card tooltip recovery, but it has **not** yet materially improved full queue population because top-latch and scroll restoration are still blocking the normal production reader path.
+2026-03-13 12:31:12.914-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: I ran the full live validation without further code changes.
+
+Artifacts:
+- Full live-state run: [production_floor_live_state.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_floor_live_state.json)
+- Production-only normal flow: [production_overview_direct_v2.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_overview_direct_v2.json)
+- Manual top/lower card check: [production_overview_manual_cards.json](c:/dev/ipm-ocr-bot/out/full_production_state_validation_v1/production_overview_manual_cards.json)
+
+Commands run:
+```powershell
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... ProductionFloorLiveStateReader.read() ...
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... ProductionOverviewReader.read_cards(...) ...
+$env:PYTHONPATH='c:\dev\ipm-ocr-bot\src'; ... manual _read_card top/lower check ...
+```
+
+Results:
+- Full normal live-state flow did **not** complete.
+  - blocker: `ValueError('unreadable_page:items:1')`
+- Production-only normal flow also did **not** complete.
+  - `smelt`: `ValueError('production_top_latch_failed')`
+  - `craft`: `ValueError('production_top_latch_failed')`
+
+So the system is still blocked in the normal end-to-end path, and `top-latch` remains a real blocker.
+
+Manual production-only check, bypassing the top-latch gate:
+- `smelt`
+  - top cards: `ValueError('unreadable_active_state:19/1,00K')`
+  - lower cards: `ValueError('smelt_tooltip_fallback_failed:tooltip_probe_no_valid_label;smelt_recipe_popup_fallback_failed:smelt_recipe_popup_not_visible')`
+  - return-to-top: `ValueError('production_scroll_up_failed')`
+- `craft`
+  - top cards: `ValueError('ambiguous_output_match:Copper Wire:0.8517:0.8517')`
+  - lower cards: `ValueError('ambiguous_output_match:Copper Wire:0.8311:0.8311')`
+  - return-to-top: `ValueError('production_scroll_up_failed')`
+
+What this means:
+- The recent tooltip improvement is real for narrow top-card probing.
+- It does **not** yet translate into end-to-end queue population.
+- The current overall blockers are still:
+  - upstream inventory fragility: `unreadable_page:items:1`
+  - production top-latch failure in normal flow
+  - scroll restoration failure: `production_scroll_up_failed`
+
+So the answer is: the seam improvement helped narrow top-card tooltip recovery, but it has **not** yet materially improved full queue population because top-latch and scroll restoration are still blocking the normal production reader path.
+2026-03-13 12:31:12.914-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:33:38.371-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: You are making a narrow, governance-safe observation-layer improvement in C:\dev\ipm-ocr-bot.
+
+Scope:
+- src/ipm/readers/production_overview.py
+- tests/test_production_overview_reader.py
+- only add inventory reader scope if strictly required by the identified blocker
+
+Do not touch PlanetsTask.
+Do not add sell behavior.
+Do not add production execution.
+Do not weaken thresholds.
+Preserve fail-closed behavior.
+Do not refactor unrelated systems.
+
+Current state
+
+Recent work produced narrow live tooltip success on top cards:
+- smelt tooltip recovery succeeded
+- craft tooltip recovery succeeded
+
+However full live validation still does not complete.
+
+Observed blockers:
+- unreadable_page:items:1
+- production_top_latch_failed
+- production_scroll_up_failed
+
+Manual production checks confirm:
+- top-latch remains a real blocker in normal flow
+- scroll restoration remains a real blocker
+- tooltip improvements do not materially help full queue population until those navigation/state seams are fixed
+
+Objective
+
+Focus only on production navigation stability.
+
+Primary goals:
+1. make top-latch acquisition/restoration more reliable
+2. make scroll-up restoration to top more reliable
+3. preserve fail-closed behavior
+
+Do NOT spend this pass on more tooltip tuning unless strictly required to validate latch state.
+Do NOT broaden into execution logic.
+
+Required work
+
+1. Audit and harden the top-latch logic in production_overview.py.
+   - Identify why normal flow fails to verify the top state.
+   - Use existing card anchors / recipe anchor / stable structural cues where possible.
+   - Improve verification reliability without weakening standards.
+
+2. Audit and harden scroll restoration.
+   - The current system still hits production_scroll_up_failed.
+   - Make return-to-top detection and stopping logic more reliable.
+   - Keep retry counts disciplined; do not revert to excessive blind scrolling.
+
+3. Improve observability.
+   - Save or expose clearer audit artifacts for:
+     - top-latch expected state
+     - actual observed top state
+     - scroll-up attempts
+     - final restore success/failure
+
+4. Preserve the existing tooltip improvements, but do not make tooltip work the focus of this pass.
+
+Testing requirements
+
+Update tests in:
+- tests/test_production_overview_reader.py
+
+Add/extend deterministic tests for:
+1. top-latch verification success/failure behavior
+2. scroll-up restoration success/failure behavior
+3. stop-on-success during top restoration
+4. fail-closed behavior when top cannot be verified
+5. no regression in tooltip-before-popup ordering
+
+Validation requirements
+
+Run:
+- focused tests
+- compile check
+- broader relevant regression slice
+
+If practical, run a live validation focused specifically on:
+- top-latch acquisition
+- one downward production scroll
+- return-to-top restoration
+
+Deliverables
+
+Return:
+1. summary of changes
+2. exact files changed
+3. validation commands run
+4. validation results
+5. whether top-latch improved live
+6. whether scroll restoration improved live
+7. remaining blocker
+
+Important
+
+This pass is about production navigation reliability, not tooltip tuning.
+The current evidence shows tooltip work is no longer the primary bottleneck.
+2026-03-13 12:33:38.371-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: You are making a narrow, governance-safe observation-layer improvement in C:\dev\ipm-ocr-bot.
+
+Scope:
+- src/ipm/readers/production_overview.py
+- tests/test_production_overview_reader.py
+- only add inventory reader scope if strictly required by the identified blocker
+
+Do not touch PlanetsTask.
+Do not add sell behavior.
+Do not add production execution.
+Do not weaken thresholds.
+Preserve fail-closed behavior.
+Do not refactor unrelated systems.
+
+Current state
+
+Recent work produced narrow live tooltip success on top cards:
+- smelt tooltip recovery succeeded
+- craft tooltip recovery succeeded
+
+However full live validation still does not complete.
+
+Observed blockers:
+- unreadable_page:items:1
+- production_top_latch_failed
+- production_scroll_up_failed
+
+Manual production checks confirm:
+- top-latch remains a real blocker in normal flow
+- scroll restoration remains a real blocker
+- tooltip improvements do not materially help full queue population until those navigation/state seams are fixed
+
+Objective
+
+Focus only on production navigation stability.
+
+Primary goals:
+1. make top-latch acquisition/restoration more reliable
+2. make scroll-up restoration to top more reliable
+3. preserve fail-closed behavior
+
+Do NOT spend this pass on more tooltip tuning unless strictly required to validate latch state.
+Do NOT broaden into execution logic.
+
+Required work
+
+1. Audit and harden the top-latch logic in production_overview.py.
+   - Identify why normal flow fails to verify the top state.
+   - Use existing card anchors / recipe anchor / stable structural cues where possible.
+   - Improve verification reliability without weakening standards.
+
+2. Audit and harden scroll restoration.
+   - The current system still hits production_scroll_up_failed.
+   - Make return-to-top detection and stopping logic more reliable.
+   - Keep retry counts disciplined; do not revert to excessive blind scrolling.
+
+3. Improve observability.
+   - Save or expose clearer audit artifacts for:
+     - top-latch expected state
+     - actual observed top state
+     - scroll-up attempts
+     - final restore success/failure
+
+4. Preserve the existing tooltip improvements, but do not make tooltip work the focus of this pass.
+
+Testing requirements
+
+Update tests in:
+- tests/test_production_overview_reader.py
+
+Add/extend deterministic tests for:
+1. top-latch verification success/failure behavior
+2. scroll-up restoration success/failure behavior
+3. stop-on-success during top restoration
+4. fail-closed behavior when top cannot be verified
+5. no regression in tooltip-before-popup ordering
+
+Validation requirements
+
+Run:
+- focused tests
+- compile check
+- broader relevant regression slice
+
+If practical, run a live validation focused specifically on:
+- top-latch acquisition
+- one downward production scroll
+- return-to-top restoration
+
+Deliverables
+
+Return:
+1. summary of changes
+2. exact files changed
+3. validation commands run
+4. validation results
+5. whether top-latch improved live
+6. whether scroll restoration improved live
+7. remaining blocker
+
+Important
+
+This pass is about production navigation reliability, not tooltip tuning.
+The current evidence shows tooltip work is no longer the primary bottleneck.
+2026-03-13 12:33:38.371-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:33:42.266-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:36:59.744-0400 15516 8336  SER    Pie64 [Ready] I: GUEST: [ 3599.997981] init: Could not find service hosting interface android.hardware.radio@1.0::IRadio/slot1
+2026-03-13 12:37:06.800-0400 15516 7024  AGA    Pie64 [Ready] I: New SOCKET connection: com.android.vending (pid 3169, tid 3289)
+2026-03-13 12:37:13.122-0400 15516 14904 HCALL  Pie64 [Ready] I: hcallConfigVDNoFlushClbk : enable = 1
+2026-03-13 12:37:13.184-0400 15516 1816  HCALL  Pie64 [Ready] I: hcallConfigVDNoFlushClbk : enable = 0
+2026-03-13 12:37:16.413-0400 15516 14904 HCALL  Pie64 [Ready] I: hcallConfigVDNoFlushClbk : enable = 1
+2026-03-13 12:37:16.503-0400 15516 1816  HCALL  Pie64 [Ready] I: hcallConfigVDNoFlushClbk : enable = 0
+2026-03-13 12:37:27.546-0400 15516 29700 HST    Pie64 [Ready] I: Enable HPP for com.TironiumTech.IdlePlanetMiner
+2026-03-13 12:37:27.546-0400 15516 29700 AGA    Pie64 [Ready] I: New SOCKET connection: com.TironiumTech.IdlePlanetMiner (pid 4568, tid 7548)
+2026-03-13 12:38:25.799-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:40:24.579-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:40:24.583-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:40:54.829-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:42:34.431-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:42:55.619-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:43:00.588-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:43:42.273-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:43:42.323-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:43:42.323-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:43:42.323-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:43:42.323-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:43:42.323-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:43:42.323-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:43:57.811-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 12:46:40.078-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: I got it and inspected it.
+
+Artifacts:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/manifest.json)
+- [contact_sheet.png](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/contact_sheet.png)
+
+Quick read:
+- `158` frames at `30 fps`
+- sampled `27` frames for inspection
+- one sampled frame clearly contained tooltip-bearing text:
+  - `frame_0114.png` -> OCR read `Saddle iron ore Lump`
+  - strict known-name extraction still pulled out `Iron`
+
+So this clip is useful. It contains at least one real tooltip-bearing moment, and it reinforces the same pattern we’ve been seeing:
+- the tooltip is readable enough
+- the main challenge is isolating the right local region and state timing, not proving the tooltip exists
+
+If you want, I can do the same deeper pass I did on the previous GIF/MP4:
+- extract the exact tooltip-bearing frame sequence around that `Iron` hit
+- measure where the label sits relative to the icon row
+- use that to guide the remaining production navigation/tooltip-state work
+2026-03-13 12:46:40.078-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: I got it and inspected it.
+
+Artifacts:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/manifest.json)
+- [contact_sheet.png](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/contact_sheet.png)
+
+Quick read:
+- `158` frames at `30 fps`
+- sampled `27` frames for inspection
+- one sampled frame clearly contained tooltip-bearing text:
+  - `frame_0114.png` -> OCR read `Saddle iron ore Lump`
+  - strict known-name extraction still pulled out `Iron`
+
+So this clip is useful. It contains at least one real tooltip-bearing moment, and it reinforces the same pattern we’ve been seeing:
+- the tooltip is readable enough
+- the main challenge is isolating the right local region and state timing, not proving the tooltip exists
+
+If you want, I can do the same deeper pass I did on the previous GIF/MP4:
+- extract the exact tooltip-bearing frame sequence around that `Iron` hit
+- measure where the label sits relative to the icon row
+- use that to guide the remaining production navigation/tooltip-state work
+2026-03-13 12:46:40.078-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:49:25.940-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:49:25.991-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:49:25.991-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:49:25.991-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:49:25.991-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:49:25.991-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:49:25.991-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:49:30.628-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:49:30.679-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:49:30.679-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:49:30.679-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:49:30.679-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: 
+2026-03-13 12:49:30.679-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: 
+2026-03-13 12:49:30.679-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:52:54.680-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Short answer: **that graphic is misleading**. It mixes questionable statistics with a **false population baseline** and categories that are **not reported that way by the FBI**.
+
+Let’s break down the main issues.
+
+---
+
+## 1. The “28% of the population” claim is wrong
+
+The image says white men are **28% of the U.S. population**.
+
+In reality:
+
+* Non-Hispanic white people ≈ **58–59% of the U.S. population**
+* Men are roughly **half** of that.
+
+So **white men alone are roughly 29–30% of the population**, which is where that number comes from.
+
+But the graphic **compares white men to the entire population**, while the crime stats it references are usually reported as **all offenders by race**, not **race + gender**.
+
+That makes the comparison **statistically inconsistent**.
+
+---
+
+## 2. FBI data doesn’t report many of these categories this way
+
+The FBI’s **Uniform Crime Reports (UCR)** and **NIBRS** datasets typically report:
+
+* race of offenders
+* sometimes gender
+* broad crime categories
+
+But the image lists categories like:
+
+* “mass shooters”
+* “statutory rapists (pedophiles)”
+* “incest perpetrators”
+* “child porn arrests”
+
+These **aren’t standard FBI race tables** in the way the graphic suggests. Many come from:
+
+* selective studies
+* arrest data subsets
+* advocacy reports
+* or sometimes are **simply fabricated numbers**
+
+---
+
+## 3. Arrest data ≠ crime rate
+
+Even when numbers are real, **arrest data doesn’t equal actual crime distribution** because it depends on:
+
+* reporting rates
+* policing patterns
+* investigative priorities
+* population distribution
+
+This is a major reason criminologists avoid simple racial comparisons without context.
+
+---
+
+## 4. The numbers are cherry-picked
+
+Even if some individual percentages came from real datasets, the image:
+
+* selects only crimes where the chosen group is a majority
+* ignores crimes where they are not
+* mixes **different datasets and years**
+
+That’s a classic **misleading infographic technique**.
+
+---
+
+## 5. “Mass shooter” statistics are especially unreliable
+
+There is **no single official FBI race breakdown for “mass shooters.”**
+
+Different organizations define mass shootings differently:
+
+* FBI active shooter reports
+* Gun Violence Archive
+* Mother Jones database
+
+Each produces **different racial distributions**, so quoting one number as “FBI data” is inaccurate.
+
+---
+
+✅ **Bottom line**
+
+The graphic is **not a reliable representation of FBI statistics**.
+It uses:
+
+* an **inconsistent population comparison**
+* **nonstandard crime categories**
+* **selective or unverifiable numbers**
+
+So it shouldn’t be treated as factual analysis.
+
+---
+
+If you want, I can also show you **what the actual FBI arrest statistics by race look like** and why they’re often misunderstood online. That discussion gets a lot more nuanced than memes like this.
+2026-03-13 12:52:54.680-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Short answer: **that graphic is misleading**. It mixes questionable statistics with a **false population baseline** and categories that are **not reported that way by the FBI**.
+
+Let’s break down the main issues.
+
+---
+
+## 1. The “28% of the population” claim is wrong
+
+The image says white men are **28% of the U.S. population**.
+
+In reality:
+
+* Non-Hispanic white people ≈ **58–59% of the U.S. population**
+* Men are roughly **half** of that.
+
+So **white men alone are roughly 29–30% of the population**, which is where that number comes from.
+
+But the graphic **compares white men to the entire population**, while the crime stats it references are usually reported as **all offenders by race**, not **race + gender**.
+
+That makes the comparison **statistically inconsistent**.
+
+---
+
+## 2. FBI data doesn’t report many of these categories this way
+
+The FBI’s **Uniform Crime Reports (UCR)** and **NIBRS** datasets typically report:
+
+* race of offenders
+* sometimes gender
+* broad crime categories
+
+But the image lists categories like:
+
+* “mass shooters”
+* “statutory rapists (pedophiles)”
+* “incest perpetrators”
+* “child porn arrests”
+
+These **aren’t standard FBI race tables** in the way the graphic suggests. Many come from:
+
+* selective studies
+* arrest data subsets
+* advocacy reports
+* or sometimes are **simply fabricated numbers**
+
+---
+
+## 3. Arrest data ≠ crime rate
+
+Even when numbers are real, **arrest data doesn’t equal actual crime distribution** because it depends on:
+
+* reporting rates
+* policing patterns
+* investigative priorities
+* population distribution
+
+This is a major reason criminologists avoid simple racial comparisons without context.
+
+---
+
+## 4. The numbers are cherry-picked
+
+Even if some individual percentages came from real datasets, the image:
+
+* selects only crimes where the chosen group is a majority
+* ignores crimes where they are not
+* mixes **different datasets and years**
+
+That’s a classic **misleading infographic technique**.
+
+---
+
+## 5. “Mass shooter” statistics are especially unreliable
+
+There is **no single official FBI race breakdown for “mass shooters.”**
+
+Different organizations define mass shootings differently:
+
+* FBI active shooter reports
+* Gun Violence Archive
+* Mother Jones database
+
+Each produces **different racial distributions**, so quoting one number as “FBI data” is inaccurate.
+
+---
+
+✅ **Bottom line**
+
+The graphic is **not a reliable representation of FBI statistics**.
+It uses:
+
+* an **inconsistent population comparison**
+* **nonstandard crime categories**
+* **selective or unverifiable numbers**
+
+So it shouldn’t be treated as factual analysis.
+
+---
+
+If you want, I can also show you **what the actual FBI arrest statistics by race look like** and why they’re often misunderstood online. That discussion gets a lot more nuanced than memes like this.
+2026-03-13 12:52:54.680-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:54:18.485-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Short answer: **the graphic is misleading.**
+
+### 1. The population comparison is flawed
+
+The image says white men are **28% of the U.S. population**.
+That’s roughly true (white ≈ 58–59% of the population, men ≈ half).
+
+But the crime stats it references are usually reported by **race alone**, not **race + gender**.
+So it compares **white men (28%) to all offenders**, which is not a valid comparison.
+
+### 2. The FBI doesn’t report many of these categories this way
+
+The FBI’s crime reports (UCR / NIBRS) track broad categories like:
+
+* homicide
+* robbery
+* assault
+* rape
+
+The graphic lists things like:
+
+* “mass shooters”
+* “statutory rapists (pedophiles)”
+* “incest perpetrators”
+* “child porn arrests”
+
+Those **aren’t standard FBI race tables**, and the percentages shown are not easily traceable to official reports.
+
+### 3. Arrest data ≠ crime rates
+
+Even when numbers come from real datasets, **arrest statistics are not the same as actual crime rates**, because they depend on:
+
+* reporting rates
+* policing patterns
+* investigative priorities
+
+### 4. The numbers are cherry-picked
+
+The image selects crimes where the chosen group appears as a majority and ignores others.
+It also mixes **different datasets and years**, which can make the statistics look more dramatic.
+
+✅ **Bottom line:**
+The graphic shouldn’t be treated as reliable FBI data. It combines inconsistent comparisons, questionable categories, and cherry-picked numbers.
+2026-03-13 12:54:18.486-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Short answer: **the graphic is misleading.**
+
+### 1. The population comparison is flawed
+
+The image says white men are **28% of the U.S. population**.
+That’s roughly true (white ≈ 58–59% of the population, men ≈ half).
+
+But the crime stats it references are usually reported by **race alone**, not **race + gender**.
+So it compares **white men (28%) to all offenders**, which is not a valid comparison.
+
+### 2. The FBI doesn’t report many of these categories this way
+
+The FBI’s crime reports (UCR / NIBRS) track broad categories like:
+
+* homicide
+* robbery
+* assault
+* rape
+
+The graphic lists things like:
+
+* “mass shooters”
+* “statutory rapists (pedophiles)”
+* “incest perpetrators”
+* “child porn arrests”
+
+Those **aren’t standard FBI race tables**, and the percentages shown are not easily traceable to official reports.
+
+### 3. Arrest data ≠ crime rates
+
+Even when numbers come from real datasets, **arrest statistics are not the same as actual crime rates**, because they depend on:
+
+* reporting rates
+* policing patterns
+* investigative priorities
+
+### 4. The numbers are cherry-picked
+
+The image selects crimes where the chosen group appears as a majority and ignores others.
+It also mixes **different datasets and years**, which can make the statistics look more dramatic.
+
+✅ **Bottom line:**
+The graphic shouldn’t be treated as reliable FBI data. It combines inconsistent comparisons, questionable categories, and cherry-picked numbers.
+2026-03-13 12:54:18.486-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:58:02.645-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: I got it and inspected it.
+
+Artifacts:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/manifest.json)
+- [contact_sheet.png](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/contact_sheet.png)
+
+Quick read:
+- `158` frames at `30 fps`
+- sampled `27` frames for inspection
+- one sampled frame clearly contained tooltip-bearing text:
+  - `frame_0114.png` -> OCR read `Saddle iron ore Lump`
+  - strict known-name extraction still pulled out `Iron`
+
+So this clip is useful. It contains at least one real tooltip-bearing moment, and it reinforces the same pattern we’ve been seeing:
+- the tooltip is readable enough
+- the main challenge is isolating the right local region and state timing, not proving the tooltip exists
+
+If you want, I can do the same deeper pass I did on the previous GIF/MP4:
+- extract the exact tooltip-bearing frame sequence around that `Iron` hit
+- measure where the label sits relative to the icon row
+- use that to guide the remaining production navigation/tooltip-state work
+2026-03-13 12:58:02.645-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: I got it and inspected it.
+
+Artifacts:
+- [manifest.json](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/manifest.json)
+- [contact_sheet.png](c:/dev/ipm-ocr-bot/out/mp4_inspect_SXkhccbzj2/contact_sheet.png)
+
+Quick read:
+- `158` frames at `30 fps`
+- sampled `27` frames for inspection
+- one sampled frame clearly contained tooltip-bearing text:
+  - `frame_0114.png` -> OCR read `Saddle iron ore Lump`
+  - strict known-name extraction still pulled out `Iron`
+
+So this clip is useful. It contains at least one real tooltip-bearing moment, and it reinforces the same pattern we’ve been seeing:
+- the tooltip is readable enough
+- the main challenge is isolating the right local region and state timing, not proving the tooltip exists
+
+If you want, I can do the same deeper pass I did on the previous GIF/MP4:
+- extract the exact tooltip-bearing frame sequence around that `Iron` hit
+- measure where the label sits relative to the icon row
+- use that to guide the remaining production navigation/tooltip-state work
+2026-03-13 12:58:02.645-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:58:38.215-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Yes. Do the deeper pass, but measurement-only: extract the exact tooltip-visible frame range around frame_0114, measure appearance timing and tooltip position relative to the icon row/card, report first-visible frame, last-visible frame, approximate duration, and whether it appeared after the first or second click. No code changes in this pass.
+2026-03-13 12:58:38.215-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Yes. Do the deeper pass, but measurement-only: extract the exact tooltip-visible frame range around frame_0114, measure appearance timing and tooltip position relative to the icon row/card, report first-visible frame, last-visible frame, approximate duration, and whether it appeared after the first or second click. No code changes in this pass.
+2026-03-13 12:58:38.215-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:59:33.337-0400 15516 32500 UI     Pie64 [Ready] W: Retrying to obtain clipboard.
+2026-03-13 12:59:33.387-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:59:33.387-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:59:33.387-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 12:59:33.387-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:59:33.387-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+2026-03-13 12:59:33.387-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 13:06:59.737-0400 15516 8336  SER    Pie64 [Ready] I: GUEST: [ 5400.000176] init: Could not find service hosting interface android.hardware.radio@1.0::IRadio/slot1
+2026-03-13 13:36:59.718-0400 15516 8336  SER    Pie64 [Ready] I: GUEST: [ 7200.001027] init: Could not find service hosting interface android.hardware.radio@1.0::IRadio/slot1
+2026-03-13 13:37:29.671-0400 15516 18324 HST    Pie64 [Ready] I: Enable HPP for com.TironiumTech.IdlePlanetMiner
+2026-03-13 13:37:29.671-0400 15516 18324 AGA    Pie64 [Ready] I: New SOCKET connection: com.TironiumTech.IdlePlanetMiner (pid 4568, tid 9718)
+2026-03-13 14:00:20.864-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Understood. I misclassified the clip.
+
+I’ll treat [HD-Player_SXkhccbzj2.mp4](c:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4) as a **top-of-list restoration reference**, not a tooltip reference.
+
+That’s useful, because it means the right questions for this clip are:
+- what exact visual cue tells you “we are back at top”
+- how many upward scrolls it actually takes
+- whether the stop condition is:
+  - no further motion
+  - a specific top-card layout
+  - a specific card pair becoming visible again
+
+I already extracted the frames and contact sheet:
+- [manifest.json](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\manifest.json)
+- [contact_90_130.png](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\contact_90_130.png)
+
+So the next correct step is:
+- ignore tooltip OCR in this clip
+- measure the top-restoration pattern from the frame sequence
+- identify the actual stop cue your manual method is using
+
+That should help the real blocker much more than tooltip analysis for this specific recording.
+2026-03-13 14:00:20.864-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Understood. I misclassified the clip.
+
+I’ll treat [HD-Player_SXkhccbzj2.mp4](c:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4) as a **top-of-list restoration reference**, not a tooltip reference.
+
+That’s useful, because it means the right questions for this clip are:
+- what exact visual cue tells you “we are back at top”
+- how many upward scrolls it actually takes
+- whether the stop condition is:
+  - no further motion
+  - a specific top-card layout
+  - a specific card pair becoming visible again
+
+I already extracted the frames and contact sheet:
+- [manifest.json](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\manifest.json)
+- [contact_90_130.png](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\contact_90_130.png)
+
+So the next correct step is:
+- ignore tooltip OCR in this clip
+- measure the top-restoration pattern from the frame sequence
+- identify the actual stop cue your manual method is using
+
+That should help the real blocker much more than tooltip analysis for this specific recording.
+2026-03-13 14:00:20.864-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 14:06:13.813-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: Understood. I misclassified the clip.
+
+I’ll treat [HD-Player_SXkhccbzj2.mp4](c:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4) as a **top-of-list restoration reference**, not a tooltip reference.
+
+That’s useful, because it means the right questions for this clip are:
+- what exact visual cue tells you “we are back at top”
+- how many upward scrolls it actually takes
+- whether the stop condition is:
+  - no further motion
+  - a specific top-card layout
+  - a specific card pair becoming visible again
+
+I already extracted the frames and contact sheet:
+- [manifest.json](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\manifest.json)
+- [contact_90_130.png](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\contact_90_130.png)
+
+So the next correct step is:
+- ignore tooltip OCR in this clip
+- measure the top-restoration pattern from the frame sequence
+- identify the actual stop cue your manual method is using
+
+That should help the real blocker much more than tooltip analysis for this specific recording.
+2026-03-13 14:06:13.813-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: Understood. I misclassified the clip.
+
+I’ll treat [HD-Player_SXkhccbzj2.mp4](c:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4) as a **top-of-list restoration reference**, not a tooltip reference.
+
+That’s useful, because it means the right questions for this clip are:
+- what exact visual cue tells you “we are back at top”
+- how many upward scrolls it actually takes
+- whether the stop condition is:
+  - no further motion
+  - a specific top-card layout
+  - a specific card pair becoming visible again
+
+I already extracted the frames and contact sheet:
+- [manifest.json](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\manifest.json)
+- [contact_90_130.png](c:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2\contact_90_130.png)
+
+So the next correct step is:
+- ignore tooltip OCR in this clip
+- measure the top-restoration pattern from the frame sequence
+- identify the actual stop cue your manual method is using
+
+That should help the real blocker much more than tooltip analysis for this specific recording.
+2026-03-13 14:06:13.813-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 14:06:59.647-0400 15516 8336  SER    Pie64 [Ready] I: GUEST: [ 9000.003699] init: Could not find service hosting interface android.hardware.radio@1.0::IRadio/slot1
+2026-03-13 14:11:59.450-0400 15516 32500 EFFECT Pie64 [Ready] I: [effectOnWindowActivate] active:1
+2026-03-13 14:19:32.197-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: November 10
+2026-03-13 14:19:32.197-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: November 10
+2026-03-13 14:19:32.197-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-13 14:25:31.221-0400 15516 32500 PLR    Pie64 [Ready] I: clipboard data changed: You are working in the repository:
+
+C:\dev\ipm-ocr-bot
+
+Environment:
+C:\dev\ipm-ocr-bot\.venv
+
+This pass is **measurement and navigation analysis only**.
+
+Do NOT modify any code yet.
+
+Do NOT change:
+- PlanetsTask
+- execution behavior
+- sell logic
+- tooltip OCR logic
+- thresholds
+- existing production reader logic
+
+Your goal is to analyze a screen recording that demonstrates **manual return-to-top behavior in the production list** so we can determine the correct visual stop condition for the production scroll restoration logic.
+
+Recording:
+
+C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+
+Frames have already been extracted here:
+
+C:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2
+
+Artifacts already present:
+- manifest.json
+- contact_90_130.png
+
+Treat this recording strictly as **top-of-list restoration evidence**, not tooltip evidence.
+
+Ignore tooltip OCR completely for this pass.
+
+---
+
+Objectives
+
+Determine how manual scrolling returns to the **top of the production list** and what reliable visual cue indicates that the list has reached the top.
+
+You must answer these questions using the extracted frames.
+
+---
+
+Required measurements
+
+1. Identify the **first frame where the UI is clearly at the top of the production list**.
+
+   This frame should show:
+   - the first smelt card fully visible
+   - the second card partially visible below it
+   - the card layout matching the normal top state.
+
+   Save this frame index and screenshot.
+
+---
+
+2. Identify the **2–3 frames immediately before that top frame**.
+
+   These frames represent the transition into the top state.
+
+   Save these frame indexes and screenshots.
+
+---
+
+3. Determine the **exact number of upward scroll actions** that occurred before reaching the top frame.
+
+   If scroll gestures are visible, count them.
+
+   If not directly visible, infer from vertical movement across frames.
+
+---
+
+4. Determine the **best visual stop cue** for detecting top-of-list state.
+
+   Evaluate these candidates:
+
+   A. Top-card layout condition
+      Example: first card fully visible + second card partially visible.
+
+   B. Specific anchor region
+      Example: RECIPE button position of the first card.
+
+   C. Card edge alignment
+      Example: the top card's upper boundary aligns with the production panel top.
+
+   D. Motion stopping
+      Example: additional upward scroll produces no vertical movement.
+
+   Identify which cue is **most stable and easiest for the bot to detect**.
+
+---
+
+5. Measure the **bounding region that represents the top-card anchor state**.
+
+   Determine a small rectangular region that reliably identifies the top card's presence at the top of the panel.
+
+   This region should be stable across frames and suitable for use in a future top-latch verification.
+
+---
+
+Deliverables
+
+Return:
+
+1. Frame index of the first confirmed top-of-list state.
+2. Frame indexes immediately before it.
+3. Number of upward scrolls required to reach top.
+4. Screenshots of the top frame and preceding frames.
+5. The most reliable visual stop cue.
+6. Suggested bounding region for top-card anchor detection.
+7. Explanation of why this cue is more reliable than motion-based detection.
+
+Do NOT propose code changes yet.
+
+This pass is strictly to produce reliable evidence that will guide the fix for:
+
+production_top_latch_failed
+production_scroll_up_failed
+
+Once this evidence is gathered, we will implement a navigation fix based on the measured visual cue.
+2026-03-13 14:25:31.221-0400 15516 32500 PLR    Pie64 [Ready] I: Setting clipboard text in guest: You are working in the repository:
+
+C:\dev\ipm-ocr-bot
+
+Environment:
+C:\dev\ipm-ocr-bot\.venv
+
+This pass is **measurement and navigation analysis only**.
+
+Do NOT modify any code yet.
+
+Do NOT change:
+- PlanetsTask
+- execution behavior
+- sell logic
+- tooltip OCR logic
+- thresholds
+- existing production reader logic
+
+Your goal is to analyze a screen recording that demonstrates **manual return-to-top behavior in the production list** so we can determine the correct visual stop condition for the production scroll restoration logic.
+
+Recording:
+
+C:\Users\lwpar\Documents\ShareX\Screenshots\2026-03\HD-Player_SXkhccbzj2.mp4
+
+Frames have already been extracted here:
+
+C:\dev\ipm-ocr-bot\out\mp4_deep_measure_SXkhccbzj2
+
+Artifacts already present:
+- manifest.json
+- contact_90_130.png
+
+Treat this recording strictly as **top-of-list restoration evidence**, not tooltip evidence.
+
+Ignore tooltip OCR completely for this pass.
+
+---
+
+Objectives
+
+Determine how manual scrolling returns to the **top of the production list** and what reliable visual cue indicates that the list has reached the top.
+
+You must answer these questions using the extracted frames.
+
+---
+
+Required measurements
+
+1. Identify the **first frame where the UI is clearly at the top of the production list**.
+
+   This frame should show:
+   - the first smelt card fully visible
+   - the second card partially visible below it
+   - the card layout matching the normal top state.
+
+   Save this frame index and screenshot.
+
+---
+
+2. Identify the **2–3 frames immediately before that top frame**.
+
+   These frames represent the transition into the top state.
+
+   Save these frame indexes and screenshots.
+
+---
+
+3. Determine the **exact number of upward scroll actions** that occurred before reaching the top frame.
+
+   If scroll gestures are visible, count them.
+
+   If not directly visible, infer from vertical movement across frames.
+
+---
+
+4. Determine the **best visual stop cue** for detecting top-of-list state.
+
+   Evaluate these candidates:
+
+   A. Top-card layout condition
+      Example: first card fully visible + second card partially visible.
+
+   B. Specific anchor region
+      Example: RECIPE button position of the first card.
+
+   C. Card edge alignment
+      Example: the top card's upper boundary aligns with the production panel top.
+
+   D. Motion stopping
+      Example: additional upward scroll produces no vertical movement.
+
+   Identify which cue is **most stable and easiest for the bot to detect**.
+
+---
+
+5. Measure the **bounding region that represents the top-card anchor state**.
+
+   Determine a small rectangular region that reliably identifies the top card's presence at the top of the panel.
+
+   This region should be stable across frames and suitable for use in a future top-latch verification.
+
+---
+
+Deliverables
+
+Return:
+
+1. Frame index of the first confirmed top-of-list state.
+2. Frame indexes immediately before it.
+3. Number of upward scrolls required to reach top.
+4. Screenshots of the top frame and preceding frames.
+5. The most reliable visual stop cue.
+6. Suggested bounding region for top-card anchor detection.
+7. Explanation of why this cue is more reliable than motion-based detection.
+
+Do NOT propose code changes yet.
+
+This pass is strictly to produce reliable evidence that will guide the fix for:
+
+production_top_latch_failed
+production_scroll_up_failed
+
+Once this evidence is gathered, we will implement a navigation fix based on the measured visual cue.
+2026-03-13 14:25:31.221-0400 15516 32500 GCALL  Pie64 [Ready] I: gcallSetClipboardTextRpc
+2026-03-",low,19,text_log_extension;bluestacks_host_metadata,
+windows_host|C:\ProgramData\BlueStacks_nxt\bluestacks.conf,bluestacks_conf,windows_host,C:\ProgramData\BlueStacks_nxt,C:\ProgramData\BlueStacks_nxt\bluestacks.conf,bluestacks.conf,file,True,host_read,17207,1774304534,2026-03-23T22:22:14Z,c74cbd8c2af0beef7c32f086df5f74f776229ea5ec51faac7d4e4717e1cbb680,.conf,host_metadata,True,hashed_only,,"bst.bluestacks_account_id=""timberwookie@gmail.com""
+bst.bluestacks_cdn_url=""https://cdn3.bluestacks.com""
+bst.bluestacks_cloud_url=""https://cloud.bluestacks.com""
+bst.bluestacks_cloud_url2=""https://delegate.bluestacks.com""
+bst.bluestacks_eb_url=""https://eb.bluestacks.com""
+bst.campaign_hash=""760f5eaf23c794e8a350625f1a519250""
+bst.campaign_name=""aw-ded-tier1-eng-bluestacks5-brand""
+bst.channel_handle=""""
+bst.charger_warning_last_display_time=""""
+bst.country=""US""
+bst.create_desktop_shortcuts=""1""
+bst.crosshair_onboarding_popup_shown=""0""
+bst.custom_cursor_enabled=""1""
+bst.custom_resolutions=""""
+bst.dns_server=""8.8.8.8""
+bst.dns_server2=""10.0.2.3""
+bst.do_not_show_link_account_popup=""0""
+bst.do_not_show_noncfu_popup_version=""0""
+bst.enable_adb_access=""1""
+bst.enable_adb_remote_access=""0""
+bst.enable_android_ads_test_app=""0""
+bst.enable_boot_banner=""1""
+bst.enable_bsx_app_shortcuts=""0""
+bst.enable_discord_integration=""1""
+bst.enable_esc_fullscreen=""1""
+bst.enable_esc_mousecursor=""1""
+bst.enable_gamepad_detection=""1""
+bst.enable_gamepad_vibration=""1""
+bst.enable_image_detection=""1""
+bst.enable_mem_dedup=""1""
+bst.enable_native_gamepad=""2""
+bst.enable_navigationbar=""0""
+bst.enable_programmatic_ads=""0""
+bst.enable_sigin_gamelaunch=""1""
+bst.enable_statusbar=""1""
+bst.enable_webengine_console_log=""0""
+bst.exit_utm_campaign=""bluestacks5-page-en""
+bst.feature.ai_chat=""0""
+bst.feature.android_ads_stats=""0""
+bst.feature.app_install_stats=""1""
+bst.feature.auto_upload_nowgg_moments=""1""
+bst.feature.b2b_ribbon_icon_url=""https://cdn-bgp.bluestacks.com/exclusive/images/overlay_ribbon.png""
+bst.feature.bluestacksX=""1""
+bst.feature.creator_studio=""0""
+bst.feature.discord_url=""https://discord.gg/UnXV7taVs4""
+bst.feature.force_grm_brotli_compression=""1""
+bst.feature.live_stream=""1""
+bst.feature.macros=""1""
+bst.feature.nowbux=""1""
+bst.feature.nowgg_cloud_upload_enabled=""1""
+bst.feature.nowgg_login_popup=""1""
+bst.feature.ntp_server=""time.nist.gov""
+bst.feature.popout_ai_chat=""0""
+bst.feature.programmatic_ads=""1""
+bst.feature.quicklaunch=""0""
+bst.feature.rooting=""0""
+bst.feature.send_internal_notification_stats=""1""
+bst.feature.send_notification_stats=""0""
+bst.feature.send_nowbux_login_boot_stats=""1""
+bst.feature.send_offer_stats=""0""
+bst.feature.send_programmatic_ads_boot_stats=""1""
+bst.feature.send_programmatic_ads_click_stats=""1""
+bst.feature.send_programmatic_ads_fill_stats=""0""
+bst.feature.show_boot_banner_preference=""1""
+bst.feature.show_cloud_instance=""1""
+bst.feature.show_gp_ads=""1""
+bst.feature.show_guest_signin=""1""
+bst.feature.show_moments=""1""
+bst.feature.show_programmatic_ads_preference=""1""
+bst.feature.show_quest_icon=""0""
+bst.feature.side_panel=""1""
+bst.feature.skipNowggLogin=""1""
+bst.feature.usage_stats=""1""
+bst.feedback_popup_ignored_apps=""""
+bst.fixed_window_size=""0""
+bst.force_hyperv_elevation=""0""
+bst.force_raw_mode=""0""
+bst.fresh_cpu_core=""0""
+bst.fresh_cpu_ram=""0""
+bst.fullscreen_blurb_shown=""1""
+bst.gamepad_editing_onboarding_done=""1""
+bst.guest_login_completed=""0""
+bst.guid=""d829b270-8425-4c4c-b492-829f786faa53""
+bst.host_user_agent=""Windows NT 10.0; Win64; x64""
+bst.hyperv_api_error_popup_shown=""0""
+bst.hyperv_elevate_required=""0""
+bst.iap_date=""0""
+bst.image_dump_pkg=""""
+bst.imgd_compressed_tex=""0""
+bst.imgd_min_tex_size=""64""
+bst.imgd_use_two_texcrc=""0""
+bst.install_date=""14/06/2025""
+bst.install_id=""adf49651-e444-4405-95ca-a22f8ed7cc96""
+bst.installed_images=""Pie64,Nougat32""
+bst.instance.Nougat32.abi_list=""x86,arm""
+bst.instance.Nougat32.adb_port=""5555""
+bst.instance.Nougat32.ads_app_activity=""com.uncube.gamevantage.ui.activities.MainActivity""
+bst.instance.Nougat32.ads_app_package=""com.uncube.gamevantage""
+bst.instance.Nougat32.ads_display_time=""""
+bst.instance.Nougat32.ads_limit_min_pixels=""900""
+bst.instance.Nougat32.ads_screen_width=""320""
+bst.instance.Nougat32.ads_screen_width_percentage=""20""
+bst.instance.Nougat32.airplane_mode_active=""0""
+bst.instance.Nougat32.airplane_mode_active_time=""20250829T153953""
+bst.instance.Nougat32.android_google_ad_id=""112180f9-fde3-4c27-bdff-9f89103d51c6""
+bst.instance.Nougat32.android_id=""c1b4dfd1c322fefd""
+bst.instance.Nougat32.android_sound_while_tapping=""1""
+bst.instance.Nougat32.app_launch_count=""0""
+bst.instance.Nougat32.astc_decoding_mode=""software""
+bst.instance.Nougat32.autohide_notifications=""0""
+bst.instance.Nougat32.boot_duration=""7808""
+bst.instance.Nougat32.camera_backend=""ffmpeg""
+bst.instance.Nougat32.camera_device=""OBS Virtual Camera""
+bst.instance.Nougat32.camera_rotation_angle=""0""
+bst.instance.Nougat32.cpus=""4""
+bst.instance.Nougat32.custom_resolution_selected=""0""
+bst.instance.Nougat32.device_carrier_code=""se_310260""
+bst.instance.Nougat32.device_country_code=""840""
+bst.instance.Nougat32.device_custom_brand=""""
+bst.instance.Nougat32.device_custom_manufacturer=""""
+bst.instance.Nougat32.device_custom_model=""""
+bst.instance.Nougat32.device_profile_code=""ofpn""
+bst.instance.Nougat32.display_name=""BlueStacks App Player 1""
+bst.instance.Nougat32.dpi=""240""
+bst.instance.Nougat32.eco_mode_max_fps=""5""
+bst.instance.Nougat32.enable_fps_display=""0""
+bst.instance.Nougat32.enable_fullscreen_all_apps=""0""
+bst.instance.Nougat32.enable_high_fps=""0""
+bst.instance.Nougat32.enable_logcat_redirection=""0""
+bst.instance.Nougat32.enable_notifications=""1""
+bst.instance.Nougat32.enable_root_access=""0""
+bst.instance.Nougat32.enable_vsync=""0""
+bst.instance.Nougat32.fb_height=""900""
+bst.instance.Nougat32.fb_width=""1600""
+bst.instance.Nougat32.first_boot=""0""
+bst.instance.Nougat32.game_controls_enabled=""1""
+bst.instance.Nougat32.gl_win_height=""900""
+bst.instance.Nougat32.gl_win_screen=""LG FULL HD""
+bst.instance.Nougat32.gl_win_x=""183""
+bst.instance.Nougat32.gl_win_y=""126""
+bst.instance.Nougat32.google_account_logins=""""
+bst.instance.Nougat32.google_login_popup_shown=""0""
+bst.instance.Nougat32.graphics_engine=""aga""
+bst.instance.Nougat32.graphics_renderer=""gl""
+bst.instance.Nougat32.grm_ignored_rules=""""
+bst.instance.Nougat32.launch_date=""""
+bst.instance.Nougat32.libc_mem_allocator=""jem""
+bst.instance.Nougat32.macro_win_height=""-1""
+bst.instance.Nougat32.macro_win_screen=""""
+bst.instance.Nougat32.macro_win_x=""-1""
+bst.instance.Nougat32.macro_win_y=""-1""
+bst.instance.Nougat32.max_fps=""60""
+bst.instance.Nougat32.nowbux_signin_completed=""1""
+bst.instance.Nougat32.nowgg_email=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a@gmail.com""
+bst.instance.Nougat32.nowgg_userAvatarUrl=""https://cdn.now.gg/presets/avatars/avatar30.png""
+bst.instance.Nougat32.nowgg_userId=""01K3VNDPY1CRMKATYR5A7YH9F8""
+bst.instance.Nougat32.nowgg_username=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a ""
+bst.instance.Nougat32.pin_to_top=""0""
+bst.instance.Nougat32.ram=""4096""
+bst.instance.Nougat32.refresh_token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsImF1ZCI6InpCQzFMQ3M3czdJdVp6eFFQOW9PJCQwMUZNOVZZV01TV1I2U1A0MlE0UzQ2WjBTWSIsInNlc3Npb25JZCI6ImFyeEl2clhWcmVZVU5uQmw2QXNsVyIsInVzZXJJZCI6IjAxSzNWTkRQWTFDUk1LQVRZUjVBN1lIOUY4IiwiaXNHdWVzdFVzZXIiOmZhbHNlLCJhdXRoUHJvdmlkZXJUeXBlIjoibm93Z2ciLCJzY29wZSI6ImF1dGhvcml6YXRpb24sZW1haWwsbm93cGxheSxwcm9maWxlLHZpZGVvcyx3YWxsZXQucmVhZG9ubHkiLCJpYXQiOjE3NTY0OTYzMjMsImV4cCI6MTc4ODAzMjMyM30.-DLltxL_lGHKhd05qHedvGk9Vqnto1pZ1NIyI7Nx66Y""
+bst.instance.Nougat32.show_nowbux_rewards_red_dot_onboarding=""1""
+bst.instance.Nougat32.show_sidebar=""1""
+bst.instance.Nougat32.split_ad_enabled=""0""
+bst.instance.Nougat32.split_ad_show_times=""-1""
+bst.instance.Nougat32.status.adb_port=""5555""
+bst.instance.Nougat32.status.ip_addr_prefix_len=""24""
+bst.instance.Nougat32.status.ip_gateway_addr=""10.0.2.2""
+bst.instance.Nougat32.status.ip_guest_addr=""10.0.2.15""
+bst.instance.Nougat32.status.session_id=""2""
+bst.instance.Nougat32.token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsInRva2VuSWQiOiIxYTU5MjJlNi1lNDEzLTQ0ZDQtOGNiYy0yYTQzMzY4MzZmNmQiLCJhdWQiOiJ6QkMxTENzN3M3SXVaenhRUDlvTyQkMDFGTTlWWVdNU1dSNlNQNDJRNFM0NlowU1kiLCJzZXNzaW9uSWQiOiJhcnhJdnJYVnJlWVVObkJsNkFzbFciLCJ1c2VySWQiOiIwMUszVk5EUFkxQ1JNS0FUWVI1QTdZSDlGOCIsInNjb3BlIjoiYXV0aG9yaXphdGlvbixlbWFpbCxub3dwbGF5LHByb2ZpbGUsdmlkZW9zLHdhbGxldC5yZWFkb25seSIsImlhdCI6MTc3MzE1Nzk0OCwiZXhwIjoxNzczMTY4NzQ4fQ.Jsd4MDHrQH9xbUh7bHZRlbC04iWEedWrjtUW5qiHGFM""
+bst.instance.Nougat32.vulkan_supported=""1""
+bst.instance.Pie64.abi_list=""x86,x64,arm,arm64""
+bst.instance.Pie64.adb_port=""5555""
+bst.instance.Pie64.ads_app_activity=""com.uncube.gamevantage.ui.activities.MainActivity""
+bst.instance.Pie64.ads_app_package=""com.uncube.gamevantage""
+bst.instance.Pie64.ads_display_time=""""
+bst.instance.Pie64.ads_limit_min_pixels=""900""
+bst.instance.Pie64.ads_screen_width=""320""
+bst.instance.Pie64.ads_screen_width_percentage=""20""
+bst.instance.Pie64.airplane_mode_active=""0""
+bst.instance.Pie64.airplane_mode_active_time=""20250829T153953""
+bst.instance.Pie64.android_google_ad_id=""617d3fe6-e50e-4fb6-8bdf-e9a6efe76a39""
+bst.instance.Pie64.android_id=""8a018d0f15d25785""
+bst.instance.Pie64.android_sound_while_tapping=""1""
+bst.instance.Pie64.app_launch_count=""0""
+bst.instance.Pie64.astc_decoding_mode=""software""
+bst.instance.Pie64.autohide_notifications=""0""
+bst.instance.Pie64.boot_duration=""8073""
+bst.instance.Pie64.camera_backend=""ffmpeg""
+bst.instance.Pie64.camera_device=""OBS Virtual Camera""
+bst.instance.Pie64.camera_rotation_angle=""0""
+bst.instance.Pie64.cpus=""4""
+bst.instance.Pie64.custom_resolution_selected=""0""
+bst.instance.Pie64.device_carrier_code=""se_310410""
+bst.instance.Pie64.device_country_code=""840""
+bst.instance.Pie64.device_custom_brand=""""
+bst.instance.Pie64.device_custom_manufacturer=""""
+bst.instance.Pie64.device_custom_model=""""
+bst.instance.Pie64.device_profile_code=""sttu""
+bst.instance.Pie64.display_name=""BlueStacks App Player""
+bst.instance.Pie64.dpi=""320""
+bst.instance.Pie64.eco_mode_max_fps=""5""
+bst.instance.Pie64.enable_fps_display=""0""
+bst.instance.Pie64.enable_fullscreen_all_apps=""0""
+bst.instance.Pie64.enable_high_fps=""1""
+bst.instance.Pie64.enable_logcat_redirection=""0""
+bst.instance.Pie64.enable_notifications=""1""
+bst.instance.Pie64.enable_root_access=""0""
+bst.instance.Pie64.enable_vsync=""0""
+bst.instance.Pie64.fb_height=""1600""
+bst.instance.Pie64.fb_width=""900""
+bst.instance.Pie64.first_boot=""0""
+bst.instance.Pie64.game_controls_enabled=""1""
+bst.instance.Pie64.gl_win_height=""997""
+bst.instance.Pie64.gl_win_screen=""LG FULL HD""
+bst.instance.Pie64.gl_win_x=""1233""
+bst.instance.Pie64.gl_win_y=""34""
+bst.instance.Pie64.google_account_logins=""timberwookie@gmail.com,xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a@gmail.com""
+bst.instance.Pie64.google_login_popup_shown=""0""
+bst.instance.Pie64.graphics_engine=""aga""
+bst.instance.Pie64.graphics_renderer=""vlcn""
+bst.instance.Pie64.grm_ignored_rules=""""
+bst.instance.Pie64.launch_date=""""
+bst.instance.Pie64.libc_mem_allocator=""jem""
+bst.instance.Pie64.macro_win_height=""390""
+bst.instance.Pie64.macro_win_screen=""LG FULL HD""
+bst.instance.Pie64.macro_win_x=""754""
+bst.instance.Pie64.macro_win_y=""283""
+bst.instance.Pie64.max_fps=""240""
+bst.instance.Pie64.nowbux_signin_completed=""1""
+bst.instance.Pie64.nowgg_email=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a@gmail.com""
+bst.instance.Pie64.nowgg_userAvatarUrl=""https://cdn.now.gg/presets/avatars/avatar30.png""
+bst.instance.Pie64.nowgg_userId=""01K3VNDPY1CRMKATYR5A7YH9F8""
+bst.instance.Pie64.nowgg_username=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a ""
+bst.instance.Pie64.pin_to_top=""0""
+bst.instance.Pie64.ram=""4096""
+bst.instance.Pie64.refresh_token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsImF1ZCI6InpCQzFMQ3M3czdJdVp6eFFQOW9PJCQwMUZNOVZZV01TV1I2U1A0MlE0UzQ2WjBTWSIsInNlc3Npb25JZCI6ImFyeEl2clhWcmVZVU5uQmw2QXNsVyIsInVzZXJJZCI6IjAxSzNWTkRQWTFDUk1LQVRZUjVBN1lIOUY4IiwiaXNHdWVzdFVzZXIiOmZhbHNlLCJhdXRoUHJvdmlkZXJUeXBlIjoibm93Z2ciLCJzY29wZSI6ImF1dGhvcml6YXRpb24sZW1haWwsbm93cGxheSxwcm9maWxlLHZpZGVvcyx3YWxsZXQucmVhZG9ubHkiLCJpYXQiOjE3NTY0OTYzMjMsImV4cCI6MTc4ODAzMjMyM30.-DLltxL_lGHKhd05qHedvGk9Vqnto1pZ1NIyI7Nx66Y""
+bst.instance.Pie64.show_nowbux_rewards_red_dot_onboarding=""1""
+bst.instance.Pie64.show_sidebar=""1""
+bst.instance.Pie64.split_ad_enabled=""0""
+bst.instance.Pie64.split_ad_show_times=""-1""
+bst.instance.Pie64.status.adb_port=""5555""
+bst.instance.Pie64.status.ip_addr_prefix_len=""24""
+bst.instance.Pie64.status.ip_gateway_addr=""10.0.2.2""
+bst.instance.Pie64.status.ip_guest_addr=""10.0.2.15""
+bst.instance.Pie64.status.session_id=""337""
+bst.instance.Pie64.token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsInRva2VuSWQiOiI3ZTZhNjhiMi01MmMzLTQ4NGMtOGY2My1kOTQ3NmNiMmUyZWYiLCJhdWQiOiJ6QkMxTENzN3M3SXVaenhRUDlvTyQkMDFGTTlWWVdNU1dSNlNQNDJRNFM0NlowU1kiLCJzZXNzaW9uSWQiOiJhcnhJdnJYVnJlWVVObkJsNkFzbFciLCJ1c2VySWQiOiIwMUszVk5EUFkxQ1JNS0FUWVI1QTdZSDlGOCIsInNjb3BlIjoiYXV0aG9yaXphdGlvbixlbWFpbCxub3dwbGF5LHByb2ZpbGUsdmlkZW9zLHdhbGxldC5yZWFkb25seSIsImlhdCI6MTc3NDI5ODQzOCwiZXhwIjoxNzc0MzA5MjM4fQ.MotQyOWiZWfNddBV0H1bqTLGqi2Z7b60mSqhbigw2xQ""
+bst.instance.Pie64.vulkan_supported=""1""
+bst.key_controls_overlay_enabled=""1""
+bst.key_controls_overlay_opacity=""42""
+bst.launch_store_on_boot=""1""
+bst.launcher_guid=""59fc621e-ae62-4031-b1d4-47333ec1d302""
+bst.launcher_version=""10.42.101.2001""
+bst.locale=""en-US""
+bst.log_levels=""*:I""
+bst.machine_id=""d829b270-8425-4c4c-b492-829f786faa53""
+bst.media_folder=""C:/Users/lwpar/Pictures/BlueStacks""
+bst.mem_opt_mode=""0""
+bst.mem_pcd_enabled=""0""
+bst.mem_pcd_pclimit=""40""
+bst.mem_pcr_enabled=""0""
+bst.mem_pcr_pclimit=""48""
+bst.mem_swap_enabled=""0""
+bst.microphone_device=""""
+bst.mim.batch_operation_interval=""2000""
+bst.mim.delete_folder_warning=""1""
+bst.mim.delete_instance_in_folder_warning=""1""
+bst.mim.instance_arrangement_layout=""grid""
+bst.mim.instance_sort_option=""name""
+bst.mim.instances_per_row=""2""
+bst.mim.max_fps=""60""
+bst.mim_win_height=""512""
+bst.mim_win_screen=""LG FULL HD""
+bst.mim_win_x=""614""
+bst.mim_win_y=""260""
+bst.mobile_app_promotion_popup_launch_count=""0""
+bst.mobile_app_promotion_popup_timestamp=""0""
+bst.mute_all_instances=""0""
+bst.next_vm_id=""2""
+bst.nowgg_email=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a@gmail.com""
+bst.nowgg_signin_completed=""1""
+bst.nowgg_userId=""01K3VNDPY1CRMKATYR5A7YH9F8""
+bst.nowgg_username=""xj9q2r7m5b1v8n4k6t0y3p8l2s9w1a ""
+bst.prefer_dedicated_gpu=""1""
+bst.programmatic_android_ads_count=""0""
+bst.programmatic_android_ads_show_date=""""
+bst.qt_renderer=""Software""
+bst.raw_incompatible_cpu=""0""
+bst.refresh_token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsImF1ZCI6InpCQzFMQ3M3czdJdVp6eFFQOW9PJCQwMUZNOVZZV01TV1I2U1A0MlE0UzQ2WjBTWSIsInNlc3Npb25JZCI6ImFyeEl2clhWcmVZVU5uQmw2QXNsVyIsInVzZXJJZCI6IjAxSzNWTkRQWTFDUk1LQVRZUjVBN1lIOUY4IiwiaXNHdWVzdFVzZXIiOmZhbHNlLCJhdXRoUHJvdmlkZXJUeXBlIjoibm93Z2ciLCJzY29wZSI6ImF1dGhvcml6YXRpb24sZW1haWwsbm93cGxheSxwcm9maWxlLHZpZGVvcyx3YWxsZXQucmVhZG9ubHkiLCJpYXQiOjE3NTY0OTYzMjMsImV4cCI6MTc4ODAzMjMyM30.-DLltxL_lGHKhd05qHedvGk9Vqnto1pZ1NIyI7Nx66Y""
+bst.shared_folders=""Documents,Pictures,InputMapper,BstSharedFolder""
+bst.shortcut.airplane_mode=""Ctrl + Shift + H""
+bst.shortcut.boss_key=""Ctrl + Shift + X""
+bst.shortcut.decrease_volume=""Ctrl + Shift + Down""
+bst.shortcut.enable_disable_game_controls=""Ctrl + Shift + F10""
+bst.shortcut.go_back=""Ctrl + Shift + 2""
+bst.shortcut.go_home=""Ctrl + Shift + 1""
+bst.shortcut.increase_volume=""Ctrl + Shift + Up""
+bst.shortcut.install_apk=""Ctrl + Shift + B""
+bst.shortcut.mute_unmute=""Ctrl + Shift + M""
+bst.shortcut.open_controls_editor=""Ctrl + Shift + A""
+bst.shortcut.open_location_provider=""Ctrl + Shift + K""
+bst.shortcut.open_macro_recorder=""Ctrl + Shift + 7""
+bst.shortcut.open_media_folder=""Ctrl + Shift + 6""
+bst.shortcut.open_mim=""Ctrl + Shift + 8""
+bst.shortcut.open_recent_apps=""Ctrl + Shift + 5""
+bst.shortcut.open_settings=""Ctrl + Shift + I""
+bst.shortcut.open_sync_operations=""Ctrl + Shift + 9""
+bst.shortcut.pause_play_macros=""Ctrl + Shift + U""
+bst.shortcut.play_pause_sync_operations=""Ctrl + Shift + P""
+bst.shortcut.record_moment=""Ctrl + M""
+bst.shortcut.record_screen=""Ctrl + Shift + R""
+bst.shortcut.rotate=""Ctrl + Shift + 4""
+bst.shortcut.screen_translate=""Ctrl + Shift + L""
+bst.shortcut.shake=""Ctrl + Shift + 3""
+bst.shortcut.show_hide_on_screen_controls=""Shift + Tab""
+bst.shortcut.switch_scheme=""Ctrl + Shift + Q""
+bst.shortcut.take_screenshot=""Ctrl + Shift + S""
+bst.shortcut.toggle_eco_mode=""Ctrl + Shift + F""
+bst.shortcut.toggle_fullscreen=""F11""
+bst.shortcut.toggle_mouse_cursor_lock=""Ctrl + Shift + F8""
+bst.shortcut.trim_memory=""Ctrl + Shift + T""
+bst.show_camera_detection_message=""1""
+bst.show_charger_warning=""1""
+bst.show_gamepad_detection_message=""0""
+bst.show_macro_delete_warning=""1""
+bst.show_macro_folder_delete_warning=""1""
+bst.show_raw_mode_warning=""1""
+bst.show_schedule_macro_delete_warning=""1""
+bst.show_scheme_delete_warning=""1""
+bst.speaker_device=""""
+bst.sso_host_env=""prod""
+bst.startup_macro=""""
+bst.status.hypervisor=""hyperv""
+bst.status.imap_schema_version=""""
+bst.status.raw_mode=""0""
+bst.status.sse4_available=""1""
+bst.status.ssse3_available=""1""
+bst.stop_macro_on_home_blurb_shown=""0""
+bst.system_ram=""32581""
+bst.token=""eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL25vdy5nZyIsInRva2VuSWQiOiJiZDg3ODEyMS00ZTFmLTQ2MTMtYjRhOS01MWZmYjc5ZTRmMDAiLCJhdWQiOiJ6QkMxTENzN3M3SXVaenhRUDlvTyQkMDFGTTlWWVdNU1dSNlNQNDJRNFM0NlowU1kiLCJzZXNzaW9uSWQiOiJhcnhJdnJYVnJlWVVObkJsNkFzbFciLCJ1c2VySWQiOiIwMUszVk5EUFkxQ1JNS0FUWVI1QTdZSDlGOCIsInNjb3BlIjoiYXV0aG9yaXphdGlvbixlbWFpbCxub3dwbGF5LHByb2ZpbGUsdmlkZW9zLHdhbGxldC5yZWFkb25seSIsImlhdCI6MTc3MzQ1MjY0MywiZXhwIjoxNzczNDYzNDQzfQ.xgi-9Aox1_1Gb4pyjjpFfZViwIGvZkSBCymJgXpNlQw""
+bst.ui_scale_factor=""1.00""
+bst.usage_stats_interval=""600""
+bst.version_machine_id=""09bc1352-1a35-4c54-90e2-4a15416f9015""
+",low,9,bluestacks_host_metadata,

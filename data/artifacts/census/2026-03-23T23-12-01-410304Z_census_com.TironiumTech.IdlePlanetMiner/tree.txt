@@ -1,0 +1,3 @@
+F	medium	4147	windows_host	C:\ProgramData\BlueStacks_nxt\Engine\Pie64\AppCache\AppCache.json
+F	low	8969275	windows_host	C:\ProgramData\BlueStacks_nxt\Logs\Player.log
+F	low	17207	windows_host	C:\ProgramData\BlueStacks_nxt\bluestacks.conf

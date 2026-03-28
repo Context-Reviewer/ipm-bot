@@ -1,0 +1,18 @@
+catalog_path: C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\2026-03-24T00-24-59-102223Z_il2cpp_output_catalog_sample_cpp2il_run_2
+output_dir_path: C:\dev\ipm-bot\data\artifacts\external_tool_outputs\sample_cpp2il_run_2
+linked_input_report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_input_reports\2026-03-24T00-20-25-552341Z_il2cpp_input_report_2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+linked_workspace_path: C:\dev\ipm-bot\data\artifacts\il2cpp_workspaces\2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+tool_name: Cpp2IL
+tool_version: 2026.3.24
+file_count: 2
+
+notes:
+manual analyst run
+
+cataloged_files:
+- DummyAssembly/Assembly-CSharp.dll size_bytes=14 sha256=ca167c5ffc8c4e8464a79c62f59b0638596f6144de5ffe1f8c24f8ff8a9bd0d6
+- script.json size_bytes=17 sha256=e137a9368619e9a2a2cab401b0623bb0063b7cb3958151e9b1ddd55eccfd3214
+
+scope_note:
+Catalog only. This report does not validate the semantic correctness of external IL2CPP reconstruction output.

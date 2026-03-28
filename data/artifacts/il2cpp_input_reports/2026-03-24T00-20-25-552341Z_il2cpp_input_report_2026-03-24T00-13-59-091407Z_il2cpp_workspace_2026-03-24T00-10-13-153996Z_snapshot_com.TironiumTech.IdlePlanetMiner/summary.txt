@@ -1,0 +1,14 @@
+report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_input_reports\2026-03-24T00-20-25-552341Z_il2cpp_input_report_2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+workspace_path: C:\dev\ipm-bot\data\artifacts\il2cpp_workspaces\2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+architecture: arm64-v8a
+
+validated_files:
+- workspace/global-metadata.dat sha256=a463d6da862e091365043898f90b6065af7f7c572a89a1712ff787c14d458f61 size_bytes=9430316
+- workspace/libil2cpp.so sha256=aa4d6feff79f920f296a8b9d16fa323066123f9bf98cfaa824a1db7c2ecf975b size_bytes=47306632
+
+external_tool_notes:
+Cpp2IL manual run placeholder
+
+scope_note:
+This report validates staged inputs only. It does not execute or validate external IL2CPP reconstruction output.

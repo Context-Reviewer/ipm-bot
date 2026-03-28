@@ -1,0 +1,16 @@
+catalog_path: C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\2026-03-24T00-24-48-545848Z_il2cpp_output_catalog_sample_cpp2il_run
+output_dir_path: C:\dev\ipm-bot\data\artifacts\external_tool_outputs\sample_cpp2il_run
+linked_input_report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_input_reports\2026-03-24T00-20-25-552341Z_il2cpp_input_report_2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+linked_workspace_path: C:\dev\ipm-bot\data\artifacts\il2cpp_workspaces\2026-03-24T00-13-59-091407Z_il2cpp_workspace_2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+tool_name: Cpp2IL
+tool_version: 2026.3.24
+file_count: 0
+
+notes:
+manual analyst run
+
+cataloged_files:
+
+scope_note:
+Catalog only. This report does not validate the semantic correctness of external IL2CPP reconstruction output.

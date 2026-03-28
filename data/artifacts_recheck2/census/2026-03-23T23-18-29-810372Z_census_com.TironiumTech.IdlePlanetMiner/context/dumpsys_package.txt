@@ -1,0 +1,250 @@
+Total number of currently running services:0
+Activity Resolver Table:
+  Schemes:
+      genericidp:
+        91a519 com.TironiumTech.IdlePlanetMiner/com.google.firebase.auth.internal.GenericIdpActivity filter 29b89ee
+          Action: "android.intent.action.VIEW"
+          Category: "android.intent.category.DEFAULT"
+          Category: "android.intent.category.BROWSABLE"
+          Scheme: "genericidp"
+          Authority: "firebase.auth": -1
+          Path: "PatternMatcher{LITERAL: /}"
+      recaptcha:
+        8a719de com.TironiumTech.IdlePlanetMiner/com.google.firebase.auth.internal.RecaptchaActivity filter c546e8f
+          Action: "android.intent.action.VIEW"
+          Category: "android.intent.category.DEFAULT"
+          Category: "android.intent.category.BROWSABLE"
+          Scheme: "recaptcha"
+          Authority: "firebase.auth": -1
+          Path: "PatternMatcher{LITERAL: /}"
+
+  Non-Data Actions:
+      android.intent.action.MAIN:
+        8bbd7bf com.TironiumTech.IdlePlanetMiner/com.unity3d.player.UnityPlayerActivity filter c708b69
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+
+Receiver Resolver Table:
+  Non-Data Actions:
+      android.intent.action.BATTERY_OKAY:
+        713e8c com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy filter a8356bb
+          Action: "android.intent.action.BATTERY_OKAY"
+          Action: "android.intent.action.BATTERY_LOW"
+      android.intent.action.ACTION_POWER_DISCONNECTED:
+        d8e79d5 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy filter a09874a
+          Action: "android.intent.action.ACTION_POWER_CONNECTED"
+          Action: "android.intent.action.ACTION_POWER_DISCONNECTED"
+      androidx.profileinstaller.action.SAVE_PROFILE:
+        e86f5ea com.TironiumTech.IdlePlanetMiner/androidx.profileinstaller.ProfileInstallReceiver filter 507e233
+          Action: "androidx.profileinstaller.action.SAVE_PROFILE"
+      android.intent.action.DEVICE_STORAGE_LOW:
+        b6030db com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy filter dfb17d8
+          Action: "android.intent.action.DEVICE_STORAGE_LOW"
+          Action: "android.intent.action.DEVICE_STORAGE_OK"
+      android.net.conn.CONNECTIVITY_CHANGE:
+        b39b778 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy filter e3d2731
+          Action: "android.net.conn.CONNECTIVITY_CHANGE"
+      android.intent.action.DEVICE_STORAGE_OK:
+        b6030db com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy filter dfb17d8
+          Action: "android.intent.action.DEVICE_STORAGE_LOW"
+          Action: "android.intent.action.DEVICE_STORAGE_OK"
+      androidx.profileinstaller.action.INSTALL_PROFILE:
+        e86f5ea com.TironiumTech.IdlePlanetMiner/androidx.profileinstaller.ProfileInstallReceiver filter 80c056d
+          Action: "androidx.profileinstaller.action.INSTALL_PROFILE"
+      android.intent.action.BATTERY_LOW:
+        713e8c com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy filter a8356bb
+          Action: "android.intent.action.BATTERY_OKAY"
+          Action: "android.intent.action.BATTERY_LOW"
+      android.intent.action.TIMEZONE_CHANGED:
+        c49de51 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.RescheduleReceiver filter 2e0ce16
+          Action: "android.intent.action.BOOT_COMPLETED"
+          Action: "android.intent.action.TIME_SET"
+          Action: "android.intent.action.TIMEZONE_CHANGED"
+      android.intent.action.TIME_SET:
+        c49de51 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.RescheduleReceiver filter 2e0ce16
+          Action: "android.intent.action.BOOT_COMPLETED"
+          Action: "android.intent.action.TIME_SET"
+          Action: "android.intent.action.TIMEZONE_CHANGED"
+      androidx.profileinstaller.action.SKIP_FILE:
+        e86f5ea com.TironiumTech.IdlePlanetMiner/androidx.profileinstaller.ProfileInstallReceiver filter 613b5a2
+          Action: "androidx.profileinstaller.action.SKIP_FILE"
+      androidx.profileinstaller.action.BENCHMARK_OPERATION:
+        e86f5ea com.TironiumTech.IdlePlanetMiner/androidx.profileinstaller.ProfileInstallReceiver filter 1b909f0
+          Action: "androidx.profileinstaller.action.BENCHMARK_OPERATION"
+      android.intent.action.BOOT_COMPLETED:
+        c49de51 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.RescheduleReceiver filter 2e0ce16
+          Action: "android.intent.action.BOOT_COMPLETED"
+          Action: "android.intent.action.TIME_SET"
+          Action: "android.intent.action.TIMEZONE_CHANGED"
+      android.intent.action.ACTION_POWER_CONNECTED:
+        d8e79d5 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy filter a09874a
+          Action: "android.intent.action.ACTION_POWER_CONNECTED"
+          Action: "android.intent.action.ACTION_POWER_DISCONNECTED"
+      androidx.work.diagnostics.REQUEST_DIAGNOSTICS:
+        d686b6 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.diagnostics.DiagnosticsReceiver filter 3f5d984
+          Action: "androidx.work.diagnostics.REQUEST_DIAGNOSTICS"
+      androidx.work.impl.background.systemalarm.UpdateProxies:
+        f26ffb7 com.TironiumTech.IdlePlanetMiner/androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver filter 386a397
+          Action: "androidx.work.impl.background.systemalarm.UpdateProxies"
+
+Permissions:
+  Permission [com.TironiumTech.IdlePlanetMiner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION] (40ed324):
+    sourcePackage=com.TironiumTech.IdlePlanetMiner
+    uid=10070 gids=null type=0 prot=signature
+    perm=Permission{7d0e8d com.TironiumTech.IdlePlanetMiner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION}
+    packageSetting=PackageSetting{dbc5842 com.TironiumTech.IdlePlanetMiner/10070}
+
+Registered ContentProviders:
+  com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.LevelPlayActivityLifecycleProvider:
+    Provider{121e053 com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.LevelPlayActivityLifecycleProvider}
+  com.TironiumTech.IdlePlanetMiner/com.google.android.gms.ads.MobileAdsInitProvider:
+    Provider{f7fd90 com.TironiumTech.IdlePlanetMiner/com.google.android.gms.ads.MobileAdsInitProvider}
+  com.TironiumTech.IdlePlanetMiner/com.google.firebase.provider.FirebaseInitProvider:
+    Provider{6390689 com.TironiumTech.IdlePlanetMiner/com.google.firebase.provider.FirebaseInitProvider}
+  com.TironiumTech.IdlePlanetMiner/com.facebook.ads.AudienceNetworkContentProvider:
+    Provider{d3bb68e com.TironiumTech.IdlePlanetMiner/com.facebook.ads.AudienceNetworkContentProvider}
+  com.TironiumTech.IdlePlanetMiner/com.applovin.sdk.AppLovinInitProvider:
+    Provider{3e02eaf com.TironiumTech.IdlePlanetMiner/com.applovin.sdk.AppLovinInitProvider}
+  com.TironiumTech.IdlePlanetMiner/androidx.startup.InitializationProvider:
+    Provider{f0762bc com.TironiumTech.IdlePlanetMiner/androidx.startup.InitializationProvider}
+  com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.IronsourceLifecycleProvider:
+    Provider{fa28245 com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.IronsourceLifecycleProvider}
+
+ContentProvider Authorities:
+  [com.TironiumTech.IdlePlanetMiner.mobileadsinitprovider]:
+    Provider{f7fd90 com.TironiumTech.IdlePlanetMiner/com.google.android.gms.ads.MobileAdsInitProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.applovininitprovider]:
+    Provider{3e02eaf com.TironiumTech.IdlePlanetMiner/com.applovin.sdk.AppLovinInitProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.AudienceNetworkContentProvider]:
+    Provider{d3bb68e com.TironiumTech.IdlePlanetMiner/com.facebook.ads.AudienceNetworkContentProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.androidx-startup]:
+    Provider{f0762bc com.TironiumTech.IdlePlanetMiner/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.IronsourceLifecycleProvider]:
+    Provider{fa28245 com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.IronsourceLifecycleProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.LevelPlayActivityLifecycleProvider]:
+    Provider{121e053 com.TironiumTech.IdlePlanetMiner/com.ironsource.lifecycle.LevelPlayActivityLifecycleProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+  [com.TironiumTech.IdlePlanetMiner.firebaseinitprovider]:
+    Provider{6390689 com.TironiumTech.IdlePlanetMiner/com.google.firebase.provider.FirebaseInitProvider}
+      applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+
+Key Set Manager:
+  [com.TironiumTech.IdlePlanetMiner]
+      Signing KeySets: 22
+
+Packages:
+  Package [com.TironiumTech.IdlePlanetMiner] (dbc5842):
+    userId=10070
+    pkg=Package{98b06cb com.TironiumTech.IdlePlanetMiner}
+    codePath=/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==
+    resourcePath=/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==
+    legacyNativeLibraryDir=/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/lib
+    primaryCpuAbi=arm64-v8a
+    secondaryCpuAbi=null
+    versionCode=640 minSdk=24 targetSdk=35
+    versionName=2.8.8
+    splits=[base, config.arm64_v8a]
+    apkSigningVersion=3
+    applicationInfo=ApplicationInfo{240ad9a com.TironiumTech.IdlePlanetMiner}
+    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    privateFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION PARTIALLY_DIRECT_BOOT_AWARE ]
+    dataDir=/data/user/0/com.TironiumTech.IdlePlanetMiner
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    usesOptionalLibraries:
+      org.apache.http.legacy
+      android.ext.adservices
+    usesLibraryFiles:
+      /system/framework/org.apache.http.legacy.boot.jar
+    timeStamp=2026-02-28 17:00:55
+    firstInstallTime=2026-02-28 17:00:58
+    lastUpdateTime=2026-02-28 17:00:58
+    installerPackageName=com.android.vending
+    signatures=PackageSignatures{845eea8 version:3, signatures:[a869d051], past signatures:[]}
+    installPermissionsFixed=true
+    pkgFlags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP ]
+    declared permissions:
+      com.TironiumTech.IdlePlanetMiner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: prot=signature, INSTALLED
+    requested permissions:
+      android.permission.INTERNET
+      android.permission.ACCESS_NETWORK_STATE
+      com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE
+      android.permission.VIBRATE
+      com.google.android.gms.permission.AD_ID
+      com.applovin.array.apphub.permission.BIND_APPHUB_SERVICE
+      android.permission.ACCESS_WIFI_STATE
+      android.permission.ACCESS_ADSERVICES_ATTRIBUTION
+      com.samsung.android.mapsagent.permission.READ_APP_INFO
+      com.huawei.appmarket.service.commondata.permission.GET_COMMON_DATA
+      android.permission.WAKE_LOCK
+      android.permission.ACCESS_ADSERVICES_AD_ID
+      com.android.vending.BILLING
+      android.permission.ACCESS_ADSERVICES_TOPICS
+      com.google.android.c2dm.permission.RECEIVE
+      android.permission.READ_EXTERNAL_STORAGE
+      android.permission.WRITE_EXTERNAL_STORAGE
+      android.permission.POST_NOTIFICATIONS
+      com.google.android.providers.gsf.permission.READ_GSERVICES
+      android.permission.FOREGROUND_SERVICE
+      com.TironiumTech.IdlePlanetMiner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+    install permissions:
+      com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE: granted=true
+      com.google.android.c2dm.permission.RECEIVE: granted=true
+      com.google.android.providers.gsf.permission.READ_GSERVICES: granted=true
+      android.permission.FOREGROUND_SERVICE: granted=true
+      com.TironiumTech.IdlePlanetMiner.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: granted=true
+      android.permission.INTERNET: granted=true
+      com.android.vending.BILLING: granted=true
+      android.permission.ACCESS_NETWORK_STATE: granted=true
+      android.permission.VIBRATE: granted=true
+      android.permission.ACCESS_WIFI_STATE: granted=true
+      com.google.android.gms.permission.AD_ID: granted=true
+      android.permission.WAKE_LOCK: granted=true
+    User 0: ceDataInode=3672061 installed=true hidden=false suspended=false stopped=false notLaunched=false enabled=0 instant=false virtual=false
+      gids=[3003]
+      runtime permissions:
+        android.permission.READ_EXTERNAL_STORAGE: granted=true
+        android.permission.WRITE_EXTERNAL_STORAGE: granted=true
+      disabledComponents:
+        androidx.work.impl.background.systemalarm.RescheduleReceiver
+      enabledComponents:
+        androidx.work.impl.background.systemjob.SystemJobService
+
+Package Changes:
+  Sequence number=22
+  User 0:
+    seq=21, package=com.google.android.gms
+
+
+Dexopt state:
+  [com.TironiumTech.IdlePlanetMiner]
+    path: /data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk
+      x86_64: [status=speed-profile] [reason=install]
+      known secondary dex files:
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/remote_config_resources_lib.jar
+          class loader context: PCL[];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/firestore_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/google_api_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/google_api_resources_lib.jar
+          class loader context: PCL[];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/auth_resources_lib.jar
+          class loader context: PCL[];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/remote_config_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/firestore_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/google_api_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/database_resources_lib.jar
+          class loader context: PCL[];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/auth_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/remote_config_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/firestore_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/google_api_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar
+          class loader context: PCL[];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/1762298034389.jar
+          class loader context: PCL[];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/firestore_resources_lib.jar
+          class loader context: PCL[];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/google_api_resources_lib.jar];PCL[/data/user/0/com.TironiumTech.IdlePlanetMiner/cache/app_resources_lib.jar];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/cache/1754603592408.jar
+          class loader context: PCL[];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+        /data/user/0/com.TironiumTech.IdlePlanetMiner/files/audience_network.dex
+          class loader context: PCL[];PCL[/system/framework/org.apache.http.legacy.boot.jar:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk]
+
+
+Compiler stats:
+  [com.TironiumTech.IdlePlanetMiner]
+     base.apk - 2827

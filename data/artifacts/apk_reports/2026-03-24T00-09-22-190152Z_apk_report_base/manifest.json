@@ -1,0 +1,15 @@
+{
+  "schema_version": "apk-report-v1",
+  "created_at_utc": "2026-03-24T00:09:22Z",
+  "apk_input": "C:\\dev\\ipm-bot\\data\\artifacts\\snapshots\\2026-03-23T23-12-24-278956Z_snapshot_com.TironiumTech.IdlePlanetMiner",
+  "resolved_apk_path": "C:\\dev\\ipm-bot\\data\\artifacts\\snapshots\\2026-03-23T23-12-24-278956Z_snapshot_com.TironiumTech.IdlePlanetMiner\\context\\installed_package\\base.apk",
+  "output_dir": "C:\\dev\\ipm-bot\\data\\artifacts\\apk_reports\\2026-03-24T00-09-22-190152Z_apk_report_base",
+  "host_platform": "Windows-11-10.0.26200-SP0",
+  "member_count": 1002,
+  "interesting_member_count": 2,
+  "extracted_member_count": 2,
+  "il2cpp_detected": true,
+  "il2cpp_indicators": [
+    "assets/bin/Data/Managed/Metadata/global-metadata.dat"
+  ]
+}

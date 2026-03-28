@@ -1,0 +1,26 @@
+[
+  {
+    "artifact_key": "windows_host|C:\\ProgramData\\BlueStacks_nxt\\Logs\\Player.log",
+    "change_type": "modified",
+    "source_kind": "windows_host",
+    "source_path": "C:\\ProgramData\\BlueStacks_nxt\\Logs\\Player.log",
+    "relative_path": "Player.log",
+    "before_size_bytes": 8979730,
+    "after_size_bytes": 8980356,
+    "before_mtime_utc": "2026-03-23T23:19:37Z",
+    "after_mtime_utc": "2026-03-23T23:20:03Z",
+    "before_sha256": null,
+    "after_sha256": null,
+    "before_file_class": "log_or_text",
+    "after_file_class": "log_or_text",
+    "before_copied_relative_path": "extracted\\bluestacks_player_log\\Player.log",
+    "after_copied_relative_path": "extracted\\bluestacks_player_log\\Player.log",
+    "priority": "low",
+    "triage_score": 51,
+    "reasons": [
+      "size_changed",
+      "mtime_changed"
+    ],
+    "text_diff_relative_path": null
+  }
+]

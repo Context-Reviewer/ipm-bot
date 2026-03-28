@@ -1,0 +1,5 @@
+Selected action: activate_ad_boost
+Final status: FAIL
+Failure reason: TIMEOUT_NO_SAVE_CHANGE
+Save snapshot: available=True active_smelters=3 active_crafters=2 nearest_completion_seconds=9.396508
+Receipt path: C:\dev\ipm-bot\logs\receipts\2026-03-26T02-07-38Z_activate_ad_boost.json

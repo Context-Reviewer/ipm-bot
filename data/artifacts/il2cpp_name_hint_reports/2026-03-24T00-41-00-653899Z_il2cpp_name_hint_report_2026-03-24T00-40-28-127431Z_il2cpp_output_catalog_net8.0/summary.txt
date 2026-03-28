@@ -1,0 +1,28 @@
+report_path: C:\dev\ipm-bot\data\artifacts\il2cpp_name_hint_reports\2026-03-24T00-41-00-653899Z_il2cpp_name_hint_report_2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0
+source_catalog_path: C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0
+source_snapshot_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner
+case_sensitive: false
+term_count: 5
+match_count: 10
+
+terms:
+- player
+- save
+- reward
+- ad
+- data
+
+matching_entries:
+- DummyDll/Firebase.Database.dll matched_terms=data size_bytes=49664 sha256=33d4aed1ba932dd29591f1b079ac7657300ed5f3d18b505be038efad3a73b3a1
+- DummyDll/GoogleMobileAds.Android.dll matched_terms=ad size_bytes=69120 sha256=38dcf018d355001a10d8c22f048685e7fd14f713a0423755e2e738481fac066c
+- DummyDll/GoogleMobileAds.Common.dll matched_terms=ad size_bytes=8192 sha256=5dc1ba178c0cfdbabc2a9f464c618dee490a8810a9984abe967b0ec2c2ff2d3a
+- DummyDll/GoogleMobileAds.Core.dll matched_terms=ad size_bytes=17408 sha256=8d18e44ef6208d2495064ccb55958602641e35eade2f8c3bf93e3321e06432a1
+- DummyDll/GoogleMobileAds.Ump.Android.dll matched_terms=ad size_bytes=11776 sha256=b3a847c499519f5636235fbf5c3e9ea8126e180c49d55a80b4196b83b7100b63
+- DummyDll/GoogleMobileAds.Ump.dll matched_terms=ad size_bytes=7680 sha256=05fa6ee251ab26a3ecd9257548db89dc2c43ae2bdad6592b4aaa78290bce1ba0
+- DummyDll/GoogleMobileAds.dll matched_terms=ad size_bytes=3584 sha256=8557132a7ded7e2d18fb55ae6472eb5d8fbff34c346289ef7c506e9410b70bbe
+- DummyDll/System.Data.dll matched_terms=data size_bytes=604672 sha256=13a45424d096db97cd02fe35828af2771520d28795585df9b680039199a1d426
+- DummyDll/Unity.Services.Core.Threading.dll matched_terms=ad size_bytes=2048 sha256=aa41534ac79e27333fbfae6cd04dd50f0238b2c204795fb5ad04850f08b2a29a
+- il2cpp_header_to_ghidra.py matched_terms=ad size_bytes=1209 sha256=f8c1180bf70ac6ff142bfdd19f6bad1a84e9208b2e8cc120f7d1b98586478337
+
+scope_note:
+This report narrows large external output trees using filename/path metadata only.

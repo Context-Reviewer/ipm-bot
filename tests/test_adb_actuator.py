@@ -41,7 +41,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
             ),
@@ -139,7 +138,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=10.0,
@@ -194,7 +192,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=5.0,
@@ -241,7 +238,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=15.0,
@@ -300,7 +296,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=20.0,
@@ -358,7 +353,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=5.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=15.0,
@@ -409,7 +403,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_post_reward_auto_claim_enabled=True,
@@ -500,7 +493,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
             ),
@@ -558,7 +550,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=20.0,
@@ -631,7 +622,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
                 ad_boost_exit_timeout_seconds=30.0,
@@ -689,7 +679,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=5.0,
-                ad_boost_watch_timeout_seconds=60.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
             ),
@@ -733,7 +722,6 @@ class AdbActuatorTests(unittest.TestCase):
                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
                 ark_popup_wait_seconds=1.5,
                 ad_boost_open_timeout_seconds=10.0,
-                ad_boost_watch_timeout_seconds=5.0,
                 ad_boost_probe_interval_seconds=2.0,
                 ad_boost_stabilization_seconds=3.0,
             ),
@@ -887,18 +875,10 @@ class AdbActuatorTests(unittest.TestCase):
         dumpsys_output = (
             "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
         )
-        ui_dump_output = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<hierarchy><node text="Reward granted" content-desc="Close ad" /></hierarchy>'
-        )
         runner = RecordingCommandRunner(
             captured_outputs={
                 "adb -s emulator-5554 shell dumpsys window windows": dumpsys_output,
                 "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
-                "adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml": (
-                    "UI hierchary dumped to: /sdcard/ipm_bot_window_dump.xml"
-                ),
-                "adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml": ui_dump_output,
             }
         )
         clock = RecordingClock()
@@ -939,23 +919,20 @@ class AdbActuatorTests(unittest.TestCase):
             metadata.probe_samples[1].focus_activity,
             "com.google.android.gms.ads.AdActivity",
         )
-        self.assertEqual(metadata.probe_samples[1].ui_text_excerpt, "Reward granted | Close ad")
+        self.assertIsNone(metadata.probe_samples[1].ui_text_excerpt)
         self.assertEqual(
             metadata.probe_samples[1].dumpsys_activity_output,
             "ACTIVITY MANAGER ACTIVITIES",
         )
         self.assertIn("mCurrentFocus=Window", metadata.probe_samples[1].dumpsys_window_output)
-        self.assertTrue(metadata.probe_samples[1].ui_dump_xml.startswith("<?xml version=\"1.0\""))
+        self.assertIsNone(metadata.probe_samples[1].ui_dump_xml)
         self.assertIsNone(metadata.probe_samples[1].probe_error)
         self.assertEqual(metadata.probe_samples[3].sample_context, "pre_esc")
         self.assertEqual(metadata.probe_samples[3].esc_attempt_index, 1)
         self.assertEqual(metadata.probe_samples[4].sample_context, "post_esc")
         self.assertEqual(metadata.probe_samples[4].esc_attempt_index, 1)
         self.assertEqual(metadata.probe_samples[5].sample_context, "post_esc_settle")
-        self.assertEqual(
-            metadata.stage_events[1].stage_name,
-            "entry_observation",
-        )
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
         self.assertTrue(metadata.claim_attempted)
         self.assertEqual(metadata.number_of_claim_taps, 1)
         self.assertEqual(len(metadata.claim_tap_timestamps), 1)
@@ -965,18 +942,10 @@ class AdbActuatorTests(unittest.TestCase):
         dumpsys_output = (
             "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
         )
-        ui_dump_output = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<hierarchy><node text="Ad 1 of 2" content-desc="Close ad" /></hierarchy>'
-        )
         runner = RecordingCommandRunner(
             captured_outputs={
                 "adb -s emulator-5554 shell dumpsys window windows": dumpsys_output,
                 "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
-                "adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml": (
-                    "UI hierchary dumped to: /sdcard/ipm_bot_window_dump.xml"
-                ),
-                "adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml": ui_dump_output,
             }
         )
         clock = RecordingClock()
@@ -1094,7 +1063,6 @@ class AdbActuatorTests(unittest.TestCase):
             [event.stage_name for event in metadata.stage_events],
             [
                 "ark_entry_tap",
-                "entry_observation",
                 "ark_watch_tap",
                 "probe_window_start",
                 "ad_close_tap",
@@ -1125,12 +1093,9 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertEqual(len(metadata.claim_tap_timestamps), 1)
         self.assertEqual(sleeper.durations, [1.25, 6.0, 1.0, 1.25, 1.25, 2.5])
 
-    def test_claim_ark_reward_records_probe_error_when_ui_dump_is_unavailable(self) -> None:
+    def test_claim_ark_reward_records_focus_probe_error_when_dumpsys_is_unavailable(self) -> None:
         runner = RecordingCommandRunner(
             captured_outputs={
-                "adb -s emulator-5554 shell dumpsys window windows": (
-                    "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
-                ),
                 "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
             }
         )
@@ -1160,26 +1125,19 @@ class AdbActuatorTests(unittest.TestCase):
         metadata = actuator.execute("claim_ark_reward")
 
         self.assertEqual(len(metadata.probe_samples), 5)
-        self.assertIn("ui:", metadata.probe_samples[0].probe_error)
+        self.assertIn("focus:", metadata.probe_samples[0].probe_error)
         self.assertIsNone(metadata.probe_samples[0].ui_dump_xml)
-        self.assertIsNotNone(metadata.probe_samples[0].dumpsys_window_output)
+        self.assertIsNone(metadata.probe_samples[0].dumpsys_window_output)
         self.assertIsNotNone(metadata.probe_samples[0].dumpsys_activity_output)
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
 
-    def test_claim_ark_reward_labels_entry_probe_when_it_stays_on_game_view(self) -> None:
-        ui_dump_output = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<hierarchy><node text="Game view" /></hierarchy>'
-        )
+    def test_claim_ark_reward_does_not_issue_ui_dump_commands_when_probe_sampling_is_enabled(self) -> None:
         runner = RecordingCommandRunner(
             captured_outputs={
                 "adb -s emulator-5554 shell dumpsys window windows": (
                     "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
                 ),
                 "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
-                "adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml": (
-                    "UI hierchary dumped to: /sdcard/ipm_bot_window_dump.xml"
-                ),
-                "adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml": ui_dump_output,
             }
         )
         clock = RecordingClock()
@@ -1209,9 +1167,9 @@ class AdbActuatorTests(unittest.TestCase):
         metadata = actuator.execute("claim_ark_reward")
 
         self.assertEqual(metadata.probe_samples[0].sample_context, "post_entry")
-        self.assertEqual(metadata.probe_samples[0].ui_text_excerpt, "Game view")
-        self.assertEqual(metadata.stage_events[1].stage_name, "entry_observation")
-        self.assertIn("entry_inconclusive_immediate_probe", metadata.stage_events[1].detail)
+        self.assertTrue(all(sample.ui_text_excerpt is None for sample in metadata.probe_samples))
+        self.assertTrue(all(sample.ui_dump_xml is None for sample in metadata.probe_samples))
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
 
     def test_manual_observation_mode_skips_ark_commands_and_collects_probes(self) -> None:
         ui_dump_output = (
@@ -1321,12 +1279,14 @@ class AdbActuatorTests(unittest.TestCase):
 class RecordingCommandRunner:
     def __init__(self, captured_outputs: dict[str, str] | None = None) -> None:
         self.commands: list[list[str]] = []
+        self.capture_commands: list[list[str]] = []
         self.captured_outputs = {} if captured_outputs is None else dict(captured_outputs)
 
     def run(self, command: list[str]) -> None:
         self.commands.append(list(command))
 
     def capture(self, command: list[str]) -> str:
+        self.capture_commands.append(list(command))
         normalized = " ".join(command)
         try:
             return self.captured_outputs[normalized]

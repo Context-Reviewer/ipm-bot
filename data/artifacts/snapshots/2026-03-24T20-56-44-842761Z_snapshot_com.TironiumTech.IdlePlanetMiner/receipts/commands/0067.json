@@ -1,0 +1,18 @@
+{
+  "receipt_id": "0067",
+  "purpose": "read_external_storage_emulated",
+  "command": [
+    "C:\\Program Files\\BlueStacks_nxt\\HD-Adb.exe",
+    "-s",
+    "emulator-5554",
+    "exec-out",
+    "cat",
+    "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config"
+  ],
+  "started_at_utc": "2026-03-24T20:56:46Z",
+  "finished_at_utc": "2026-03-24T20:56:46Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0067.stdout.txt",
+  "stderr_path": null
+}

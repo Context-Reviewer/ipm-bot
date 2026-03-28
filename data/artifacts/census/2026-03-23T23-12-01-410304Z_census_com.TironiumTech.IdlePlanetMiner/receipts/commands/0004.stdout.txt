@@ -1,0 +1,2 @@
+package:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/base.apk
+package:/data/app/com.TironiumTech.IdlePlanetMiner-A4GQ1Pc8Qi7heScUiyzSKA==/split_config.arm64_v8a.apk

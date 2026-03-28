@@ -1,0 +1,18 @@
+{
+  "receipt_id": "0022",
+  "purpose": "read_external_sdcard",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "exec-out",
+    "cat",
+    "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Drawing.dll-resources.dat"
+  ],
+  "started_at_utc": "2026-03-23T23:18:30Z",
+  "finished_at_utc": "2026-03-23T23:18:30Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0022.stdout.bin",
+  "stderr_path": null
+}

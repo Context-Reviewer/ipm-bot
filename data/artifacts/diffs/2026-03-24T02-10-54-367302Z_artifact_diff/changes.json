@@ -1,0 +1,122 @@
+[
+  {
+    "artifact_key": "adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "change_type": "modified",
+    "source_kind": "adb_external",
+    "source_path": "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "relative_path": "files/playerInfo.dat",
+    "before_size_bytes": 112055,
+    "after_size_bytes": 112055,
+    "before_mtime_utc": "2026-03-24T02:07:28Z",
+    "after_mtime_utc": "2026-03-24T02:10:28Z",
+    "before_sha256": "0585810dd1b90e71a10deef71b6cc6b6323441efdf3e7eab0a727b4082e8ddbc",
+    "after_sha256": "0e6ace3c34ec151dd59057415d8e47f783c52b1b7ef3c34987763e10a8412580",
+    "before_file_class": "binary_state_blob",
+    "after_file_class": "binary_state_blob",
+    "before_copied_relative_path": "extracted\\external_sdcard\\files\\playerInfo.dat",
+    "after_copied_relative_path": "extracted\\external_sdcard\\files\\playerInfo.dat",
+    "priority": "high",
+    "triage_score": 156,
+    "reasons": [
+      "mtime_changed",
+      "hash_changed"
+    ],
+    "text_diff_relative_path": null
+  },
+  {
+    "artifact_key": "adb_external|/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat",
+    "change_type": "modified",
+    "source_kind": "adb_external",
+    "source_path": "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat",
+    "relative_path": "files/playerInfoBackup.dat",
+    "before_size_bytes": 112055,
+    "after_size_bytes": 112055,
+    "before_mtime_utc": "2026-03-24T02:07:28Z",
+    "after_mtime_utc": "2026-03-24T02:10:28Z",
+    "before_sha256": "e48df301692293b3cf1696137472d9d91d2b5d82474860bca7fbb90e435889ab",
+    "after_sha256": "f016004f44aeff41c4b42bf74aeacb2fdd4019ee2156a3c2a577f6910683f106",
+    "before_file_class": "binary_state_blob",
+    "after_file_class": "binary_state_blob",
+    "before_copied_relative_path": "extracted\\external_sdcard\\files\\playerInfoBackup.dat",
+    "after_copied_relative_path": "extracted\\external_sdcard\\files\\playerInfoBackup.dat",
+    "priority": "high",
+    "triage_score": 156,
+    "reasons": [
+      "mtime_changed",
+      "hash_changed"
+    ],
+    "text_diff_relative_path": null
+  },
+  {
+    "artifact_key": "adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "change_type": "modified",
+    "source_kind": "adb_external",
+    "source_path": "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfo.dat",
+    "relative_path": "files/playerInfo.dat",
+    "before_size_bytes": 112055,
+    "after_size_bytes": 112055,
+    "before_mtime_utc": "2026-03-24T02:07:28Z",
+    "after_mtime_utc": "2026-03-24T02:10:28Z",
+    "before_sha256": "0585810dd1b90e71a10deef71b6cc6b6323441efdf3e7eab0a727b4082e8ddbc",
+    "after_sha256": "0e6ace3c34ec151dd59057415d8e47f783c52b1b7ef3c34987763e10a8412580",
+    "before_file_class": "binary_state_blob",
+    "after_file_class": "binary_state_blob",
+    "before_copied_relative_path": "extracted\\external_storage_emulated\\files\\playerInfo.dat",
+    "after_copied_relative_path": "extracted\\external_storage_emulated\\files\\playerInfo.dat",
+    "priority": "high",
+    "triage_score": 156,
+    "reasons": [
+      "mtime_changed",
+      "hash_changed"
+    ],
+    "text_diff_relative_path": null
+  },
+  {
+    "artifact_key": "adb_external|/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat",
+    "change_type": "modified",
+    "source_kind": "adb_external",
+    "source_path": "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/playerInfoBackup.dat",
+    "relative_path": "files/playerInfoBackup.dat",
+    "before_size_bytes": 112055,
+    "after_size_bytes": 112055,
+    "before_mtime_utc": "2026-03-24T02:07:28Z",
+    "after_mtime_utc": "2026-03-24T02:10:28Z",
+    "before_sha256": "e48df301692293b3cf1696137472d9d91d2b5d82474860bca7fbb90e435889ab",
+    "after_sha256": "f016004f44aeff41c4b42bf74aeacb2fdd4019ee2156a3c2a577f6910683f106",
+    "before_file_class": "binary_state_blob",
+    "after_file_class": "binary_state_blob",
+    "before_copied_relative_path": "extracted\\external_storage_emulated\\files\\playerInfoBackup.dat",
+    "after_copied_relative_path": "extracted\\external_storage_emulated\\files\\playerInfoBackup.dat",
+    "priority": "high",
+    "triage_score": 156,
+    "reasons": [
+      "mtime_changed",
+      "hash_changed"
+    ],
+    "text_diff_relative_path": null
+  },
+  {
+    "artifact_key": "windows_host|C:\\ProgramData\\BlueStacks_nxt\\Logs\\Player.log",
+    "change_type": "modified",
+    "source_kind": "windows_host",
+    "source_path": "C:\\ProgramData\\BlueStacks_nxt\\Logs\\Player.log",
+    "relative_path": "Player.log",
+    "before_size_bytes": 9306343,
+    "after_size_bytes": 9317612,
+    "before_mtime_utc": "2026-03-24T02:06:36Z",
+    "after_mtime_utc": "2026-03-24T02:09:41Z",
+    "before_sha256": null,
+    "after_sha256": null,
+    "before_file_class": "log_or_text",
+    "after_file_class": "log_or_text",
+    "before_copied_relative_path": "extracted\\bluestacks_player_log\\Player.log",
+    "after_copied_relative_path": "extracted\\bluestacks_player_log\\Player.log",
+    "priority": "low",
+    "triage_score": 51,
+    "reasons": [
+      "size_changed",
+      "mtime_changed"
+    ],
+    "text_diff_relative_path": null
+  }
+]

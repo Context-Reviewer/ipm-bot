@@ -314,6 +314,46 @@ The report records:
 
 This is a metadata-only narrowing aid for manual analyst inspection. It does not parse file contents and does not make semantic claims about external reconstruction output.
 
+## IL2CPP manual findings report
+
+`il2cpp-manual-findings-report` is the first step where human semantic interpretation is recorded in the repo, but only as analyst-supplied notes tied to governed artifact manifests. The repo still does not open external reconstruction files or validate the correctness of those findings.
+
+Examples:
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-manual-findings-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" --finding-path "DummyAssembly/PlayerData.cs" --finding-note "Likely player state class"
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-manual-findings-report --name-hint-report "C:\dev\ipm-bot\data\artifacts\il2cpp_name_hint_reports\<hint_report>" --finding-path "DummyAssembly/RewardPanel.cs" --finding-note "Reward UI hook candidate" --finding-symbol "RewardPanel" --finding-kind "class" --analyst "lwpar" --notes "manual review session 1"
+```
+
+```powershell
+.\scripts\run_artifact_discovery.ps1 -Command il2cpp-manual-findings-report -CatalogDir "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" -FindingPath "DummyAssembly/PlayerData.cs" -FindingNote "Likely player state class" -Analyst "lwpar"
+```
+
+It writes to:
+
+```text
+data/artifacts/il2cpp_manual_findings_reports/<timestamp>_il2cpp_manual_findings_report_<source>/
+```
+
+Each report contains:
+
+- `manifest.json`
+- `summary.txt`
+
+Each finding entry records:
+
+- `relative_path`
+- `size_bytes`
+- `sha256`
+- `finding_note`
+- optional `finding_symbol`
+- optional `finding_kind`
+
+This command verifies that each `finding-path` exists in the referenced catalog inventory, then records the analyst-entered notes. It does not inspect the underlying external files and does not validate semantic correctness.
+
 ## Recommended first validation experiment
 
 Use a low-noise settings change first.

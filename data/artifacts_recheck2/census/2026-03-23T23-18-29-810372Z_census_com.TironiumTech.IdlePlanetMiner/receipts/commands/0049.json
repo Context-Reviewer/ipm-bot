@@ -1,0 +1,18 @@
+{
+  "receipt_id": "0049",
+  "purpose": "read_external_storage_emulated",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "exec-out",
+    "cat",
+    "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner/files/il2cpp/Resources/System.Data.dll-resources.dat"
+  ],
+  "started_at_utc": "2026-03-23T23:18:31Z",
+  "finished_at_utc": "2026-03-23T23:18:31Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0049.stdout.bin",
+  "stderr_path": null
+}

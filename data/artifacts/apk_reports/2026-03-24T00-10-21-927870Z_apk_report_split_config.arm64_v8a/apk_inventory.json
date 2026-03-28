@@ -1,0 +1,210 @@
+[
+  {
+    "member_path": "AndroidManifest.xml",
+    "file_size": 1060,
+    "compress_size": 472,
+    "crc32_hex": "ca9dbf79",
+    "sha256": "62c1df56bb61664ac3d7c32c7813e613c7266ac0b79fb63f4b710ffbf78e9967",
+    "extension": ".xml",
+    "classification": "apk_manifest",
+    "interesting": true,
+    "notes": [
+      "package_metadata"
+    ],
+    "extracted_relative_path": "extracted_members\\AndroidManifest.xml"
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppAnalytics.so",
+    "file_size": 54792,
+    "compress_size": 17669,
+    "crc32_hex": "b4ed6dd0",
+    "sha256": "49e48d2bc9b082ccd0539306caa3d62c0de5d65ce3d4695dc8396bcf22704e70",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppApp-12_6_0.so",
+    "file_size": 6032216,
+    "compress_size": 1575424,
+    "crc32_hex": "3c5f02ff",
+    "sha256": "782c758507ecb2c1eacea25aad91aa725d39c3a32b05c020263a31b9527247ff",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppAppCheck.so",
+    "file_size": 73488,
+    "compress_size": 22001,
+    "crc32_hex": "9f0f21fe",
+    "sha256": "33c1da1c4c1f3742e3fb22107051d72c3475b3e9197f9949e24291b7cdcd7a8a",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppAuth.so",
+    "file_size": 205272,
+    "compress_size": 56228,
+    "crc32_hex": "cccdb1f2",
+    "sha256": "898137942bbeb565eb2a63d06223720949faf132b240dc9a9e0d9074c8f1f5d5",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppDatabase.so",
+    "file_size": 151424,
+    "compress_size": 40936,
+    "crc32_hex": "72701711",
+    "sha256": "9e4b48f03411bdf8235922f4e046973d656d893d3b38ddf58a3e03a1ed5faa55",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppFirestore.so",
+    "file_size": 408232,
+    "compress_size": 97505,
+    "crc32_hex": "aab565e8",
+    "sha256": "b7f58694fc6b681e6d89238887d81f7aebc105ceef641fbd5b8d51b64c8abadf",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppFunctions.so",
+    "file_size": 39776,
+    "compress_size": 11629,
+    "crc32_hex": "f6ba1d87",
+    "sha256": "aa52d739608403470360dc3432daa13c301359511800f2ef5f07a2f369ec7dbd",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libFirebaseCppRemoteConfig.so",
+    "file_size": 82752,
+    "compress_size": 24705,
+    "crc32_hex": "80412a11",
+    "sha256": "cf9c3f8bc28b9f107fc32690b42a7ae630f3447a7d091fddecba9545a6a74160",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libapplovin-native-crash-reporter.so",
+    "file_size": 860200,
+    "compress_size": 251998,
+    "crc32_hex": "c75d2a8f",
+    "sha256": "ecf2a7327be482870f4c791392a50cecfeaabb2c76a7224898e9713a18c4c36a",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libil2cpp.so",
+    "file_size": 47306632,
+    "compress_size": 14295176,
+    "crc32_hex": "db60cf40",
+    "sha256": "aa4d6feff79f920f296a8b9d16fa323066123f9bf98cfaa824a1db7c2ecf975b",
+    "extension": ".so",
+    "classification": "il2cpp_native_runtime",
+    "interesting": true,
+    "notes": [
+      "il2cpp_runtime"
+    ],
+    "extracted_relative_path": "extracted_members\\lib\\arm64-v8a\\libil2cpp.so"
+  },
+  {
+    "member_path": "lib/arm64-v8a/libmain.so",
+    "file_size": 18608,
+    "compress_size": 2669,
+    "crc32_hex": "db43903b",
+    "sha256": "e2a12641542457e7355f3da2fa93b138463711d7a1f0edea24e9d9cfff5fa0b4",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "lib/arm64-v8a/libunity.so",
+    "file_size": 25859960,
+    "compress_size": 10410657,
+    "crc32_hex": "9903cefd",
+    "sha256": "289952d16d2f8b463605895c15744915b208459018894854164e40a8c4d83ee9",
+    "extension": ".so",
+    "classification": "native_library",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "stamp-cert-sha256",
+    "file_size": 32,
+    "compress_size": 35,
+    "crc32_hex": "62d68276",
+    "sha256": "1d9c2a02a93816ff5c7ae64f9aad02c23de49dc514620db1a7ad624d2a83679c",
+    "extension": null,
+    "classification": "generic_apk_member",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "META-INF/BNDLTOOL.SF",
+    "file_size": 1353,
+    "compress_size": 622,
+    "crc32_hex": "b946613f",
+    "sha256": "bb1e59aa63d9eb096f2e0f675be1b6f1b97ce12bb3bc84f00cd2c2a274d2fa95",
+    "extension": ".sf",
+    "classification": "generic_apk_member",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "META-INF/BNDLTOOL.RSA",
+    "file_size": 1152,
+    "compress_size": 1021,
+    "crc32_hex": "c0a72380",
+    "sha256": "cf8eba6e265c8ae1446a54633e13848e405fcdcf9a61e91ba6ace209e5f1dbab",
+    "extension": ".rsa",
+    "classification": "generic_apk_member",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  },
+  {
+    "member_path": "META-INF/MANIFEST.MF",
+    "file_size": 1245,
+    "compress_size": 555,
+    "crc32_hex": "286827a9",
+    "sha256": "89805a6d4f220b18326abbde3fd2ac86d7069bb8ce5f901df0ca4070fee5f887",
+    "extension": ".mf",
+    "classification": "generic_apk_member",
+    "interesting": false,
+    "notes": [],
+    "extracted_relative_path": null
+  }
+]

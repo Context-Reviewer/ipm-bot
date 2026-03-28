@@ -1,0 +1,68 @@
+....FF..........
+======================================================================
+FAIL: test_activate_ad_boost_handles_multi_ad_chains_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_handles_multi_ad_chains_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 426, in test_activate_ad_boost_handles_multi_ad_chains_and_succeeds
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+        [e.stage_name for e in metadata.stage_events],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<10 lines>...
+        ]
+        ^
+    )
+    ^
+AssertionError: Lists differ: ['boo[126 chars]tected', 'ad_close_action_sent', 'returned_to_game', 'run_end'] != ['boo[126 chars]tected', 'ad_close_action_sent', 'game_returned', 'run_end']
+
+First differing element 7:
+'returned_to_game'
+'game_returned'
+
+  ['boost_entry_tap',
+   'boost_watch_tap',
+   'ad_opened',
+   'ad_close_affordance_detected',
+   'ad_close_action_sent',
+   'ad_close_affordance_detected',
+   'ad_close_action_sent',
+-  'returned_to_game',
++  'game_returned',
+   'run_end']
+
+======================================================================
+FAIL: test_activate_ad_boost_handles_store_redirect_and_succeeds (tests.test_adb_actuator.AdbActuatorTests.test_activate_ad_boost_handles_store_redirect_and_succeeds)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\dev\ipm-bot\tests\test_adb_actuator.py", line 349, in test_activate_ad_boost_handles_store_redirect_and_succeeds
+    self.assertEqual(
+    ~~~~~~~~~~~~~~~~^
+        [e.stage_name for e in metadata.stage_events],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<11 lines>...
+        ]
+        ^
+    )
+    ^
+AssertionError: Lists differ: ['boo[134 chars]tected', 'ad_close_action_sent', 'returned_to_game', 'run_end'] != ['boo[134 chars]tected', 'ad_close_action_sent', 'game_returned', 'run_end']
+
+First differing element 8:
+'returned_to_game'
+'game_returned'
+
+  ['boost_entry_tap',
+   'boost_watch_tap',
+   'ad_opened',
+   'store_redirect_detected',
+   'store_back_sent',
+   'returned_to_ad',
+   'ad_close_affordance_detected',
+   'ad_close_action_sent',
+-  'returned_to_game',
++  'game_returned',
+   'run_end']
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.004s
+
+FAILED (failures=2)

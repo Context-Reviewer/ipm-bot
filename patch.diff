@@ -1,0 +1,864 @@
+diff --git a/docs/architecture/artifact_discovery.md b/docs/architecture/artifact_discovery.md
+index 4030b3c..49b540d 100644
+--- a/docs/architecture/artifact_discovery.md
++++ b/docs/architecture/artifact_discovery.md
+@@ -314,6 +314,46 @@ The report records:
+ 
+ This is a metadata-only narrowing aid for manual analyst inspection. It does not parse file contents and does not make semantic claims about external reconstruction output.
+ 
++## IL2CPP manual findings report
++
++`il2cpp-manual-findings-report` is the first step where human semantic interpretation is recorded in the repo, but only as analyst-supplied notes tied to governed artifact manifests. The repo still does not open external reconstruction files or validate the correctness of those findings.
++
++Examples:
++
++```powershell
++.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-manual-findings-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" --finding-path "DummyAssembly/PlayerData.cs" --finding-note "Likely player state class"
++```
++
++```powershell
++.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-manual-findings-report --name-hint-report "C:\dev\ipm-bot\data\artifacts\il2cpp_name_hint_reports\<hint_report>" --finding-path "DummyAssembly/RewardPanel.cs" --finding-note "Reward UI hook candidate" --finding-symbol "RewardPanel" --finding-kind "class" --analyst "lwpar" --notes "manual review session 1"
++```
++
++```powershell
++.\scripts\run_artifact_discovery.ps1 -Command il2cpp-manual-findings-report -CatalogDir "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" -FindingPath "DummyAssembly/PlayerData.cs" -FindingNote "Likely player state class" -Analyst "lwpar"
++```
++
++It writes to:
++
++```text
++data/artifacts/il2cpp_manual_findings_reports/<timestamp>_il2cpp_manual_findings_report_<source>/
++```
++
++Each report contains:
++
++- `manifest.json`
++- `summary.txt`
++
++Each finding entry records:
++
++- `relative_path`
++- `size_bytes`
++- `sha256`
++- `finding_note`
++- optional `finding_symbol`
++- optional `finding_kind`
++
++This command verifies that each `finding-path` exists in the referenced catalog inventory, then records the analyst-entered notes. It does not inspect the underlying external files and does not validate semantic correctness.
++
+ ## Recommended first validation experiment
+ 
+ Use a low-noise settings change first.
+diff --git a/docs/save_schema/player_data_offset_notebook.md b/docs/save_schema/player_data_offset_notebook.md
+index 2ae861b..0055880 100644
+--- a/docs/save_schema/player_data_offset_notebook.md
++++ b/docs/save_schema/player_data_offset_notebook.md
+@@ -1,149 +1,98 @@
+ # PlayerData Offset Notebook
+ 
+-## Current Model
+-
+-- `SaveLoad.PlayerData` is the strongest schema anchor for local `playerInfo.dat`.
+-- `0xC1C1 + index` is the strongest current candidate for the persisted `smelterOn` per-index boolean region.
+-- `0xC3DD + index` is the strongest current candidate for a parallel smelter companion region.
+-- `0xC3F1` and `0xC60D` are the strongest current crafter-state candidates.
+-- Larger recurring clusters are treated as timer/progress/date companions until proven otherwise.
+-
+-## Protocol
+-
+-- Take a baseline snapshot.
+-- Perform exactly one in-game toggle.
+-- Wait `50` seconds to cross autosave.
+-- Take a second snapshot.
+-- Run `artifacts diff`.
+-- Run `save bytes-diff` on the copied `playerInfo.dat` files.
+-
+-## Confirmed Offsets
+-
+-| Feature | Index | Offset | Flip | Confidence | Note |
+-|---|---:|---|---|---|---|
+-| Smelter | 0 | `0xC1C1` | `00 <-> 01` | High | primary candidate |
+-| Smelter | 0 | `0xC3DD` | `00 <-> 01` | High | companion candidate |
+-| Smelter | 1 | `0xC1C2` | `00 <-> 01` | High | primary candidate |
+-| Smelter | 1 | `0xC3DE` | `00 <-> 01` | High | companion candidate |
+-| Crafter | 0 | `0xC3F1` | `00 <-> 01` | High | primary candidate |
+-| Crafter | 0 | `0xC60D` | `00 <-> 01` | High | companion candidate |
+-
+-## Cluster Notes
+-
+-| Feature | Index | Anchor | Nearby Regions | Repeatability | Hypothesis |
+-|---|---:|---|---|---|---|
+-| Smelter | 0 | `0xC1C1` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC2xx-C3xx` | reversible on/off | timers/progress/date companions |
+-| Smelter | 1 | `0xC1C2` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC2xx-C3xx` | reversible on/off | timers/progress/date companions |
+-| Crafter | 0 | `0xC3F1` | `0x72xx`, `0x75xx`, `0x77xx`, `0x81xx`, `0xC4xx-C6xx` | reversible on/off | timers/progress/date companions |
+-
+-## Evidence Summary
+-
+-- Smelter 0 on: `0xC1C1`, `0xC3DD` -> `01`
+-- Smelter 0 off: `0xC1C1`, `0xC3DD` -> `00`
+-- Smelter 1 on: `0xC1C2`, `0xC3DE` -> `01`
+-- Smelter 1 off: `0xC1C2`, `0xC3DE` -> `00`
+-- Crafter 0 on: `0xC3F1`, `0xC60D` -> `01`
+-- Crafter 0 off: `0xC3F1`, `0xC60D` -> `00`
+-
+-## Chronological Experiment Log
+-
+-### Smelter 0 on
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-02-20-524494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-03-30-755494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-04-05-904382Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C1C1: 00 -> 01`
+-  - `0x0000C3DD: 00 -> 01`
+-
+-### Smelter 0 off
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-03-30-755494Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-07-34-369648Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-07-55-367783Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C1C1: 01 -> 00`
+-  - `0x0000C3DD: 01 -> 00`
+-
+-### Smelter 1 on
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-07-34-369648Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-10-34-881346Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-10-54-367302Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C1C2: 00 -> 01`
+-  - `0x0000C3DE: 00 -> 01`
+-
+-### Smelter 1 off
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-10-34-881346Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-13-44-187867Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-14-02-944122Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C1C2: 01 -> 00`
+-  - `0x0000C3DE: 01 -> 00`
+-
+-### Crafter 0 on
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-15-40-285124Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-16-45-166633Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-16-59-803209Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C3F1: 00 -> 01`
+-  - `0x0000C60D: 00 -> 01`
+-- Additional moving candidate:
+-  - `0x0000C419: 02 -> 00`
+-
+-### Crafter 0 off
+-
+-- Before snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-16-45-166633Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- After snapshot:
+-  - `C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T02-19-33-788532Z_snapshot_com.TironiumTech.IdlePlanetMiner`
+-- Artifact diff:
+-  - `C:\dev\ipm-bot\data\artifacts\diffs\2026-03-24T02-20-00-272382Z_artifact_diff`
+-- Key reversible candidates:
+-  - `0x0000C3F1: 01 -> 00`
+-  - `0x0000C60D: 01 -> 00`
+-- Non-primary companion from on-run did not cleanly behave as a simple mirrored boolean:
+-  - `0x0000C419`
+-
+-## Schema Anchors From Manual IL2CPP Review
+-
+-- `SaveLoad.PlayerData` contains direct production-state fields:
+-  - `smelterOn`
+-  - `smelterStartDate`
+-  - `smelterEndDate`
+-  - `smelterSecondsCompleted`
+-  - `crafterOn`
+-  - `crafterStartDate`
+-  - `crafterEndDate`
+-  - `crafterSecondsCompleted`
+-- `SaveLoad.PlayerData` also contains persisted ad/reward fields:
+-  - `lastAdWatchedDate`
+-  - `adsWatched`
+-  - `arksClaimed`
+-  - `pendingRewardType`
+-  - `rewardIsDarkMatterBool`
+-  - `arkRewardReadyToClaim`
+-
+-## Next Experiments
+-
+-1. Same smelter `on`, compare `+50s` vs `+120s`.
+-2. Same smelter `on -> off` with controlled timing.
+-3. Second crafter index to test stride behavior.
++> **v2 — Parser-Derived (2026-03-24)**
++> All offsets below are deterministic, produced by `sub_records.py` with 100% file coverage.
++> Manual offset assignments from v1 have been superseded.
++
++## Format
++
++- `playerInfo.dat` is a raw .NET `BinaryFormatter` stream (uncompressed).
++- `playerInfoBackup.dat` is a near-synchronous mirror copy (~7ms later), NOT a previous save state.
++- Root class: `SaveLoad+PlayerData`, 478 top-level members, 228 MemberReference sub-records.
++
++## ⚠ Corrections From v1
++
++| Offset | v1 Assignment (WRONG) | v2 Assignment (CORRECT) |
++|---|---|---|
++| `0xC1C1` | `smelterOn[0]` | **`smeltRecipeSelectedBool[0]`** (ref 63) |
++| `0xC1C2` | `smelterOn[1]` | **`smeltRecipeSelectedBool[1]`** (ref 63) |
++| `0xC3F1` | `crafterOn[0]` | **`craftRecipeSelectedBool[0]`** (ref 72) |
++
++**Root cause:** BinaryFormatter serializes sub-records in object-ID order, not field-semantic order.
++"Nearby in file" ≠ "related in meaning". The v1 experiment correctly observed both `0xC1C1` and `0xC3DD`
++flipping together on smelter toggle — but misidentified which was `smelterOn` and which was
++`smeltRecipeSelectedBool`. Both flip because starting a smelter both selects a recipe AND sets on=true.
++
++## Smelter Arrays (10 slots each)
++
++| Ref | Type | Base Offset | Size | Field |
++|---:|---|---|---:|---|
++| 63 | BOOLEAN[10] | `0xC1C1` | 10 | `smeltRecipeSelectedBool` |
++| 64 | BOOLEAN[10] | `0xC1D5` | 10 | `alternateSmeltRecipeSelected` |
++| 65 | INT32[10] | `0xC1E9` | 40 | `smeltRecipeNumber` |
++| 66 | DATETIME[10] | `0xC21B` | 80 | `smelterStartDate` |
++| 67 | DATETIME[10] | `0xC275` | 80 | `smelterEndDate` |
++| 68 | DATETIME[10] | `0xC2CF` | 80 | `smelterOriginalEndDate` |
++| 69 | TIMESPAN[10] | `0xC329` | 80 | `smelterTimespanLeft` |
++| 70 | DOUBLE[10] | `0xC383` | 80 | `smelterSecondsCompleted` |
++| **71** | **BOOLEAN[10]** | **`0xC3DD`** | **10** | **`smelterOn`** |
++
++## Crafter Arrays (10 slots each)
++
++| Ref | Type | Base Offset | Size | Field |
++|---:|---|---|---:|---|
++| 72 | BOOLEAN[10] | `0xC3F1` | 10 | `craftRecipeSelectedBool` |
++| 73 | BOOLEAN[10] | `0xC405` | 10 | `alternateCraftRecipeSelected` |
++| 74 | INT32[10] | `0xC419` | 40 | `craftRecipeNumber` |
++| 75 | DATETIME[10] | `0xC44B` | 80 | `crafterStartDate` |
++| 76 | DATETIME[10] | `0xC4A5` | 80 | `crafterEndDate` |
++| 77 | DATETIME[10] | `0xC4FF` | 80 | `crafterOriginalEndDate` |
++| 78 | TIMESPAN[10] | `0xC559` | 80 | `crafterTimespanLeft` |
++| 79 | DOUBLE[10] | `0xC5B3` | 80 | `crafterSecondsCompleted` |
++| **80** | **BOOLEAN[10]** | **`0xC60D`** | **10** | **`crafterOn`** |
++
++## Save-Pipeline Metadata
++
++| Offset | Type | Field | Note |
++|---|---|---|---|
++| `0x3648` | DATETIME | save timestamp 1 | ~7ms earlier in active vs backup |
++| `0x3D55` | DATETIME | save timestamp 2 | ~7ms earlier in active vs backup |
++
++## High-Value Resource/Economy Arrays
++
++| Ref | Type | Base Offset | Size | Field |
++|---:|---|---|---:|---|
++| 4 | BOOLEAN[120] | `0x4276` | 120 | `resourceDiscovered` |
++| 5 | SINGLE[120] | `0x42F8` | 480 | `resourceCount` |
++| 9 | SINGLE[120] | `0x5900` | 480 | `resourceGatheredTotal` |
++| 11 | SINGLE[120] | `0x5CD4` | 480 | `resourceSoldTotal` |
++
++## Planet Arrays (76 slots)
++
++| Ref | Type | Base Offset | Size | Field |
++|---:|---|---|---:|---|
++| 19 | INT32[76] | `0x6C24` | 304 | `miningSpeedLevel` |
++| 20 | INT32[76] | `0x6D5E` | 304 | `speedLevel` |
++| 21 | INT32[76] | `0x6E98` | 304 | `cargoLevel` |
++| 23 | BOOLEAN[76] | `0x710C` | 76 | `planetUnlocked` |
++| 26 | DATETIME[76] | `0x7506` | 608 | `tripStartDate` |
++| 27 | DATETIME[76] | `0x7770` | 608 | `tripEndDate` |
++
++## Element Addressing
++
++To address element `[i]` within an array:
++
++```
++byte_offset = base_offset + (i * element_size)
++```
++
++Element sizes: BOOLEAN=1, INT32=4, SINGLE=4, DOUBLE=8, DATETIME=8, TIMESPAN=8
++
++## Historical Experiment Log
++
++Preserved from v1 for provenance. All interpretations below should use v2 field names.
++
++- Smelter toggle experiments correctly observed `0xC1C1` and `0xC3DD` flipping together.
++- v1 incorrectly labeled `0xC1C1` as `smelterOn`. Parser proves it is `smeltRecipeSelectedBool`.
++- The "companion" hypothesis is disproven — both offsets are real distinct fields that co-flip on toggle.
++- Crafter experiment observed `0xC419` changing (`02 → 00`), now identified as `craftRecipeNumber[0]`.
+diff --git a/src/ipm_bot/actuator/adb.py b/src/ipm_bot/actuator/adb.py
+index 54fa660..0781dd5 100644
+--- a/src/ipm_bot/actuator/adb.py
++++ b/src/ipm_bot/actuator/adb.py
+@@ -58,6 +58,10 @@ class AdbActuatorConfig:
+     ark_post_watch_probe_count: int = 0
+     ark_post_watch_probe_interval_seconds: float = 2.0
+     ark_post_watch_ui_dump_max_text_length: int = 240
++    ad_boost_open_timeout_seconds: float = 10.0
++    ad_boost_watch_timeout_seconds: float = 60.0
++    ad_boost_probe_interval_seconds: float = 2.0
++    ad_boost_stabilization_seconds: float = 3.0
+ 
+     def __post_init__(self) -> None:
+         if not self.adb_path.strip():
+@@ -86,6 +90,14 @@ class AdbActuatorConfig:
+             raise ValueError("ark_post_watch_probe_interval_seconds must be greater than zero.")
+         if self.ark_post_watch_ui_dump_max_text_length <= 0:
+             raise ValueError("ark_post_watch_ui_dump_max_text_length must be greater than zero.")
++        if self.ad_boost_open_timeout_seconds <= 0:
++            raise ValueError("ad_boost_open_timeout_seconds must be greater than zero.")
++        if self.ad_boost_watch_timeout_seconds <= 0:
++            raise ValueError("ad_boost_watch_timeout_seconds must be greater than zero.")
++        if self.ad_boost_probe_interval_seconds <= 0:
++            raise ValueError("ad_boost_probe_interval_seconds must be greater than zero.")
++        if self.ad_boost_stabilization_seconds < 0:
++            raise ValueError("ad_boost_stabilization_seconds must be non-negative.")
+ 
+ 
+ @dataclass(frozen=True, slots=True)
+@@ -152,6 +164,10 @@ class AdbActionActuator(ActionActuator):
+             ark_post_watch_probe_count=config.ark_post_watch_probe_count,
+             ark_post_watch_probe_interval_seconds=config.ark_post_watch_probe_interval_seconds,
+             ark_post_watch_ui_dump_max_text_length=config.ark_post_watch_ui_dump_max_text_length,
++            ad_boost_open_timeout_seconds=config.ad_boost_open_timeout_seconds,
++            ad_boost_watch_timeout_seconds=config.ad_boost_watch_timeout_seconds,
++            ad_boost_probe_interval_seconds=config.ad_boost_probe_interval_seconds,
++            ad_boost_stabilization_seconds=config.ad_boost_stabilization_seconds,
+         )
+ 
+     def execute(self, action: str) -> ActuatorExecutionMetadata:
+@@ -170,6 +186,10 @@ class AdbActionActuator(ActionActuator):
+             if self._config.manual_observation_mode:
+                 return self._execute_manual_observation_claim_ark_reward()
+             return self._execute_claim_ark_reward()
++        if normalized_action == "activate_ad_boost":
++            if self._config.manual_observation_mode:
++                return self._execute_manual_observation_activate_ad_boost()
++            return self._execute_activate_ad_boost()
+ 
+         commands = self._commands_for_action(normalized_action)
+         return self._execute_command_sequence(
+@@ -224,8 +244,6 @@ class AdbActionActuator(ActionActuator):
+     def _commands_for_action(self, action: str) -> list[list[str] | float | PostWatchProbeStep]:
+         if action == "idle":
+             return []
+-        if action == "activate_ad_boost":
+-            return self._activate_ad_boost_commands()
+         raise ActuatorExecutionError(
+             f"Unsupported action for ADB actuator: {action}",
+             ActuatorExecutionMetadata(
+@@ -236,16 +254,177 @@ class AdbActionActuator(ActionActuator):
+             ),
+         )
+ 
+-    def _activate_ad_boost_commands(self) -> list[list[str] | float | PostWatchProbeStep]:
+-        commands: list[list[str] | float | PostWatchProbeStep] = []
+-        launch_command = self._launch_command()
+-        if launch_command is not None:
+-            commands.append(launch_command)
+-            
+-        commands.append(self._adb_command("shell", "input", "tap", str(self._config.activate_ad_boost_tap.x), str(self._config.activate_ad_boost_tap.y)))
+-        commands.append(self._config.ark_popup_wait_seconds)
+-        commands.append(self._adb_command("shell", "input", "tap", str(self._config.activate_ad_boost_watch_tap.x), str(self._config.activate_ad_boost_watch_tap.y)))
+-        return commands
++    def _execute_activate_ad_boost(self) -> ActuatorExecutionMetadata:
++        attempted_summaries: list[str] = []
++        stage_events: list[ActuatorStageEvent] = []
++        probe_samples: list[ActuatorProbeSample] = []
++        watch_started_at: float | None = None
++        
++        try:
++            launch_command = self._launch_command()
++            if launch_command is not None:
++                self._run_command(launch_command, attempted_summaries)
++
++            self._run_command(
++                self._adb_command(
++                    "shell", "input", "tap",
++                    str(self._config.activate_ad_boost_tap.x),
++                    str(self._config.activate_ad_boost_tap.y)
++                ),
++                attempted_summaries,
++            )
++            entry_started_at = self._monotonic_fn()
++            self._record_stage_event(
++                stage_events, "boost_entry_tap", elapsed_started_at=None,
++                detail=f"{self._config.activate_ad_boost_tap.x},{self._config.activate_ad_boost_tap.y}"
++            )
++
++            self._sleep_fn(self._config.ark_popup_wait_seconds)
++            entry_probe = self._capture_probe_sample(
++                entry_started_at,
++                sample_context="post_entry",
++                sample_reference_stage="boost_entry_tap",
++            )
++            probe_samples.append(entry_probe)
++
++            self._run_command(
++                self._adb_command(
++                    "shell", "input", "tap",
++                    str(self._config.activate_ad_boost_watch_tap.x),
++                    str(self._config.activate_ad_boost_watch_tap.y)
++                ),
++                attempted_summaries,
++            )
++            watch_started_at = self._monotonic_fn()
++            self._record_stage_event(
++                stage_events, "boost_watch_tap", elapsed_started_at=watch_started_at,
++                detail=f"{self._config.activate_ad_boost_watch_tap.x},{self._config.activate_ad_boost_watch_tap.y}"
++            )
++
++            ad_opened = False
++            open_deadline = watch_started_at + self._config.ad_boost_open_timeout_seconds
++            while self._monotonic_fn() < open_deadline:
++                self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
++                probe = self._capture_probe_sample(
++                    watch_started_at,
++                    sample_context="ad_open_monitor",
++                    sample_reference_stage="boost_watch_tap"
++                )
++                probe_samples.append(probe)
++                
++                if (
++                    probe.focus_package != self._config.app_package
++                    or (probe.focus_activity and "AdActivity" in probe.focus_activity)
++                    or (probe.focus_activity and probe.focus_activity != self._config.app_activity)
++                    or (probe.focus_package and "ad" in probe.focus_package.lower())
++                ):
++                    ad_opened = True
++                    break
++
++            if not ad_opened:
++                raise RuntimeError("ad_open_timeout: Focus never left the game after watch tap.")
++
++            self._record_stage_event(
++                stage_events, "ad_opened", elapsed_started_at=watch_started_at
++            )
++
++            game_returned = False
++            ad_start_time = self._monotonic_fn()
++            return_deadline = ad_start_time + self._config.ad_boost_watch_timeout_seconds
++            while self._monotonic_fn() < return_deadline:
++                self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
++                probe = self._capture_probe_sample(
++                    watch_started_at,
++                    sample_context="ad_return_monitor",
++                    sample_reference_stage="ad_opened"
++                )
++                probe_samples.append(probe)
++
++                if probe.focus_package == self._config.app_package and not (
++                    probe.focus_activity and "AdActivity" in probe.focus_activity
++                ):
++                    game_returned = True
++                    break
++
++            if not game_returned:
++                raise RuntimeError("ad_return_timeout: Game never regained focus after ad opened.")
++
++            self._record_stage_event(
++                stage_events, "game_returned", elapsed_started_at=watch_started_at
++            )
++
++            self._sleep_fn(self._config.ad_boost_stabilization_seconds)
++            probe_samples.append(self._capture_probe_sample(
++                watch_started_at,
++                sample_context="post_ad_stabilization",
++                sample_reference_stage="game_returned"
++            ))
++
++            self._record_stage_event(
++                stage_events, "run_end", elapsed_started_at=watch_started_at,
++                detail="actuation_complete"
++            )
++
++        except Exception as exc:
++            self._record_stage_event(
++                stage_events, "run_end", elapsed_started_at=watch_started_at,
++                error=str(exc)
++            )
++            failure_summary = attempted_summaries[-1] if attempted_summaries else "activate_ad_boost"
++            raise ActuatorExecutionError(
++                f"ADB execution failed for activate_ad_boost: {failure_summary} ({exc})",
++                ActuatorExecutionMetadata(
++                    actuator_type=self.actuator_type,
++                    actuator_execution_status="FAILED",
++                    actuator_command_count=len(attempted_summaries),
++                    actuator_command_summary=list(attempted_summaries),
++                    stage_events=list(stage_events),
++                    probe_samples=list(probe_samples),
++                ),
++            ) from exc
++
++        return ActuatorExecutionMetadata(
++            actuator_type=self.actuator_type,
++            actuator_execution_status="COMPLETED",
++            actuator_command_count=len(attempted_summaries),
++            actuator_command_summary=list(attempted_summaries),
++            stage_events=list(stage_events),
++            probe_samples=list(probe_samples),
++        )
++
++    def _execute_manual_observation_activate_ad_boost(self) -> ActuatorExecutionMetadata:
++        stage_events: list[ActuatorStageEvent] = []
++        observation_started_at = self._monotonic_fn()
++        self._record_stage_event(
++            stage_events,
++            "manual_observation_start",
++            elapsed_started_at=observation_started_at,
++            detail=(
++                f"window={self._config.manual_observation_window_seconds},"
++                f"interval={self._config.manual_observation_probe_interval_seconds},"
++                "no_automated_inputs=true"
++            ),
++        )
++        probe_samples = self._collect_timed_probes(
++            started_at=observation_started_at,
++            offsets_seconds=self._manual_observation_offsets(),
++            sample_context="manual_observation",
++            sample_reference_stage="manual_observation_start",
++        )
++        self._record_stage_event(
++            stage_events,
++            "manual_observation_end",
++            elapsed_started_at=observation_started_at,
++            detail="observation_complete",
++        )
++        return ActuatorExecutionMetadata(
++            actuator_type=self.actuator_type,
++            actuator_execution_status="COMPLETED",
++            actuator_command_count=0,
++            actuator_command_summary=[],
++            stage_events=list(stage_events),
++            probe_samples=list(probe_samples),
++        )
+ 
+     def _execute_claim_ark_reward(self) -> ActuatorExecutionMetadata:
+         attempted_summaries: list[str] = []
+diff --git a/src/ipm_bot/actuator/boundary.py b/src/ipm_bot/actuator/boundary.py
+index c43daa9..4c58fd8 100644
+--- a/src/ipm_bot/actuator/boundary.py
++++ b/src/ipm_bot/actuator/boundary.py
+@@ -96,6 +96,10 @@ class ActuatorConfigSnapshot:
+     ark_post_watch_probe_count: int | None = None
+     ark_post_watch_probe_interval_seconds: float | None = None
+     ark_post_watch_ui_dump_max_text_length: int | None = None
++    ad_boost_open_timeout_seconds: float | None = None
++    ad_boost_watch_timeout_seconds: float | None = None
++    ad_boost_probe_interval_seconds: float | None = None
++    ad_boost_stabilization_seconds: float | None = None
+ 
+     def __post_init__(self) -> None:
+         if not self.actuator_type:
+@@ -139,6 +143,14 @@ class ActuatorConfigSnapshot:
+             and self.ark_post_watch_ui_dump_max_text_length <= 0
+         ):
+             raise ValueError("Actuator config snapshot UI dump max text length must be greater than zero.")
++        if self.ad_boost_open_timeout_seconds is not None and self.ad_boost_open_timeout_seconds <= 0:
++            raise ValueError("Actuator config snapshot ad boost open timeout must be greater than zero.")
++        if self.ad_boost_watch_timeout_seconds is not None and self.ad_boost_watch_timeout_seconds <= 0:
++            raise ValueError("Actuator config snapshot ad boost watch timeout must be greater than zero.")
++        if self.ad_boost_probe_interval_seconds is not None and self.ad_boost_probe_interval_seconds <= 0:
++            raise ValueError("Actuator config snapshot ad boost probe interval must be greater than zero.")
++        if self.ad_boost_stabilization_seconds is not None and self.ad_boost_stabilization_seconds < 0:
++            raise ValueError("Actuator config snapshot ad boost stabilization must be non-negative.")
+ 
+ 
+ class ActuatorExecutionError(Exception):
+diff --git a/src/ipm_bot/control/composition.py b/src/ipm_bot/control/composition.py
+index 66fc81d..3fe92c6 100644
+--- a/src/ipm_bot/control/composition.py
++++ b/src/ipm_bot/control/composition.py
+@@ -176,6 +176,30 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
+         default=240,
+         help="Maximum UI text excerpt length persisted per Ark post-watch probe sample.",
+     )
++    parser.add_argument(
++        "--ad-boost-open-timeout-seconds",
++        type=float,
++        default=10.0,
++        help="Wait time for focus to leave game after activating ad boost.",
++    )
++    parser.add_argument(
++        "--ad-boost-watch-timeout-seconds",
++        type=float,
++        default=60.0,
++        help="Wait time for focus to return to game after ad opens.",
++    )
++    parser.add_argument(
++        "--ad-boost-probe-interval-seconds",
++        type=float,
++        default=2.0,
++        help="Polling interval for focus monitoring during ad boost.",
++    )
++    parser.add_argument(
++        "--ad-boost-stabilization-seconds",
++        type=float,
++        default=3.0,
++        help="Wait time after ad boost finishes before verifying.",
++    )
+ 
+ 
+ def build_actuator(args: argparse.Namespace) -> ActionActuator:
+@@ -218,6 +242,10 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
+             ark_post_watch_probe_count=args.ark_post_watch_probe_count,
+             ark_post_watch_probe_interval_seconds=args.ark_post_watch_probe_interval_seconds,
+             ark_post_watch_ui_dump_max_text_length=args.ark_post_watch_ui_dump_max_text_length,
++            ad_boost_open_timeout_seconds=args.ad_boost_open_timeout_seconds,
++            ad_boost_watch_timeout_seconds=args.ad_boost_watch_timeout_seconds,
++            ad_boost_probe_interval_seconds=args.ad_boost_probe_interval_seconds,
++            ad_boost_stabilization_seconds=args.ad_boost_stabilization_seconds,
+         ),
+         command_runner=SubprocessCommandRunner(),
+     )
+diff --git a/tests/test_adb_actuator.py b/tests/test_adb_actuator.py
+index 0600c76..61a5a1a 100644
+--- a/tests/test_adb_actuator.py
++++ b/tests/test_adb_actuator.py
+@@ -14,8 +14,21 @@ from ipm_bot.actuator.boundary import ActuatorExecutionError
+ 
+ 
+ class AdbActuatorTests(unittest.TestCase):
+-    def test_activate_ad_boost_emits_expected_commands(self) -> None:
+-        runner = RecordingCommandRunner()
++    def test_activate_ad_boost_monitors_ad_flow_and_succeeds(self) -> None:
++        dumpsys_window_game = (
++            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
++        )
++        dumpsys_window_ad = (
++            "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
++        )
++        runner = RecordingCommandRunner(
++            captured_outputs={
++                "adb -s emulator-5554 shell dumpsys window windows": dumpsys_window_game,
++                "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
++                "adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml": "dumped",
++                "adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml": '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>',
++            }
++        )
+         clock = RecordingClock()
+         sleeper = RecordingSleeper(clock)
+         actuator = AdbActionActuator(
+@@ -26,13 +39,36 @@ class AdbActuatorTests(unittest.TestCase):
+                 app_activity="MainActivity",
+                 activate_ad_boost_tap=TapPoint(x=111, y=222),
+                 activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+-                claim_ark_reward_tap=TapPoint(x=333, y=444),
++                ark_popup_wait_seconds=1.5,
++                ad_boost_open_timeout_seconds=10.0,
++                ad_boost_watch_timeout_seconds=60.0,
++                ad_boost_probe_interval_seconds=2.0,
++                ad_boost_stabilization_seconds=3.0,
+             ),
+             command_runner=runner,
+             sleep_fn=sleeper.sleep,
+             monotonic_fn=clock.monotonic,
+         )
+ 
++        # We will dynamically change the mock output based on the clock
++        # 1.5s popup wait + taps
++        # at t=1.5 we tap watch.
++        # open loop starts. Ad opens at t=3.5.
++        # return loop starts. Game returns at t=7.5.
++        # stabilization 3.0.
++        def dynamic_capture(command: list[str]) -> str:
++            if "dumpsys window windows" in " ".join(command):
++                if clock.monotonic() < 3.0:
++                    return dumpsys_window_game
++                if clock.monotonic() < 7.0:
++                    return dumpsys_window_ad
++                return dumpsys_window_game
++            if "dumpsys activity activities" in " ".join(command):
++                return "ACTIVITY MANAGER ACTIVITIES"
++            return '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>'
++        
++        runner.capture = dynamic_capture
++
+         metadata = actuator.execute("activate_ad_boost")
+ 
+         self.assertEqual(
+@@ -73,17 +109,162 @@ class AdbActuatorTests(unittest.TestCase):
+         self.assertEqual(metadata.actuator_type, "adb")
+         self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+         self.assertEqual(metadata.actuator_command_count, 3)
+-        self.assertEqual(sleeper.durations, [1.5])
++        self.assertEqual(sleeper.durations, [1.5, 2.0, 2.0, 2.0, 3.0])
+         self.assertEqual(
+-            metadata.actuator_command_summary,
+-            [
+-                "adb -s emulator-5554 shell am start -n com.example.idleplanetminer/MainActivity",
+-                "adb -s emulator-5554 shell input tap 111 222",
+-                "adb -s emulator-5554 shell input tap 333 555",
+-            ],
++            [e.stage_name for e in metadata.stage_events],
++            ["boost_entry_tap", "boost_watch_tap", "ad_opened", "game_returned", "run_end"]
+         )
+-        self.assertEqual(metadata.stage_events, [])
+-        self.assertEqual(metadata.probe_samples, [])
++        self.assertEqual(
++            [p.sample_context for p in metadata.probe_samples],
++            ["post_entry", "ad_open_monitor", "ad_return_monitor", "ad_return_monitor", "post_ad_stabilization"]
++        )
++
++    def test_activate_ad_boost_monitors_same_package_ad_flow_and_succeeds(self) -> None:
++        dumpsys_window_game = (
++            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/MainActivity}"
++        )
++        dumpsys_window_same_package_ad = (
++            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.facebook.ads.AudienceNetworkActivity}"
++        )
++        runner = RecordingCommandRunner(
++            captured_outputs={
++                "adb -s emulator-5554 shell dumpsys window windows": dumpsys_window_game,
++                "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
++                "adb -s emulator-5554 shell uiautomator dump /sdcard/ipm_bot_window_dump.xml": "dumped",
++                "adb -s emulator-5554 shell cat /sdcard/ipm_bot_window_dump.xml": '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>',
++            }
++        )
++        clock = RecordingClock()
++        sleeper = RecordingSleeper(clock)
++        actuator = AdbActionActuator(
++            config=AdbActuatorConfig(
++                adb_path="adb",
++                device_serial="emulator-5554",
++                app_package="com.example.idleplanetminer",
++                app_activity="MainActivity",
++                activate_ad_boost_tap=TapPoint(x=111, y=222),
++                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
++                ark_popup_wait_seconds=1.5,
++                ad_boost_open_timeout_seconds=10.0,
++                ad_boost_watch_timeout_seconds=60.0,
++                ad_boost_probe_interval_seconds=2.0,
++                ad_boost_stabilization_seconds=3.0,
++            ),
++            command_runner=runner,
++            sleep_fn=sleeper.sleep,
++            monotonic_fn=clock.monotonic,
++        )
++
++        def dynamic_capture(command: list[str]) -> str:
++            if "dumpsys window windows" in " ".join(command):
++                if clock.monotonic() < 3.0:
++                    return dumpsys_window_game
++                if clock.monotonic() < 7.0:
++                    # Focus stays in the same package but activity changes
++                    return dumpsys_window_same_package_ad
++                return dumpsys_window_game
++            if "dumpsys activity activities" in " ".join(command):
++                return "ACTIVITY MANAGER ACTIVITIES"
++            return '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>'
++        
++        runner.capture = dynamic_capture
++
++        metadata = actuator.execute("activate_ad_boost")
++        
++        self.assertEqual(metadata.actuator_type, "adb")
++        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
++        self.assertEqual(
++            [e.stage_name for e in metadata.stage_events],
++            ["boost_entry_tap", "boost_watch_tap", "ad_opened", "game_returned", "run_end"]
++        )
++
++    def test_activate_ad_boost_aborts_if_ad_does_not_open(self) -> None:
++        dumpsys_window_game = (
++            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
++        )
++        runner = RecordingCommandRunner()
++        clock = RecordingClock()
++        sleeper = RecordingSleeper(clock)
++        actuator = AdbActionActuator(
++            config=AdbActuatorConfig(
++                adb_path="adb",
++                device_serial="emulator-5554",
++                app_package="com.example.idleplanetminer",
++                app_activity="com.unity3d.player.UnityPlayerActivity",
++                activate_ad_boost_tap=TapPoint(x=111, y=222),
++                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
++                ark_popup_wait_seconds=1.5,
++                ad_boost_open_timeout_seconds=5.0,
++                ad_boost_watch_timeout_seconds=60.0,
++                ad_boost_probe_interval_seconds=2.0,
++                ad_boost_stabilization_seconds=3.0,
++            ),
++            command_runner=runner,
++            sleep_fn=sleeper.sleep,
++            monotonic_fn=clock.monotonic,
++        )
++
++        def dynamic_capture(command: list[str]) -> str:
++            if "dumpsys window windows" in " ".join(command):
++                return dumpsys_window_game
++            return '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>'
++        
++        runner.capture = dynamic_capture
++
++        with self.assertRaises(ActuatorExecutionError) as context:
++            actuator.execute("activate_ad_boost")
++
++        metadata = context.exception.metadata
++        self.assertEqual(metadata.actuator_execution_status, "FAILED")
++        self.assertEqual(metadata.stage_events[-1].stage_name, "run_end")
++        self.assertIn("ad_open_timeout", metadata.stage_events[-1].error)
++
++    def test_activate_ad_boost_aborts_if_game_does_not_return(self) -> None:
++        dumpsys_window_game = (
++            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
++        )
++        dumpsys_window_ad = (
++            "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
++        )
++        runner = RecordingCommandRunner()
++        clock = RecordingClock()
++        sleeper = RecordingSleeper(clock)
++        actuator = AdbActionActuator(
++            config=AdbActuatorConfig(
++                adb_path="adb",
++                device_serial="emulator-5554",
++                app_package="com.example.idleplanetminer",
++                app_activity="MainActivity",
++                activate_ad_boost_tap=TapPoint(x=111, y=222),
++                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
++                ark_popup_wait_seconds=1.5,
++                ad_boost_open_timeout_seconds=10.0,
++                ad_boost_watch_timeout_seconds=5.0,
++                ad_boost_probe_interval_seconds=2.0,
++                ad_boost_stabilization_seconds=3.0,
++            ),
++            command_runner=runner,
++            sleep_fn=sleeper.sleep,
++            monotonic_fn=clock.monotonic,
++        )
++
++        def dynamic_capture(command: list[str]) -> str:
++            if "dumpsys window windows" in " ".join(command):
++                if clock.monotonic() < 3.0:
++                    return dumpsys_window_game
++                return dumpsys_window_ad
++            return '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>'
++        
++        runner.capture = dynamic_capture
++
++        with self.assertRaises(ActuatorExecutionError) as context:
++            actuator.execute("activate_ad_boost")
++
++        metadata = context.exception.metadata
++        self.assertEqual(metadata.actuator_execution_status, "FAILED")
++        self.assertEqual(metadata.stage_events[-2].stage_name, "ad_opened")
++        self.assertEqual(metadata.stage_events[-1].stage_name, "run_end")
++        self.assertIn("ad_return_timeout", metadata.stage_events[-1].error)
+ 
+     def test_claim_ark_reward_emits_expected_multi_step_commands(self) -> None:
+         runner = RecordingCommandRunner()

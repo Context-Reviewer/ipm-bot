@@ -1,0 +1,21 @@
+{
+  "schema_version": "il2cpp-manual-findings-report-v1",
+  "command_name": "il2cpp-manual-findings-report",
+  "created_at_utc": "2026-03-24T01:31:24Z",
+  "source_catalog_path": "C:\\dev\\ipm-bot\\data\\artifacts\\il2cpp_output_catalogs\\2026-03-24T00-40-28-127431Z_il2cpp_output_catalog_net8.0",
+  "source_name_hint_report_path": null,
+  "source_snapshot_path": "C:\\dev\\ipm-bot\\data\\artifacts\\snapshots\\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner",
+  "analyst": "lwpar",
+  "notes": null,
+  "findings": [
+    {
+      "relative_path": "DummyDll/Assembly-CSharp.dll",
+      "size_bytes": 2179584,
+      "sha256": "5f98fc7648605ed747537321f4b63072dfbdf37ca64defee56f9a54d7cda4479",
+      "finding_note": "ClaimableItems is a Firestore-backed model with game-specific reward/change fields including arkResetInt, sellGalaxyChange, disableAdsInt, minerPassInt, cheaterBoolChange, creditsChange, darkMatterChange, reclaimRelicInt, and pushLatestSaveOnCloudInt.",
+      "finding_symbol": "ClaimableItems",
+      "finding_kind": "class"
+    }
+  ],
+  "note": "Human-entered observations only. This command does not open external files and does not validate semantic correctness."
+}

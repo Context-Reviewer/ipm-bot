@@ -1,0 +1,10 @@
+models:
+  - title: Local Coder
+    provider: ollama
+    model: qwen2.5-coder
+
+  - title: Agent Model
+    provider: ollama
+    model: devstral-small-2
+
+defaultModel: Local Coder

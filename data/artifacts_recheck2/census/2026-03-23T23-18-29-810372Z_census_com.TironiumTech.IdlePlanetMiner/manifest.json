@@ -1,0 +1,141 @@
+{
+  "schema_version": "artifact-snapshot-v1",
+  "mode": "census",
+  "snapshot_id": "2026-03-23T23-18-29-810372Z_census_com.TironiumTech.IdlePlanetMiner",
+  "package_name": "com.TironiumTech.IdlePlanetMiner",
+  "created_at_utc": "2026-03-23T23:18:29Z",
+  "output_dir": "data\\artifacts_recheck2\\census\\2026-03-23T23-18-29-810372Z_census_com.TironiumTech.IdlePlanetMiner",
+  "host_platform": "Windows-11-10.0.26200-SP0",
+  "working_directory": "C:\\dev\\ipm-bot",
+  "adb_path": "C:\\dev\\platform-tools\\adb.exe",
+  "adb_serial": "emulator-5554",
+  "hash_max_bytes": 8388608,
+  "copy_max_bytes": 33554432,
+  "text_preview_max_bytes": 65536,
+  "pull_apk": false,
+  "candidate_roots": [
+    {
+      "collector_id": "private_run_as_data",
+      "source_kind": "adb_private",
+      "source_root": "/data/data/com.TironiumTech.IdlePlanetMiner",
+      "relative_mode": "run_as_relative",
+      "enumeration_method": "adb shell run-as",
+      "description": "Package-private app sandbox via run-as, if the app is debuggable."
+    },
+    {
+      "collector_id": "private_run_as_user0",
+      "source_kind": "adb_private",
+      "source_root": "/data/user/0/com.TironiumTech.IdlePlanetMiner",
+      "relative_mode": "run_as_relative",
+      "enumeration_method": "adb shell run-as",
+      "description": "Package-private user 0 alias via run-as, if supported."
+    },
+    {
+      "collector_id": "external_sdcard",
+      "source_kind": "adb_external",
+      "source_root": "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner",
+      "relative_mode": "absolute",
+      "enumeration_method": "adb shell find",
+      "description": "External Android/data tree exposed through emulator storage."
+    },
+    {
+      "collector_id": "external_storage_emulated",
+      "source_kind": "adb_external",
+      "source_root": "/storage/emulated/0/Android/data/com.TironiumTech.IdlePlanetMiner",
+      "relative_mode": "absolute",
+      "enumeration_method": "adb shell find",
+      "description": "External storage alias for the same package tree."
+    }
+  ],
+  "method_status": [
+    {
+      "method_id": "bluestacks_appcache",
+      "description": "BlueStacks package metadata cache.",
+      "status": "ok",
+      "detail": "C:\\ProgramData\\BlueStacks_nxt\\Engine\\Pie64\\AppCache\\AppCache.json"
+    },
+    {
+      "method_id": "bluestacks_player_log",
+      "description": "BlueStacks Player.log emulator telemetry.",
+      "status": "ok",
+      "detail": "C:\\ProgramData\\BlueStacks_nxt\\Logs\\Player.log"
+    },
+    {
+      "method_id": "bluestacks_conf",
+      "description": "BlueStacks instance configuration.",
+      "status": "ok",
+      "detail": "C:\\ProgramData\\BlueStacks_nxt\\bluestacks.conf"
+    },
+    {
+      "method_id": "adb_version",
+      "description": "ADB version preflight.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "adb_devices",
+      "description": "ADB device enumeration.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "adb_get_state",
+      "description": "ADB transport state.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "pm_path_package",
+      "description": "Installed package path discovery.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "dumpsys_package",
+      "description": "Installed package dumpsys metadata.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "private_run_as_data",
+      "description": "Package-private app sandbox via run-as, if the app is debuggable.",
+      "status": "blocked",
+      "detail": "returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted"
+    },
+    {
+      "method_id": "private_run_as_user0",
+      "description": "Package-private user 0 alias via run-as, if supported.",
+      "status": "blocked",
+      "detail": "returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted"
+    },
+    {
+      "method_id": "external_sdcard",
+      "description": "External Android/data tree exposed through emulator storage.",
+      "status": "ok",
+      "detail": null
+    },
+    {
+      "method_id": "external_storage_emulated",
+      "description": "External storage alias for the same package tree.",
+      "status": "ok",
+      "detail": null
+    }
+  ],
+  "limitations": [
+    "private_run_as_data blocked or unsupported: returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted",
+    "private_run_as_user0 blocked or unsupported: returncode=1; run-as: setegid(AID_PACKAGE_INFO) failed: Operation not permitted"
+  ],
+  "command_receipt_count": 68,
+  "artifact_count": 43,
+  "file_count": 21,
+  "directory_count": 22,
+  "copied_file_count": 0,
+  "context_files": [
+    {
+      "label": "dumpsys_package",
+      "relative_path": "context/dumpsys_package.txt",
+      "source": "adb shell dumpsys package",
+      "note": "Package metadata snapshot from dumpsys package."
+    }
+  ]
+}

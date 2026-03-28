@@ -1,0 +1,20 @@
+{
+  "receipt_id": "0035",
+  "purpose": "stat_external_sdcard",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "stat",
+    "-c",
+    "%F,%s,%Y",
+    "/sdcard/Android/data/com.TironiumTech.IdlePlanetMiner/files/Unity/4e498457-fd46-4e1e-834f-7ac84a7a1acb/Analytics/config"
+  ],
+  "started_at_utc": "2026-03-23T23:18:30Z",
+  "finished_at_utc": "2026-03-23T23:18:30Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0035.stdout.txt",
+  "stderr_path": null
+}

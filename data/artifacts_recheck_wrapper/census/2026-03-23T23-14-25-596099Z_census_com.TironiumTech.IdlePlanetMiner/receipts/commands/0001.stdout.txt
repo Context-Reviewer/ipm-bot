@@ -1,0 +1,4 @@
+Android Debug Bridge version 1.0.41
+Version 36.0.2-14143358
+Installed as C:\dev\platform-tools\adb.exe
+Running on Windows 10.0.26200

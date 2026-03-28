@@ -1,0 +1,7 @@
+resolved_apk_path: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-24T00-10-13-153996Z_snapshot_com.TironiumTech.IdlePlanetMiner\context\installed_package\split_config.arm64_v8a.apk
+member_count: 17
+interesting_member_count: 2
+extracted_member_count: 2
+il2cpp_detected: true
+il2cpp_indicators:
+- lib/arm64-v8a/libil2cpp.so

@@ -1,0 +1,21 @@
+{
+  "receipt_id": "0006",
+  "purpose": "enumerate_private_run_as_data",
+  "command": [
+    "C:\\dev\\platform-tools\\adb.exe",
+    "-s",
+    "emulator-5554",
+    "shell",
+    "run-as",
+    "com.TironiumTech.IdlePlanetMiner",
+    "sh",
+    "-c",
+    "find . -xdev -print 2>/dev/null | while IFS= read -r p; do clean=\"${p#./}\"; if [ \"$clean\" = \"\" ]; then clean=\".\"; fi; if [ -d \"$p\" ]; then kind=\"dir\"; size=\"0\"; else kind=\"file\"; size=$(wc -c < \"$p\" 2>/dev/null | tr -d ' '); fi; mtime=$(stat -c %Y \"$p\" 2>/dev/null || echo ''); printf '%s\\t%s\\t%s\\t%s\\n' \"$kind\" \"$size\" \"$mtime\" \"$clean\"; done"
+  ],
+  "started_at_utc": "2026-03-23T23:12:01Z",
+  "finished_at_utc": "2026-03-23T23:12:01Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": null,
+  "stderr_path": null
+}

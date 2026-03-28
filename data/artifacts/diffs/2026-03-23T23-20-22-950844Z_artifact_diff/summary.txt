@@ -1,0 +1,9 @@
+before_snapshot_dir: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-23T23-19-39-463226Z_snapshot_com.TironiumTech.IdlePlanetMiner
+after_snapshot_dir: C:\dev\ipm-bot\data\artifacts\snapshots\2026-03-23T23-20-06-405588Z_snapshot_com.TironiumTech.IdlePlanetMiner
+new_file_count: 0
+deleted_file_count: 0
+modified_file_count: 1
+high_priority_change_count: 0
+
+most_interesting_changes:
+- score=51 priority=low change=modified path=C:\ProgramData\BlueStacks_nxt\Logs\Player.log reasons=size_changed,mtime_changed

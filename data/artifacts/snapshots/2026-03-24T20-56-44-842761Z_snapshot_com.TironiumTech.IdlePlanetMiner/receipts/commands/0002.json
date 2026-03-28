@@ -1,0 +1,17 @@
+{
+  "receipt_id": "0002",
+  "purpose": "adb_devices",
+  "command": [
+    "C:\\Program Files\\BlueStacks_nxt\\HD-Adb.exe",
+    "-s",
+    "emulator-5554",
+    "devices",
+    "-l"
+  ],
+  "started_at_utc": "2026-03-24T20:56:44Z",
+  "finished_at_utc": "2026-03-24T20:56:44Z",
+  "returncode": 0,
+  "spawn_error": null,
+  "stdout_path": "commands\\0002.stdout.txt",
+  "stderr_path": null
+}

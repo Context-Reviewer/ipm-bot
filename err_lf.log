@@ -1,0 +1,328 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.0, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\lwpar\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\dev\ipm-bot
+configfile: pyproject.toml
+plugins: anyio-4.10.0, cov-7.0.0
+collecting ... collected 105 items / 99 deselected / 6 selected
+run-last-failure: rerun previous 6 failures
+
+tests/test_adb_actuator.py::AdbActuatorTests::test_activate_ad_boost_emits_expected_commands FAILED [ 16%]
+tests/test_control_tick.py::ControlTickTests::test_ambiguous_returns_exit_code_two FAILED [ 33%]
+tests/test_control_tick.py::ControlTickTests::test_fail_returns_exit_code_one FAILED [ 50%]
+tests/test_control_tick.py::ControlTickTests::test_pass_returns_exit_code_zero_and_writes_receipt FAILED [ 66%]
+tests/test_control_tick.py::ControlTickTests::test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save FAILED [ 83%]
+tests/test_runner.py::RunnerReceiptTests::test_long_actuation_can_still_verify_when_timeout_starts_after_actuation PASSED [100%]
+
+================================== FAILURES ===================================
+_______ AdbActuatorTests.test_activate_ad_boost_emits_expected_commands _______
+
+self = <test_adb_actuator.AdbActuatorTests testMethod=test_activate_ad_boost_emits_expected_commands>
+
+    def test_activate_ad_boost_emits_expected_commands(self) -> None:
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="MainActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+    
+        metadata = actuator.execute("activate_ad_boost")
+    
+>       self.assertEqual(
+            runner.commands,
+            [
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "am",
+                    "start",
+                    "-n",
+                    "com.example.idleplanetminer/MainActivity",
+                ],
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "111",
+                    "222",
+                ],
+            ],
+        )
+E       AssertionError: Lists differ: [['ad[166 chars]222'], ['adb', '-s', 'emulator-5554', 'shell',[26 chars]59']] != [['ad[166 chars]222']]
+E       
+E       First list contains 1 additional elements.
+E       First extra element 2:
+E       ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '448', '859']
+E       
+E         [['adb',
+E           '-s',
+E           'emulator-5554',
+E           'shell',
+E           'am',
+E           'start',
+E           '-n',
+E           'com.example.idleplanetminer/MainActivity'],
+E       -  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '111', '222'],
+E       ?                                                                       ^
+E       
+E       +  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '111', '222']]
+E       ?                                                                       ^
+E       
+E       -  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '448', '859']]
+
+tests\test_adb_actuator.py:37: AssertionError
+____________ ControlTickTests.test_ambiguous_returns_exit_code_two ____________
+
+self = <test_control_tick.ControlTickTests testMethod=test_ambiguous_returns_exit_code_two>
+
+    def test_ambiguous_returns_exit_code_two(self) -> None:
+        save_payload = {
+            "adBoostActive": False,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="activate_ad_boost",
+            final_status="AMBIGUOUS",
+            failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
+        )
+    
+        exit_code, stdout_value, runner_mock, _, _ = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+    
+>       self.assertEqual(exit_code, int(ExitCode.AMBIGUOUS))
+E       AssertionError: 3 != 2
+
+tests\test_control_tick.py:136: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Error: Receipt planner decision action must match receipt action.
+______________ ControlTickTests.test_fail_returns_exit_code_one _______________
+
+self = <test_control_tick.ControlTickTests testMethod=test_fail_returns_exit_code_one>
+
+    def test_fail_returns_exit_code_one(self) -> None:
+        save_payload = {
+            "adBoostActive": False,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": False,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="activate_ad_boost",
+            final_status="FAIL",
+            failure_reason=FailureReason.TIMEOUT_NO_SAVE_CHANGE,
+        )
+    
+        exit_code, _, runner_mock, _, _ = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+    
+>       self.assertEqual(exit_code, int(ExitCode.FAIL))
+E       AssertionError: 3 != 1
+
+tests\test_control_tick.py:114: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Error: Receipt planner decision action must match receipt action.
+____ ControlTickTests.test_pass_returns_exit_code_zero_and_writes_receipt _____
+
+self = <test_control_tick.ControlTickTests testMethod=test_pass_returns_exit_code_zero_and_writes_receipt>
+
+    def test_pass_returns_exit_code_zero_and_writes_receipt(self) -> None:
+        save_payload = {
+            "adBoostActive": False,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": False,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="activate_ad_boost",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+        )
+    
+        exit_code, stdout_value, runner_mock, written_files, payloads = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+        )
+    
+>       self.assertEqual(exit_code, int(ExitCode.PASS))
+E       AssertionError: 3 != 0
+
+tests\test_control_tick.py:63: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Error: Receipt planner decision action must match receipt action.
+_ ControlTickTests.test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save _
+
+self = <test_control_tick.ControlTickTests testMethod=test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save>
+
+    def test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "playerInfo.dat"
+            save_path.write_bytes(b"binary-save")
+            receipt = _sample_receipt(
+                action="idle",
+                final_status="PASS",
+                failure_reason=FailureReason.NONE,
+            )
+            player_snapshot = object()
+            save_snapshot = SaveSnapshot(
+                source_path=str(save_path.resolve()),
+                resources=(
+                    SaveResourceSnapshot(
+                        index=0,
+                        discovered=True,
+                        count=1.0,
+                        gathered_total=1.0,
+                        gathered_this_galaxy=1.0,
+                        sold_total=0.0,
+                        sold_this_galaxy=0.0,
+                    ),
+                ),
+                planets=(
+                    SavePlanetSnapshot(
+                        index=0,
+                        unlocked=True,
+                        mining_speed_level=1,
+                        speed_level=1,
+                        cargo_level=1,
+                        trip_start_date=None,
+                        trip_end_date=None,
+                    ),
+                ),
+                smelters=(),
+                crafters=(
+                    SaveProductionSlotSnapshot(
+                        index=1,
+                        on=True,
+                        recipe_number=3,
+                        start_date=None,
+                        end_date=None,
+                        original_end_date=None,
+                        timespan_left=timedelta(seconds=3.0),
+                        seconds_completed=477.0,
+                        duration_estimate=480.0,
+                    ),
+                ),
+            )
+            planner_decision = PlannerDecision(
+                selected_action="idle",
+                decision_reason="defer_ad_boost_for_imminent_completion",
+                actuation_required=False,
+            )
+    
+            with (
+                patch("ipm_bot.main.load_save_snapshot", return_value=save_snapshot) as save_loader,
+                patch("ipm_bot.main._load_snapshot", return_value=player_snapshot) as player_loader,
+                patch("ipm_bot.main.decide_next_action_details", return_value=planner_decision) as planner,
+                patch("ipm_bot.main.run_action_until_verified", return_value=receipt),
+                patch("ipm_bot.main.write_receipt", return_value=Path(tmpdir) / "receipt.json"),
+            ):
+                action, enriched_receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=None,
+                    poll_interval_seconds=0.5,
+                    actuator=StubActionActuator(),
+                    save_source=LocalSaveSource(),
+                )
+    
+        save_loader.assert_called_once_with(save_path.resolve())
+        player_loader.assert_called_once_with(save_path.resolve())
+>       planner.assert_called_once_with(
+            player_snapshot,
+            save_snapshot=save_snapshot,
+            unattended_safe=False,
+            ad_boost_suppressed=False,
+        )
+
+tests\test_control_tick.py:284: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\lwpar\AppData\Local\Programs\Python\Python312\Lib\unittest\mock.py:956: in assert_called_once_with
+    return self.assert_called_with(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock name='decide_next_action_details' id='1793215270928'>
+args = (<object object at 0x000001A18054A7D0>,)
+kwargs = {'ad_boost_suppressed': False, 'save_snapshot': SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\Temp\\tmp_...pan_left=datetime.timedelta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), 'unattended_safe': False}
+expected = call(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\...lta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=False)
+actual = call(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\...elta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=True)
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_message at 0x000001A183EF8A40>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+    
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: decide_next_action_details(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\Temp\\tmp_7ngo2em\\playerInfo.dat', resources=(SaveResourceSnapshot(index=0, discovered=True, count=1.0, gathered_total=1.0, gathered_this_galaxy=1.0, sold_total=0.0, sold_this_galaxy=0.0),), planets=(SavePlanetSnapshot(index=0, unlocked=True, mining_speed_level=1, speed_level=1, cargo_level=1, trip_start_date=None, trip_end_date=None),), smelters=(), crafters=(SaveProductionSlotSnapshot(index=1, on=True, recipe_number=3, start_date=None, end_date=None, original_end_date=None, timespan_left=datetime.timedelta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=False)
+E           Actual: decide_next_action_details(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\Temp\\tmp_7ngo2em\\playerInfo.dat', resources=(SaveResourceSnapshot(index=0, discovered=True, count=1.0, gathered_total=1.0, gathered_this_galaxy=1.0, sold_total=0.0, sold_this_galaxy=0.0),), planets=(SavePlanetSnapshot(index=0, unlocked=True, mining_speed_level=1, speed_level=1, cargo_level=1, trip_start_date=None, trip_end_date=None),), smelters=(), crafters=(SaveProductionSlotSnapshot(index=1, on=True, recipe_number=3, start_date=None, end_date=None, original_end_date=None, timespan_left=datetime.timedelta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=True)
+
+C:\Users\lwpar\AppData\Local\Programs\Python\Python312\Lib\unittest\mock.py:944: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_adb_actuator.py::AdbActuatorTests::test_activate_ad_boost_emits_expected_commands - AssertionError: Lists differ: [['ad[166 chars]222'], ['adb', '-s', 'emulator-5554', 'shell',[26 chars]59']] != [['ad[166 chars]222']]
+
+First list contains 1 additional elements.
+First extra element 2:
+['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '448', '859']
+
+  [['adb',
+    '-s',
+    'emulator-5554',
+    'shell',
+    'am',
+    'start',
+    '-n',
+    'com.example.idleplanetminer/MainActivity'],
+-  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '111', '222'],
+?                                                                       ^
+
++  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '111', '222']]
+?                                                                       ^
+
+-  ['adb', '-s', 'emulator-5554', 'shell', 'input', 'tap', '448', '859']]
+FAILED tests/test_control_tick.py::ControlTickTests::test_ambiguous_returns_exit_code_two - AssertionError: 3 != 2
+FAILED tests/test_control_tick.py::ControlTickTests::test_fail_returns_exit_code_one - AssertionError: 3 != 1
+FAILED tests/test_control_tick.py::ControlTickTests::test_pass_returns_exit_code_zero_and_writes_receipt - AssertionError: 3 != 0
+FAILED tests/test_control_tick.py::ControlTickTests::test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save - AssertionError: expected call not found.
+Expected: decide_next_action_details(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\Temp\\tmp_7ngo2em\\playerInfo.dat', resources=(SaveResourceSnapshot(index=0, discovered=True, count=1.0, gathered_total=1.0, gathered_this_galaxy=1.0, sold_total=0.0, sold_this_galaxy=0.0),), planets=(SavePlanetSnapshot(index=0, unlocked=True, mining_speed_level=1, speed_level=1, cargo_level=1, trip_start_date=None, trip_end_date=None),), smelters=(), crafters=(SaveProductionSlotSnapshot(index=1, on=True, recipe_number=3, start_date=None, end_date=None, original_end_date=None, timespan_left=datetime.timedelta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=False)
+Actual: decide_next_action_details(<object object at 0x000001A18054A7D0>, save_snapshot=SaveSnapshot(source_path='C:\\Users\\lwpar\\AppData\\Local\\Temp\\tmp_7ngo2em\\playerInfo.dat', resources=(SaveResourceSnapshot(index=0, discovered=True, count=1.0, gathered_total=1.0, gathered_this_galaxy=1.0, sold_total=0.0, sold_this_galaxy=0.0),), planets=(SavePlanetSnapshot(index=0, unlocked=True, mining_speed_level=1, speed_level=1, cargo_level=1, trip_start_date=None, trip_end_date=None),), smelters=(), crafters=(SaveProductionSlotSnapshot(index=1, on=True, recipe_number=3, start_date=None, end_date=None, original_end_date=None, timespan_left=datetime.timedelta(seconds=3), seconds_completed=477.0, duration_estimate=480.0),)), unattended_safe=False, ad_boost_suppressed=True)
+================= 5 failed, 1 passed, 99 deselected in 0.50s ==================

@@ -1,0 +1,30 @@
+[
+  {
+    "member_path": "AndroidManifest.xml",
+    "file_size": 1060,
+    "compress_size": 472,
+    "crc32_hex": "ca9dbf79",
+    "sha256": "62c1df56bb61664ac3d7c32c7813e613c7266ac0b79fb63f4b710ffbf78e9967",
+    "extension": ".xml",
+    "classification": "apk_manifest",
+    "interesting": true,
+    "notes": [
+      "package_metadata"
+    ],
+    "extracted_relative_path": "extracted_members\\AndroidManifest.xml"
+  },
+  {
+    "member_path": "lib/arm64-v8a/libil2cpp.so",
+    "file_size": 47306632,
+    "compress_size": 14295176,
+    "crc32_hex": "db60cf40",
+    "sha256": "aa4d6feff79f920f296a8b9d16fa323066123f9bf98cfaa824a1db7c2ecf975b",
+    "extension": ".so",
+    "classification": "il2cpp_native_runtime",
+    "interesting": true,
+    "notes": [
+      "il2cpp_runtime"
+    ],
+    "extracted_relative_path": "extracted_members\\lib\\arm64-v8a\\libil2cpp.so"
+  }
+]
