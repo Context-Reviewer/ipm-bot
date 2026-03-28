@@ -127,6 +127,14 @@ class ActionAttemptReceipt:
     claim_attempted: bool = False
     number_of_claim_taps: int = 0
     claim_tap_timestamps: list[float] | None = None
+    branch_attempted: bool = False
+    branch_policy: str = "disabled"
+    branch_choice_tap_count: int = 0
+    branch_choice_tap_timestamps: list[float] | None = None
+    ad_exit_override_attempted: bool = False
+    ad_exit_override_tap_count: int = 0
+    ad_exit_override_tap_timestamps: list[float] | None = None
+    ad_exit_override_activity: str | None = None
     actuator_config_snapshot: ActuatorConfigSnapshot | None = None
     planner_decision: PlannerDecision | None = None
     actuation_attempted: bool | None = None
@@ -168,6 +176,42 @@ class ActionAttemptReceipt:
             raise ValueError(
                 "Receipt claim_attempted must match whether any claim taps were recorded."
             )
+        branch_choice_tap_timestamps = (
+            [] if self.branch_choice_tap_timestamps is None else self.branch_choice_tap_timestamps
+        )
+        if self.branch_policy not in {"disabled", "single_choice_default"}:
+            raise ValueError("Receipt branch_policy must be one of the supported values.")
+        if self.branch_choice_tap_count < 0:
+            raise ValueError("Receipt branch_choice_tap_count must be non-negative.")
+        if self.branch_choice_tap_count != len(branch_choice_tap_timestamps):
+            raise ValueError(
+                "Receipt branch_choice_tap_count must match the number of branch tap timestamps."
+            )
+        if any(timestamp < 0 for timestamp in branch_choice_tap_timestamps):
+            raise ValueError("Receipt branch tap timestamps must be non-negative.")
+        if self.branch_attempted != (self.branch_choice_tap_count > 0):
+            raise ValueError(
+                "Receipt branch_attempted must match whether any branch taps were recorded."
+            )
+        ad_exit_override_tap_timestamps = (
+            []
+            if self.ad_exit_override_tap_timestamps is None
+            else self.ad_exit_override_tap_timestamps
+        )
+        if self.ad_exit_override_tap_count < 0:
+            raise ValueError("Receipt ad_exit_override_tap_count must be non-negative.")
+        if self.ad_exit_override_tap_count != len(ad_exit_override_tap_timestamps):
+            raise ValueError(
+                "Receipt ad_exit_override_tap_count must match the number of override tap timestamps."
+            )
+        if any(timestamp < 0 for timestamp in ad_exit_override_tap_timestamps):
+            raise ValueError("Receipt ad exit override tap timestamps must be non-negative.")
+        if self.ad_exit_override_attempted != (self.ad_exit_override_tap_count > 0):
+            raise ValueError(
+                "Receipt ad_exit_override_attempted must match whether any override taps were recorded."
+            )
+        if self.ad_exit_override_activity is not None and not self.ad_exit_override_activity:
+            raise ValueError("Receipt ad_exit_override_activity must not be empty when provided.")
         if self.final_status == "PASS" and self.failure_reason is not FailureReason.NONE:
             raise ValueError("Passing receipts must use failure reason NONE.")
         if self.final_status != "PASS" and self.failure_reason is FailureReason.NONE:
@@ -521,7 +565,10 @@ def _evaluate_candidate(
 ) -> CandidateEvaluation:
     base_result = verify_transition(before, after, dict(contract.expectations))
     try:
-        if not actuator_execution.claim_attempted and action != "activate_ad_boost":
+        reward_followup_attempted = (
+            actuator_execution.claim_attempted or actuator_execution.branch_attempted
+        )
+        if not reward_followup_attempted and action != "activate_ad_boost":
             return _finalize_candidate(before, after, action, contract, base_result)
 
         before_fields = before.flat_fields()
@@ -553,6 +600,8 @@ def _evaluate_candidate(
             after=after,
             base_result=base_result,
             claim_attempted=actuator_execution.claim_attempted,
+            branch_attempted=actuator_execution.branch_attempted,
+            branch_policy=actuator_execution.branch_policy,
         )
         if reward_claim_evaluation is not None:
             return reward_claim_evaluation
@@ -579,8 +628,10 @@ def _evaluate_claim_proof(
     after: PlayerSnapshot,
     base_result: VerificationResult,
     claim_attempted: bool,
+    branch_attempted: bool,
+    branch_policy: str,
 ) -> CandidateEvaluation | None:
-    if not claim_attempted:
+    if not claim_attempted and not branch_attempted:
         return None
     if base_result.status != "PASS":
         return None
@@ -596,14 +647,19 @@ def _evaluate_claim_proof(
         )
 
     return CandidateEvaluation(
-        verification=VerificationResult(
-            status="AMBIGUOUS",
-            success=False,
-            messages=[
-                f"Claim taps were issued during action '{action}', but the save diff did not prove reward application.",
-                *base_result.messages,
-            ],
-        ),
+            verification=VerificationResult(
+                status="AMBIGUOUS",
+                success=False,
+                messages=[
+                    _missing_reward_proof_message(
+                        action=action,
+                        claim_attempted=claim_attempted,
+                        branch_attempted=branch_attempted,
+                        branch_policy=branch_policy,
+                    ),
+                    *base_result.messages,
+                ],
+            ),
         terminal_failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
     )
 
@@ -638,6 +694,29 @@ def _reward_proof_messages(
         )
 
     return messages
+
+
+def _missing_reward_proof_message(
+    *,
+    action: str,
+    claim_attempted: bool,
+    branch_attempted: bool,
+    branch_policy: str,
+) -> str:
+    if claim_attempted and branch_attempted:
+        return (
+            f"Claim taps and branch taps were issued during action '{action}', but the save diff "
+            f"did not prove reward application under branch policy '{branch_policy}'."
+        )
+    if branch_attempted:
+        return (
+            f"Branch taps were issued during action '{action}' under branch policy "
+            f"'{branch_policy}', but the save diff did not prove reward application."
+        )
+    return (
+        f"Claim taps were issued during action '{action}', but the save diff did not prove "
+        "reward application."
+    )
 
 
 def _finalize_candidate(
@@ -815,6 +894,14 @@ def _build_receipt(
         claim_attempted=actuator_execution.claim_attempted,
         number_of_claim_taps=actuator_execution.number_of_claim_taps,
         claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
+        branch_attempted=actuator_execution.branch_attempted,
+        branch_policy=actuator_execution.branch_policy,
+        branch_choice_tap_count=actuator_execution.branch_choice_tap_count,
+        branch_choice_tap_timestamps=list(actuator_execution.branch_choice_tap_timestamps),
+        ad_exit_override_attempted=actuator_execution.ad_exit_override_attempted,
+        ad_exit_override_tap_count=actuator_execution.ad_exit_override_tap_count,
+        ad_exit_override_tap_timestamps=list(actuator_execution.ad_exit_override_tap_timestamps),
+        ad_exit_override_activity=actuator_execution.ad_exit_override_activity,
     )
 
 
@@ -870,4 +957,3 @@ def _require_int_field(fields: Mapping[str, object], field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"Field '{field_name}' must be an int for action classification.")
     return value
-

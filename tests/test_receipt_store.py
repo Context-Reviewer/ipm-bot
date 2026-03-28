@@ -63,6 +63,29 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(payload["claim_attempted"], receipt.claim_attempted)
             self.assertEqual(payload["number_of_claim_taps"], receipt.number_of_claim_taps)
             self.assertEqual(payload["claim_tap_timestamps"], receipt.claim_tap_timestamps)
+            self.assertEqual(payload["branch_attempted"], receipt.branch_attempted)
+            self.assertEqual(payload["branch_policy"], receipt.branch_policy)
+            self.assertEqual(payload["branch_choice_tap_count"], receipt.branch_choice_tap_count)
+            self.assertEqual(
+                payload["branch_choice_tap_timestamps"],
+                receipt.branch_choice_tap_timestamps,
+            )
+            self.assertEqual(
+                payload["ad_exit_override_attempted"],
+                receipt.ad_exit_override_attempted,
+            )
+            self.assertEqual(
+                payload["ad_exit_override_tap_count"],
+                receipt.ad_exit_override_tap_count,
+            )
+            self.assertEqual(
+                payload["ad_exit_override_tap_timestamps"],
+                receipt.ad_exit_override_tap_timestamps,
+            )
+            self.assertEqual(
+                payload["ad_exit_override_activity"],
+                receipt.ad_exit_override_activity,
+            )
             self.assertEqual(payload["candidate_hashes"], receipt.candidate_hashes)
             self.assertEqual(payload["save_path"], receipt.save_path)
             self.assertEqual(payload["final_candidate_hash"], receipt.final_candidate_hash)
@@ -189,6 +212,38 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["actuator_execution"]["claim_tap_timestamps"],
                 receipt.actuator_execution.claim_tap_timestamps,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["branch_attempted"],
+                receipt.actuator_execution.branch_attempted,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["branch_policy"],
+                receipt.actuator_execution.branch_policy,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["branch_choice_tap_count"],
+                receipt.actuator_execution.branch_choice_tap_count,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["branch_choice_tap_timestamps"],
+                receipt.actuator_execution.branch_choice_tap_timestamps,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["ad_exit_override_attempted"],
+                receipt.actuator_execution.ad_exit_override_attempted,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["ad_exit_override_tap_count"],
+                receipt.actuator_execution.ad_exit_override_tap_count,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["ad_exit_override_tap_timestamps"],
+                receipt.actuator_execution.ad_exit_override_tap_timestamps,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["ad_exit_override_activity"],
+                receipt.actuator_execution.ad_exit_override_activity,
             )
             self.assertEqual(
                 payload["actuator_execution"]["stage_events"],
@@ -345,6 +400,50 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["actuator_config"]["ad_post_reward_auto_claim_enabled"],
                 receipt.actuator_config_snapshot.ad_post_reward_auto_claim_enabled,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_branch_policy"],
+                receipt.actuator_config_snapshot.ad_post_reward_branch_policy,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_choice_tap"],
+                receipt.actuator_config_snapshot.ad_post_reward_choice_tap,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_choice_retry_count"],
+                receipt.actuator_config_snapshot.ad_post_reward_choice_retry_count,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_choice_interval_seconds"],
+                receipt.actuator_config_snapshot.ad_post_reward_choice_interval_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_choice_settle_seconds"],
+                receipt.actuator_config_snapshot.ad_post_reward_choice_settle_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_enabled"],
+                receipt.actuator_config_snapshot.ad_exit_override_enabled,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_tap"],
+                receipt.actuator_config_snapshot.ad_exit_override_tap,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_delay_seconds"],
+                receipt.actuator_config_snapshot.ad_exit_override_delay_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_retry_count"],
+                receipt.actuator_config_snapshot.ad_exit_override_retry_count,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_interval_seconds"],
+                receipt.actuator_config_snapshot.ad_exit_override_interval_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_exit_override_activity_allowlist"],
+                list(receipt.actuator_config_snapshot.ad_exit_override_activity_allowlist),
             )
 
     def test_write_receipt_includes_explicit_adb_pull_save_source_fields(self) -> None:
@@ -574,11 +673,24 @@ def _sample_receipt(
             ad_boost_verbose_signal_tracing=True,
             ad_boost_soft_exit_timeout_seconds=15.0,
             ad_boost_hard_exit_timeout_seconds=30.0,
+            ad_exit_override_enabled=True,
+            ad_exit_override_tap="948,84",
+            ad_exit_override_delay_seconds=12.0,
+            ad_exit_override_retry_count=2,
+            ad_exit_override_interval_seconds=0.5,
+            ad_exit_override_activity_allowlist=(
+                "com.applovin.adview.AppLovinFullscreenActivity",
+            ),
             ad_post_reward_claim_tap="454,975",
             ad_post_reward_claim_retry_count=2,
             ad_post_reward_claim_interval_seconds=1.25,
             ad_post_reward_claim_settle_seconds=2.5,
             ad_post_reward_auto_claim_enabled=True,
+            ad_post_reward_branch_policy="single_choice_default",
+            ad_post_reward_choice_tap="500,820",
+            ad_post_reward_choice_retry_count=2,
+            ad_post_reward_choice_interval_seconds=0.75,
+            ad_post_reward_choice_settle_seconds=1.5,
         )
         actuator_execution = ActuatorExecutionMetadata(
             actuator_type="adb",
@@ -588,6 +700,14 @@ def _sample_receipt(
             claim_attempted=True,
             number_of_claim_taps=2,
             claim_tap_timestamps=[12.5, 13.75],
+            branch_attempted=True,
+            branch_policy="single_choice_default",
+            branch_choice_tap_count=2,
+            branch_choice_tap_timestamps=[14.0, 14.75],
+            ad_exit_override_attempted=True,
+            ad_exit_override_tap_count=2,
+            ad_exit_override_tap_timestamps=[7.0, 7.5],
+            ad_exit_override_activity="com.applovin.adview.AppLovinFullscreenActivity",
         )
         if with_observability:
             actuator_execution = ActuatorExecutionMetadata(
@@ -598,6 +718,14 @@ def _sample_receipt(
                 claim_attempted=True,
                 number_of_claim_taps=2,
                 claim_tap_timestamps=[12.5, 13.75],
+                branch_attempted=True,
+                branch_policy="single_choice_default",
+                branch_choice_tap_count=2,
+                branch_choice_tap_timestamps=[14.0, 14.75],
+                ad_exit_override_attempted=True,
+                ad_exit_override_tap_count=2,
+                ad_exit_override_tap_timestamps=[7.0, 7.5],
+                ad_exit_override_activity="com.applovin.adview.AppLovinFullscreenActivity",
                 stage_events=[
                     ActuatorStageEvent(
                         stage_name=(
@@ -725,6 +853,14 @@ def _sample_receipt(
         claim_attempted=actuator_execution.claim_attempted,
         number_of_claim_taps=actuator_execution.number_of_claim_taps,
         claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
+        branch_attempted=actuator_execution.branch_attempted,
+        branch_policy=actuator_execution.branch_policy,
+        branch_choice_tap_count=actuator_execution.branch_choice_tap_count,
+        branch_choice_tap_timestamps=list(actuator_execution.branch_choice_tap_timestamps),
+        ad_exit_override_attempted=actuator_execution.ad_exit_override_attempted,
+        ad_exit_override_tap_count=actuator_execution.ad_exit_override_tap_count,
+        ad_exit_override_tap_timestamps=list(actuator_execution.ad_exit_override_tap_timestamps),
+        ad_exit_override_activity=actuator_execution.ad_exit_override_activity,
         planner_decision=PlannerDecision(
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",

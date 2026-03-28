@@ -12,6 +12,7 @@ from typing import Callable, Protocol, Sequence
 import xml.etree.ElementTree as ET
 
 from .boundary import (
+    AdPostRewardBranchPolicy,
     ActionActuator,
     ActuatorConfigSnapshot,
     ActuatorExecutionError,
@@ -68,11 +69,22 @@ class AdbActuatorConfig:
     ad_boost_verbose_signal_tracing: bool = False
     ad_boost_soft_exit_timeout_seconds: float = 25.0
     ad_boost_hard_exit_timeout_seconds: float = 45.0
+    ad_exit_override_enabled: bool = False
+    ad_exit_override_tap: TapPoint = TapPoint(x=948, y=84)
+    ad_exit_override_delay_seconds: float = 12.0
+    ad_exit_override_retry_count: int = 1
+    ad_exit_override_interval_seconds: float = 1.0
+    ad_exit_override_activity_allowlist: tuple[str, ...] = ()
     ad_post_reward_claim_tap: TapPoint = TapPoint(x=454, y=975)
     ad_post_reward_claim_retry_count: int = 1
     ad_post_reward_claim_interval_seconds: float = 1.0
     ad_post_reward_claim_settle_seconds: float = 2.0
     ad_post_reward_auto_claim_enabled: bool = False
+    ad_post_reward_branch_policy: AdPostRewardBranchPolicy = "disabled"
+    ad_post_reward_choice_tap: TapPoint = TapPoint(x=454, y=875)
+    ad_post_reward_choice_retry_count: int = 1
+    ad_post_reward_choice_interval_seconds: float = 1.0
+    ad_post_reward_choice_settle_seconds: float = 2.0
 
     def __post_init__(self) -> None:
         if not self.adb_path.strip():
@@ -117,12 +129,28 @@ class AdbActuatorConfig:
             raise ValueError("ad_boost_soft_exit_timeout_seconds must be greater than zero.")
         if self.ad_boost_hard_exit_timeout_seconds <= 0:
             raise ValueError("ad_boost_hard_exit_timeout_seconds must be greater than zero.")
+        if self.ad_exit_override_delay_seconds < 0:
+            raise ValueError("ad_exit_override_delay_seconds must be non-negative.")
+        if self.ad_exit_override_retry_count < 0:
+            raise ValueError("ad_exit_override_retry_count must be non-negative.")
+        if self.ad_exit_override_interval_seconds < 0:
+            raise ValueError("ad_exit_override_interval_seconds must be non-negative.")
+        if any(not activity for activity in self.ad_exit_override_activity_allowlist):
+            raise ValueError("ad_exit_override_activity_allowlist entries must not be empty.")
         if self.ad_post_reward_claim_retry_count < 0:
             raise ValueError("ad_post_reward_claim_retry_count must be non-negative.")
         if self.ad_post_reward_claim_interval_seconds < 0:
             raise ValueError("ad_post_reward_claim_interval_seconds must be non-negative.")
         if self.ad_post_reward_claim_settle_seconds < 0:
             raise ValueError("ad_post_reward_claim_settle_seconds must be non-negative.")
+        if self.ad_post_reward_branch_policy not in {"disabled", "single_choice_default"}:
+            raise ValueError("ad_post_reward_branch_policy must be one of the supported values.")
+        if self.ad_post_reward_choice_retry_count < 0:
+            raise ValueError("ad_post_reward_choice_retry_count must be non-negative.")
+        if self.ad_post_reward_choice_interval_seconds < 0:
+            raise ValueError("ad_post_reward_choice_interval_seconds must be non-negative.")
+        if self.ad_post_reward_choice_settle_seconds < 0:
+            raise ValueError("ad_post_reward_choice_settle_seconds must be non-negative.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,11 +226,22 @@ class AdbActionActuator(ActionActuator):
             ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
             ad_boost_soft_exit_timeout_seconds=config.ad_boost_soft_exit_timeout_seconds,
             ad_boost_hard_exit_timeout_seconds=config.ad_boost_hard_exit_timeout_seconds,
+            ad_exit_override_enabled=config.ad_exit_override_enabled,
+            ad_exit_override_tap=f"{config.ad_exit_override_tap.x},{config.ad_exit_override_tap.y}",
+            ad_exit_override_delay_seconds=config.ad_exit_override_delay_seconds,
+            ad_exit_override_retry_count=config.ad_exit_override_retry_count,
+            ad_exit_override_interval_seconds=config.ad_exit_override_interval_seconds,
+            ad_exit_override_activity_allowlist=tuple(config.ad_exit_override_activity_allowlist),
             ad_post_reward_claim_tap=f"{config.ad_post_reward_claim_tap.x},{config.ad_post_reward_claim_tap.y}",
             ad_post_reward_claim_retry_count=config.ad_post_reward_claim_retry_count,
             ad_post_reward_claim_interval_seconds=config.ad_post_reward_claim_interval_seconds,
             ad_post_reward_claim_settle_seconds=config.ad_post_reward_claim_settle_seconds,
             ad_post_reward_auto_claim_enabled=config.ad_post_reward_auto_claim_enabled,
+            ad_post_reward_branch_policy=config.ad_post_reward_branch_policy,
+            ad_post_reward_choice_tap=f"{config.ad_post_reward_choice_tap.x},{config.ad_post_reward_choice_tap.y}",
+            ad_post_reward_choice_retry_count=config.ad_post_reward_choice_retry_count,
+            ad_post_reward_choice_interval_seconds=config.ad_post_reward_choice_interval_seconds,
+            ad_post_reward_choice_settle_seconds=config.ad_post_reward_choice_settle_seconds,
         )
 
     def execute(self, action: str) -> ActuatorExecutionMetadata:
@@ -295,6 +334,9 @@ class AdbActionActuator(ActionActuator):
         probe_samples: list[ActuatorProbeSample] = []
         signal_traces: list[ActuatorSignalTrace] = []
         claim_tap_timestamps: list[float] = []
+        branch_choice_tap_timestamps: list[float] = []
+        ad_exit_override_tap_timestamps: list[float] = []
+        ad_exit_override_activity: str | None = None
         watch_started_at: float | None = None
         
         try:
@@ -371,6 +413,7 @@ class AdbActionActuator(ActionActuator):
             store_redirects_handled = 0
             ad_soft_timeouts_handled = 0
             ad_hard_timeouts_handled = 0
+            ad_exit_override_attempted = False
             ad_active = True
 
             exit_monitor_start_time = self._monotonic_fn()
@@ -499,6 +542,25 @@ class AdbActionActuator(ActionActuator):
                 total_timeouts_handled = ad_soft_timeouts_handled + ad_hard_timeouts_handled
 
                 if (
+                    not ad_exit_override_attempted
+                    and self._config.ad_exit_override_enabled
+                    and elapsed_since_open >= self._config.ad_exit_override_delay_seconds
+                    and self._focus_activity_matches_exit_override_allowlist(probe.focus_activity)
+                ):
+                    ad_exit_override_attempted = True
+                    ad_exit_override_activity = probe.focus_activity
+                    ad_exit_override_tap_timestamps.extend(
+                        self._execute_ad_exit_override_sequence(
+                            attempted_summaries=attempted_summaries,
+                            stage_events=stage_events,
+                            signal_traces=signal_traces,
+                            watch_started_at=watch_started_at,
+                            focus_probe=probe,
+                        )
+                    )
+                    continue
+
+                if (
                     elapsed_since_open >= self._config.ad_boost_soft_exit_timeout_seconds
                     and ad_soft_timeouts_handled == 0
                     and total_timeouts_handled < 2
@@ -582,6 +644,16 @@ class AdbActionActuator(ActionActuator):
                         stabilization_probe=stabilization_probe,
                     )
                 )
+                if self._config.ad_post_reward_branch_policy == "single_choice_default":
+                    branch_choice_tap_timestamps.extend(
+                        self._execute_post_ad_branch_choice_sequence(
+                            attempted_summaries=attempted_summaries,
+                            stage_events=stage_events,
+                            signal_traces=signal_traces,
+                            watch_started_at=watch_started_at,
+                            stabilization_probe=stabilization_probe,
+                        )
+                    )
 
             self._record_stage_event(
                 stage_events, "run_end", elapsed_started_at=watch_started_at,
@@ -607,6 +679,14 @@ class AdbActionActuator(ActionActuator):
                     claim_attempted=bool(claim_tap_timestamps),
                     number_of_claim_taps=len(claim_tap_timestamps),
                     claim_tap_timestamps=list(claim_tap_timestamps),
+                    branch_attempted=bool(branch_choice_tap_timestamps),
+                    branch_policy=self._config.ad_post_reward_branch_policy,
+                    branch_choice_tap_count=len(branch_choice_tap_timestamps),
+                    branch_choice_tap_timestamps=list(branch_choice_tap_timestamps),
+                    ad_exit_override_attempted=bool(ad_exit_override_tap_timestamps),
+                    ad_exit_override_tap_count=len(ad_exit_override_tap_timestamps),
+                    ad_exit_override_tap_timestamps=list(ad_exit_override_tap_timestamps),
+                    ad_exit_override_activity=ad_exit_override_activity,
                 ),
             ) from exc
 
@@ -621,6 +701,14 @@ class AdbActionActuator(ActionActuator):
             claim_attempted=bool(claim_tap_timestamps),
             number_of_claim_taps=len(claim_tap_timestamps),
             claim_tap_timestamps=list(claim_tap_timestamps),
+            branch_attempted=bool(branch_choice_tap_timestamps),
+            branch_policy=self._config.ad_post_reward_branch_policy,
+            branch_choice_tap_count=len(branch_choice_tap_timestamps),
+            branch_choice_tap_timestamps=list(branch_choice_tap_timestamps),
+            ad_exit_override_attempted=bool(ad_exit_override_tap_timestamps),
+            ad_exit_override_tap_count=len(ad_exit_override_tap_timestamps),
+            ad_exit_override_tap_timestamps=list(ad_exit_override_tap_timestamps),
+            ad_exit_override_activity=ad_exit_override_activity,
         )
 
     def _execute_post_ad_claim_sequence(
@@ -684,6 +772,128 @@ class AdbActionActuator(ActionActuator):
             )
             self._sleep_fn(self._config.ad_post_reward_claim_settle_seconds)
         return claim_tap_timestamps
+
+    def _execute_post_ad_branch_choice_sequence(
+        self,
+        *,
+        attempted_summaries: list[str],
+        stage_events: list[ActuatorStageEvent],
+        signal_traces: list[ActuatorSignalTrace],
+        watch_started_at: float,
+        stabilization_probe: ActuatorProbeSample,
+    ) -> list[float]:
+        branch_tap_timestamps: list[float] = []
+        tap_detail = (
+            f"{self._config.ad_post_reward_choice_tap.x},"
+            f"{self._config.ad_post_reward_choice_tap.y}"
+        )
+        for attempt_index in range(1, self._config.ad_post_reward_choice_retry_count + 1):
+            branch_timestamp = round(self._monotonic_fn() - watch_started_at, 3)
+            branch_tap_timestamps.append(branch_timestamp)
+            self._run_command(
+                self._adb_command(
+                    "shell",
+                    "input",
+                    "tap",
+                    str(self._config.ad_post_reward_choice_tap.x),
+                    str(self._config.ad_post_reward_choice_tap.y),
+                ),
+                attempted_summaries,
+            )
+            self._record_stage_event(
+                stage_events,
+                "post_ad_reward_branch_choice_tap",
+                elapsed_started_at=watch_started_at,
+                detail=(
+                    f"policy={self._config.ad_post_reward_branch_policy};"
+                    f"attempt={attempt_index};tap={tap_detail}"
+                ),
+            )
+            signal_traces.append(
+                ActuatorSignalTrace(
+                    timestamp_offset_seconds=branch_timestamp,
+                    stage="post_ad_reward_branch_choice",
+                    focus_activity=stabilization_probe.focus_activity,
+                    focus_package=stabilization_probe.focus_package,
+                    ui_text_excerpt=None,
+                    is_ad_activity=False,
+                    is_playable_ad=False,
+                    is_store=False,
+                    is_game_activity=True,
+                    has_exit_marker=None,
+                    has_ad_markers=False,
+                    action_taken=tap_detail,
+                    action_reason=f"bounded_branch_choice_tap_{attempt_index}",
+                )
+            )
+            if attempt_index < self._config.ad_post_reward_choice_retry_count:
+                self._sleep_fn(self._config.ad_post_reward_choice_interval_seconds)
+        if branch_tap_timestamps and self._config.ad_post_reward_choice_settle_seconds > 0:
+            self._record_stage_event(
+                stage_events,
+                "post_ad_reward_branch_choice_settle",
+                elapsed_started_at=watch_started_at,
+                detail=(
+                    f"policy={self._config.ad_post_reward_branch_policy};"
+                    f"seconds={self._config.ad_post_reward_choice_settle_seconds}"
+                ),
+            )
+            self._sleep_fn(self._config.ad_post_reward_choice_settle_seconds)
+        return branch_tap_timestamps
+
+    def _execute_ad_exit_override_sequence(
+        self,
+        *,
+        attempted_summaries: list[str],
+        stage_events: list[ActuatorStageEvent],
+        signal_traces: list[ActuatorSignalTrace],
+        watch_started_at: float,
+        focus_probe: ActuatorProbeSample,
+    ) -> list[float]:
+        override_tap_timestamps: list[float] = []
+        tap_detail = f"{self._config.ad_exit_override_tap.x},{self._config.ad_exit_override_tap.y}"
+        for attempt_index in range(1, self._config.ad_exit_override_retry_count + 1):
+            tap_timestamp = round(self._monotonic_fn() - watch_started_at, 3)
+            override_tap_timestamps.append(tap_timestamp)
+            self._run_command(
+                self._adb_command(
+                    "shell",
+                    "input",
+                    "tap",
+                    str(self._config.ad_exit_override_tap.x),
+                    str(self._config.ad_exit_override_tap.y),
+                ),
+                attempted_summaries,
+            )
+            self._record_stage_event(
+                stage_events,
+                "ad_exit_override_tap",
+                elapsed_started_at=watch_started_at,
+                detail=(
+                    f"activity={focus_probe.focus_activity};"
+                    f"attempt={attempt_index};tap={tap_detail}"
+                ),
+            )
+            signal_traces.append(
+                ActuatorSignalTrace(
+                    timestamp_offset_seconds=tap_timestamp,
+                    stage="ad_exit_override",
+                    focus_activity=focus_probe.focus_activity,
+                    focus_package=focus_probe.focus_package,
+                    ui_text_excerpt=None,
+                    is_ad_activity=True,
+                    is_playable_ad=False,
+                    is_store=False,
+                    is_game_activity=False,
+                    has_exit_marker=None,
+                    has_ad_markers=False,
+                    action_taken=tap_detail,
+                    action_reason=f"bounded_ad_exit_override_tap_{attempt_index}",
+                )
+            )
+            if attempt_index < self._config.ad_exit_override_retry_count:
+                self._sleep_fn(self._config.ad_exit_override_interval_seconds)
+        return override_tap_timestamps
 
     def _execute_manual_observation_activate_ad_boost(self) -> ActuatorExecutionMetadata:
         stage_events: list[ActuatorStageEvent] = []
@@ -1087,6 +1297,14 @@ class AdbActionActuator(ActionActuator):
             dumpsys_window_output=dumpsys_window_output,
             dumpsys_activity_output=dumpsys_activity_output,
             ui_dump_xml=ui_dump_xml,
+        )
+
+    def _focus_activity_matches_exit_override_allowlist(self, focus_activity: str | None) -> bool:
+        if focus_activity is None:
+            return False
+        return any(
+            allowlisted_activity == focus_activity
+            for allowlisted_activity in self._config.ad_exit_override_activity_allowlist
         )
 
     def _parse_focus_snapshot(self, dumpsys_output: str) -> tuple[str | None, str | None, str | None]:

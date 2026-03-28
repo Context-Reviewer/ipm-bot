@@ -230,6 +230,41 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         help="Absolute final ad-view bounded time before sending the second fallback back payload.",
     )
     parser.add_argument(
+        "--ad-exit-override-enabled",
+        action="store_true",
+        help="Enable a bounded deterministic ad-exit tap override for configured fullscreen ad activities.",
+    )
+    parser.add_argument(
+        "--ad-exit-override-tap",
+        type=str,
+        default="948,84",
+        help="Coordinate (x,y) for bounded ad-exit override taps.",
+    )
+    parser.add_argument(
+        "--ad-exit-override-delay-seconds",
+        type=float,
+        default=12.0,
+        help="Elapsed ad-view time before the bounded ad-exit override tap sequence may begin.",
+    )
+    parser.add_argument(
+        "--ad-exit-override-retry-count",
+        type=int,
+        default=1,
+        help="Bounded number of deterministic ad-exit override taps to send.",
+    )
+    parser.add_argument(
+        "--ad-exit-override-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded ad-exit override taps.",
+    )
+    parser.add_argument(
+        "--ad-exit-override-activity-allowlist",
+        type=str,
+        default="",
+        help="Comma-separated exact focused-activity allowlist for bounded ad-exit override taps.",
+    )
+    parser.add_argument(
         "--ad-post-reward-claim-tap",
         type=str,
         default="454,975",
@@ -257,6 +292,36 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         "--ad-post-reward-auto-claim-disabled",
         action="store_true",
         help="Explicitly disable the optional bounded post-ad reward claim tap sequence.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-branch-policy",
+        choices=("disabled", "single_choice_default"),
+        default="disabled",
+        help="Deterministic post-ad reward branch policy executed after bounded claim taps.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-choice-tap",
+        type=str,
+        default="454,875",
+        help="Coordinate (x,y) for bounded post-ad reward branch choice taps.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-choice-retry-count",
+        type=int,
+        default=1,
+        help="Bounded number of deterministic post-ad reward branch choice taps to send.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-choice-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded post-ad reward branch choice taps.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-choice-settle-seconds",
+        type=float,
+        default=2.0,
+        help="Post-branch settle delay before verification begins.",
     )
 
 
@@ -309,11 +374,24 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             ad_boost_verbose_signal_tracing=args.ad_boost_verbose_signal_tracing,
             ad_boost_soft_exit_timeout_seconds=args.ad_boost_soft_exit_timeout_seconds,
             ad_boost_hard_exit_timeout_seconds=args.ad_boost_hard_exit_timeout_seconds,
+            ad_exit_override_enabled=args.ad_exit_override_enabled,
+            ad_exit_override_tap=parse_tap_point(args.ad_exit_override_tap),
+            ad_exit_override_delay_seconds=args.ad_exit_override_delay_seconds,
+            ad_exit_override_retry_count=args.ad_exit_override_retry_count,
+            ad_exit_override_interval_seconds=args.ad_exit_override_interval_seconds,
+            ad_exit_override_activity_allowlist=parse_activity_allowlist(
+                args.ad_exit_override_activity_allowlist
+            ),
             ad_post_reward_claim_tap=parse_tap_point(args.ad_post_reward_claim_tap),
             ad_post_reward_claim_retry_count=args.ad_post_reward_claim_retry_count,
             ad_post_reward_claim_interval_seconds=args.ad_post_reward_claim_interval_seconds,
             ad_post_reward_claim_settle_seconds=args.ad_post_reward_claim_settle_seconds,
             ad_post_reward_auto_claim_enabled=not getattr(args, "ad_post_reward_auto_claim_disabled", False),
+            ad_post_reward_branch_policy=args.ad_post_reward_branch_policy,
+            ad_post_reward_choice_tap=parse_tap_point(args.ad_post_reward_choice_tap),
+            ad_post_reward_choice_retry_count=args.ad_post_reward_choice_retry_count,
+            ad_post_reward_choice_interval_seconds=args.ad_post_reward_choice_interval_seconds,
+            ad_post_reward_choice_settle_seconds=args.ad_post_reward_choice_settle_seconds,
         ),
         command_runner=SubprocessCommandRunner(),
     )
@@ -358,6 +436,18 @@ def parse_tap_point(raw_value: str) -> TapPoint:
     except ValueError as exc:
         raise ValueError(f"Invalid tap coordinate value: {raw_value!r}") from exc
     return TapPoint(x=x, y=y)
+
+
+def parse_activity_allowlist(raw_value: str) -> tuple[str, ...]:
+    """Parse a comma-separated activity allowlist."""
+
+    if not raw_value.strip():
+        return ()
+    return tuple(
+        activity
+        for activity in (part.strip() for part in raw_value.split(","))
+        if activity
+    )
 
 
 def _path_type(raw_value: str):

@@ -79,6 +79,20 @@ def _serialize_receipt(
         "claim_tap_timestamps": list(
             [] if receipt.claim_tap_timestamps is None else receipt.claim_tap_timestamps
         ),
+        "branch_attempted": receipt.branch_attempted,
+        "branch_policy": receipt.branch_policy,
+        "branch_choice_tap_count": receipt.branch_choice_tap_count,
+        "branch_choice_tap_timestamps": list(
+            [] if receipt.branch_choice_tap_timestamps is None else receipt.branch_choice_tap_timestamps
+        ),
+        "ad_exit_override_attempted": receipt.ad_exit_override_attempted,
+        "ad_exit_override_tap_count": receipt.ad_exit_override_tap_count,
+        "ad_exit_override_tap_timestamps": list(
+            []
+            if receipt.ad_exit_override_tap_timestamps is None
+            else receipt.ad_exit_override_tap_timestamps
+        ),
+        "ad_exit_override_activity": receipt.ad_exit_override_activity,
         "candidate_hashes": list(receipt.candidate_hashes),
         "final_candidate_hash": receipt.final_candidate_hash,
         "contract_identity": {
@@ -127,6 +141,18 @@ def _serialize_receipt(
             "claim_attempted": receipt.actuator_execution.claim_attempted,
             "number_of_claim_taps": receipt.actuator_execution.number_of_claim_taps,
             "claim_tap_timestamps": list(receipt.actuator_execution.claim_tap_timestamps),
+            "branch_attempted": receipt.actuator_execution.branch_attempted,
+            "branch_policy": receipt.actuator_execution.branch_policy,
+            "branch_choice_tap_count": receipt.actuator_execution.branch_choice_tap_count,
+            "branch_choice_tap_timestamps": list(
+                receipt.actuator_execution.branch_choice_tap_timestamps
+            ),
+            "ad_exit_override_attempted": receipt.actuator_execution.ad_exit_override_attempted,
+            "ad_exit_override_tap_count": receipt.actuator_execution.ad_exit_override_tap_count,
+            "ad_exit_override_tap_timestamps": list(
+                receipt.actuator_execution.ad_exit_override_tap_timestamps
+            ),
+            "ad_exit_override_activity": receipt.actuator_execution.ad_exit_override_activity,
             "stage_events": [
                 {
                     "stage_name": sample.stage_name,
@@ -202,6 +228,20 @@ def _serialize_actuator_config(receipt: ActionAttemptReceipt) -> dict[str, objec
         payload["ad_boost_soft_exit_timeout_seconds"] = snapshot.ad_boost_soft_exit_timeout_seconds
     if snapshot.ad_boost_hard_exit_timeout_seconds is not None:
         payload["ad_boost_hard_exit_timeout_seconds"] = snapshot.ad_boost_hard_exit_timeout_seconds
+    if snapshot.ad_exit_override_enabled is not None:
+        payload["ad_exit_override_enabled"] = snapshot.ad_exit_override_enabled
+    if snapshot.ad_exit_override_tap is not None:
+        payload["ad_exit_override_tap"] = snapshot.ad_exit_override_tap
+    if snapshot.ad_exit_override_delay_seconds is not None:
+        payload["ad_exit_override_delay_seconds"] = snapshot.ad_exit_override_delay_seconds
+    if snapshot.ad_exit_override_retry_count is not None:
+        payload["ad_exit_override_retry_count"] = snapshot.ad_exit_override_retry_count
+    if snapshot.ad_exit_override_interval_seconds is not None:
+        payload["ad_exit_override_interval_seconds"] = snapshot.ad_exit_override_interval_seconds
+    if snapshot.ad_exit_override_activity_allowlist is not None:
+        payload["ad_exit_override_activity_allowlist"] = list(
+            snapshot.ad_exit_override_activity_allowlist
+        )
     if snapshot.ad_post_reward_claim_tap is not None:
         payload["ad_post_reward_claim_tap"] = snapshot.ad_post_reward_claim_tap
     if snapshot.ad_post_reward_claim_retry_count is not None:
@@ -212,6 +252,20 @@ def _serialize_actuator_config(receipt: ActionAttemptReceipt) -> dict[str, objec
         payload["ad_post_reward_claim_settle_seconds"] = snapshot.ad_post_reward_claim_settle_seconds
     if snapshot.ad_post_reward_auto_claim_enabled is not None:
         payload["ad_post_reward_auto_claim_enabled"] = snapshot.ad_post_reward_auto_claim_enabled
+    if snapshot.ad_post_reward_branch_policy is not None:
+        payload["ad_post_reward_branch_policy"] = snapshot.ad_post_reward_branch_policy
+    if snapshot.ad_post_reward_choice_tap is not None:
+        payload["ad_post_reward_choice_tap"] = snapshot.ad_post_reward_choice_tap
+    if snapshot.ad_post_reward_choice_retry_count is not None:
+        payload["ad_post_reward_choice_retry_count"] = snapshot.ad_post_reward_choice_retry_count
+    if snapshot.ad_post_reward_choice_interval_seconds is not None:
+        payload["ad_post_reward_choice_interval_seconds"] = (
+            snapshot.ad_post_reward_choice_interval_seconds
+        )
+    if snapshot.ad_post_reward_choice_settle_seconds is not None:
+        payload["ad_post_reward_choice_settle_seconds"] = (
+            snapshot.ad_post_reward_choice_settle_seconds
+        )
     return payload
 
 

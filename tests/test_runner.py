@@ -180,6 +180,9 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertTrue(receipt.claim_attempted)
             self.assertEqual(receipt.number_of_claim_taps, 1)
             self.assertEqual(receipt.claim_tap_timestamps, [0.25])
+            self.assertFalse(receipt.branch_attempted)
+            self.assertEqual(receipt.branch_policy, "disabled")
+            self.assertFalse(receipt.ad_exit_override_attempted)
             self.assertTrue(
                 any("Reward application proven" in message for message in receipt.verifier_messages)
             )
@@ -572,6 +575,155 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.final_status, "PASS")
             self.assertFalse(receipt.claim_attempted)
             self.assertEqual(receipt.number_of_claim_taps, 0)
+            self.assertFalse(receipt.branch_attempted)
+            self.assertEqual(receipt.branch_choice_tap_count, 0)
+
+    def test_branch_taps_without_reward_proof_are_ambiguous(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = BranchingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=10,
+                        arks_claimed=5,
+                        cash=100.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
+            self.assertEqual(receipt.failure_reason, FailureReason.AMBIGUOUS_TRANSITION)
+            self.assertTrue(receipt.branch_attempted)
+            self.assertEqual(receipt.branch_policy, "single_choice_default")
+            self.assertEqual(receipt.branch_choice_tap_count, 2)
+            self.assertEqual(receipt.branch_choice_tap_timestamps, [0.5, 1.25])
+            self.assertTrue(
+                any("Branch taps were issued" in message for message in receipt.verifier_messages)
+            )
+
+    def test_branch_taps_with_reward_proof_can_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = BranchingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=15,
+                        arks_claimed=6,
+                        cash=100.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertTrue(receipt.branch_attempted)
+            self.assertEqual(receipt.branch_policy, "single_choice_default")
+            self.assertEqual(receipt.branch_choice_tap_count, 2)
+            self.assertTrue(
+                any("Reward application proven" in message for message in receipt.verifier_messages)
+            )
+
+    def test_ad_exit_override_metadata_does_not_create_pass_without_save_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = OverrideActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=0.2,
+            )
+
+            self.assertEqual(receipt.final_status, "FAIL")
+            self.assertEqual(receipt.failure_reason, FailureReason.TIMEOUT_NO_SAVE_CHANGE)
+            self.assertTrue(receipt.ad_exit_override_attempted)
+            self.assertEqual(receipt.ad_exit_override_tap_count, 2)
+            self.assertEqual(receipt.ad_exit_override_tap_timestamps, [4.0, 4.5])
+            self.assertEqual(
+                receipt.ad_exit_override_activity,
+                "com.applovin.adview.AppLovinFullscreenActivity",
+            )
 
     def test_idle_does_not_invoke_actuator(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -872,6 +1024,48 @@ class ClaimingActuator:
             claim_attempted=True,
             number_of_claim_taps=1,
             claim_tap_timestamps=[0.25],
+        )
+
+
+class BranchingActuator:
+    actuator_type = "branching"
+    config_snapshot = ActuatorConfigSnapshot(actuator_type="branching")
+
+    def __init__(self) -> None:
+        self.actions: list[str] = []
+
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
+        self.actions.append(action)
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=[f"branching:{action}"],
+            branch_attempted=True,
+            branch_policy="single_choice_default",
+            branch_choice_tap_count=2,
+            branch_choice_tap_timestamps=[0.5, 1.25],
+        )
+
+
+class OverrideActuator:
+    actuator_type = "override"
+    config_snapshot = ActuatorConfigSnapshot(actuator_type="override")
+
+    def __init__(self) -> None:
+        self.actions: list[str] = []
+
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
+        self.actions.append(action)
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=[f"override:{action}"],
+            ad_exit_override_attempted=True,
+            ad_exit_override_tap_count=2,
+            ad_exit_override_tap_timestamps=[4.0, 4.5],
+            ad_exit_override_activity="com.applovin.adview.AppLovinFullscreenActivity",
         )
 
 

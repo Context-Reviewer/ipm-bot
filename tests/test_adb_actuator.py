@@ -109,6 +109,10 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
         self.assertEqual(metadata.actuator_command_count, 3)
         self.assertEqual(sleeper.durations, [1.5, 2.0, 2.0, 2.0, 3.0])
+        self.assertFalse(metadata.ad_exit_override_attempted)
+        self.assertEqual(metadata.ad_exit_override_tap_count, 0)
+        self.assertEqual(metadata.ad_exit_override_tap_timestamps, [])
+        self.assertIsNone(metadata.ad_exit_override_activity)
         self.assertEqual(
             [e.stage_name for e in metadata.stage_events],
             ["boost_entry_tap", "boost_watch_tap", "ad_opened", "returned_to_game", "run_end"]
@@ -459,6 +463,10 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertTrue(metadata.claim_attempted)
         self.assertEqual(metadata.number_of_claim_taps, 2)
         self.assertEqual(len(metadata.claim_tap_timestamps), 2)
+        self.assertFalse(metadata.branch_attempted)
+        self.assertEqual(metadata.branch_policy, "disabled")
+        self.assertEqual(metadata.branch_choice_tap_count, 0)
+        self.assertEqual(metadata.branch_choice_tap_timestamps, [])
         self.assertEqual(
             [
                 event.stage_name
@@ -520,12 +528,282 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertFalse(metadata.claim_attempted)
         self.assertEqual(metadata.number_of_claim_taps, 0)
         self.assertEqual(metadata.claim_tap_timestamps, [])
+        self.assertFalse(metadata.branch_attempted)
+        self.assertEqual(metadata.branch_policy, "disabled")
+        self.assertEqual(metadata.branch_choice_tap_count, 0)
+        self.assertEqual(metadata.branch_choice_tap_timestamps, [])
         self.assertFalse(
             any(
                 event.stage_name.startswith("post_ad_reward_claim")
                 for event in metadata.stage_events
             )
         )
+
+    def test_activate_ad_boost_executes_bounded_post_ad_branch_choice_sequence_when_enabled(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
+            "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_post_reward_auto_claim_enabled=True,
+                ad_post_reward_claim_tap=TapPoint(x=454, y=975),
+                ad_post_reward_claim_retry_count=1,
+                ad_post_reward_claim_interval_seconds=1.25,
+                ad_post_reward_claim_settle_seconds=2.5,
+                ad_post_reward_branch_policy="single_choice_default",
+                ad_post_reward_choice_tap=TapPoint(x=500, y=820),
+                ad_post_reward_choice_retry_count=2,
+                ad_post_reward_choice_interval_seconds=0.75,
+                ad_post_reward_choice_settle_seconds=1.5,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 7.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(
+            runner.commands[-3:],
+            [
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "454",
+                    "975",
+                ],
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "500",
+                    "820",
+                ],
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "500",
+                    "820",
+                ],
+            ],
+        )
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(metadata.branch_attempted)
+        self.assertEqual(metadata.branch_policy, "single_choice_default")
+        self.assertEqual(metadata.branch_choice_tap_count, 2)
+        self.assertEqual(len(metadata.branch_choice_tap_timestamps), 2)
+        self.assertEqual(
+            [
+                event.stage_name
+                for event in metadata.stage_events
+                if event.stage_name.startswith("post_ad_reward_branch_choice")
+            ],
+            [
+                "post_ad_reward_branch_choice_tap",
+                "post_ad_reward_branch_choice_tap",
+                "post_ad_reward_branch_choice_settle",
+            ],
+        )
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
+        self.assertEqual(sleeper.durations, [1.5, 2.0, 2.0, 2.0, 3.0, 2.5, 0.75, 1.5])
+
+    def test_activate_ad_boost_executes_bounded_ad_exit_override_for_allowlisted_activity(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_applovin = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.applovin.adview.AppLovinFullscreenActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=20.0,
+                ad_boost_soft_exit_timeout_seconds=10.0,
+                ad_boost_hard_exit_timeout_seconds=15.0,
+                ad_exit_override_enabled=True,
+                ad_exit_override_tap=TapPoint(x=948, y=84),
+                ad_exit_override_delay_seconds=3.0,
+                ad_exit_override_retry_count=2,
+                ad_exit_override_interval_seconds=0.5,
+                ad_exit_override_activity_allowlist=(
+                    "com.applovin.adview.AppLovinFullscreenActivity",
+                ),
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 7.0:
+                    return dumpsys_window_applovin
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(
+            runner.commands[-2:],
+            [
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "948",
+                    "84",
+                ],
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "948",
+                    "84",
+                ],
+            ],
+        )
+        self.assertTrue(metadata.ad_exit_override_attempted)
+        self.assertEqual(metadata.ad_exit_override_tap_count, 2)
+        self.assertEqual(len(metadata.ad_exit_override_tap_timestamps), 2)
+        self.assertEqual(
+            metadata.ad_exit_override_activity,
+            "com.applovin.adview.AppLovinFullscreenActivity",
+        )
+        self.assertEqual(
+            [
+                event.stage_name
+                for event in metadata.stage_events
+                if event.stage_name == "ad_exit_override_tap"
+            ],
+            ["ad_exit_override_tap", "ad_exit_override_tap"],
+        )
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
+        self.assertFalse(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
+
+    def test_activate_ad_boost_does_not_execute_ad_exit_override_for_non_allowlisted_activity(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_other_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.facebook.ads.AudienceNetworkActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=20.0,
+                ad_boost_soft_exit_timeout_seconds=12.0,
+                ad_boost_hard_exit_timeout_seconds=16.0,
+                ad_exit_override_enabled=True,
+                ad_exit_override_tap=TapPoint(x=948, y=84),
+                ad_exit_override_delay_seconds=3.0,
+                ad_exit_override_retry_count=2,
+                ad_exit_override_interval_seconds=0.5,
+                ad_exit_override_activity_allowlist=(
+                    "com.applovin.adview.AppLovinFullscreenActivity",
+                ),
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 7.0:
+                    return dumpsys_window_other_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertFalse(metadata.ad_exit_override_attempted)
+        self.assertEqual(metadata.ad_exit_override_tap_count, 0)
+        self.assertEqual(metadata.ad_exit_override_tap_timestamps, [])
+        self.assertIsNone(metadata.ad_exit_override_activity)
+        self.assertFalse(any(event.stage_name == "ad_exit_override_tap" for event in metadata.stage_events))
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
 
     def test_activate_ad_boost_handles_store_redirect_and_succeeds(self) -> None:
         dumpsys_window_game = (
