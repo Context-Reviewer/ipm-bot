@@ -207,13 +207,6 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         help="Maximum wait time for an exit affordance to appear while an ad is active.",
     )
     parser.add_argument(
-        "--ad-boost-exit-ui-markers",
-        type=str,
-        nargs="+",
-        default=["Close Ad", "Skip", "Reward granted"],
-        help="UI text markers that indicate an ad can be closed.",
-    )
-    parser.add_argument(
         "--ad-boost-exit-keyevent",
         type=str,
         default="KEYCODE_BACK",
@@ -224,12 +217,6 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=3,
         help="Maximum number of times to escape a Play Store redirect.",
-    )
-    parser.add_argument(
-        "--ad-boost-max-close-actions",
-        type=int,
-        default=3,
-        help="Maximum number of deterministic close actions to send per actively monitored ad session.",
     )
     parser.add_argument(
         "--ad-boost-verbose-signal-tracing",
@@ -324,10 +311,8 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             ad_boost_probe_interval_seconds=args.ad_boost_probe_interval_seconds,
             ad_boost_stabilization_seconds=args.ad_boost_stabilization_seconds,
             ad_boost_exit_timeout_seconds=args.ad_boost_exit_timeout_seconds,
-            ad_boost_exit_ui_markers=tuple(args.ad_boost_exit_ui_markers),
             ad_boost_exit_keyevent=args.ad_boost_exit_keyevent,
             ad_boost_store_max_redirects=args.ad_boost_store_max_redirects,
-            ad_boost_max_close_actions=args.ad_boost_max_close_actions,
             ad_boost_verbose_signal_tracing=args.ad_boost_verbose_signal_tracing,
             ad_boost_soft_exit_timeout_seconds=args.ad_boost_soft_exit_timeout_seconds,
             ad_boost_hard_exit_timeout_seconds=args.ad_boost_hard_exit_timeout_seconds,

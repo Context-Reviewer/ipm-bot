@@ -79,9 +79,6 @@ def _serialize_receipt(
         "claim_tap_timestamps": list(
             [] if receipt.claim_tap_timestamps is None else receipt.claim_tap_timestamps
         ),
-        "resulting_save_hashes": list(
-            [] if receipt.resulting_save_hashes is None else receipt.resulting_save_hashes
-        ),
         "candidate_hashes": list(receipt.candidate_hashes),
         "final_candidate_hash": receipt.final_candidate_hash,
         "contract_identity": {

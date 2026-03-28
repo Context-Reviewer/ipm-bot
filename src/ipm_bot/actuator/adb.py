@@ -64,10 +64,8 @@ class AdbActuatorConfig:
     ad_boost_probe_interval_seconds: float = 2.0
     ad_boost_stabilization_seconds: float = 3.0
     ad_boost_exit_timeout_seconds: float = 120.0
-    ad_boost_exit_ui_markers: tuple[str, ...] = ("Close Ad", "Skip", "Reward granted")
     ad_boost_exit_keyevent: str = "KEYCODE_BACK"
     ad_boost_store_max_redirects: int = 3
-    ad_boost_max_close_actions: int = 3
     ad_boost_verbose_signal_tracing: bool = False
     ad_boost_soft_exit_timeout_seconds: float = 25.0
     ad_boost_hard_exit_timeout_seconds: float = 45.0
@@ -114,14 +112,10 @@ class AdbActuatorConfig:
             raise ValueError("ad_boost_stabilization_seconds must be non-negative.")
         if self.ad_boost_exit_timeout_seconds <= 0:
             raise ValueError("ad_boost_exit_timeout_seconds must be greater than zero.")
-        if not self.ad_boost_exit_ui_markers:
-            raise ValueError("ad_boost_exit_ui_markers must not be empty.")
         if not self.ad_boost_exit_keyevent:
             raise ValueError("ad_boost_exit_keyevent must not be blank.")
         if self.ad_boost_store_max_redirects < 0:
             raise ValueError("ad_boost_store_max_redirects must be non-negative.")
-        if self.ad_boost_max_close_actions < 0:
-            raise ValueError("ad_boost_max_close_actions must be non-negative.")
         if self.ad_boost_soft_exit_timeout_seconds <= 0:
             raise ValueError("ad_boost_soft_exit_timeout_seconds must be greater than zero.")
         if self.ad_boost_hard_exit_timeout_seconds <= 0:
@@ -203,10 +197,8 @@ class AdbActionActuator(ActionActuator):
             ad_boost_probe_interval_seconds=config.ad_boost_probe_interval_seconds,
             ad_boost_stabilization_seconds=config.ad_boost_stabilization_seconds,
             ad_boost_exit_timeout_seconds=config.ad_boost_exit_timeout_seconds,
-            ad_boost_exit_ui_markers=config.ad_boost_exit_ui_markers,
             ad_boost_exit_keyevent=config.ad_boost_exit_keyevent,
             ad_boost_store_max_redirects=config.ad_boost_store_max_redirects,
-            ad_boost_max_close_actions=config.ad_boost_max_close_actions,
             ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
             ad_boost_soft_exit_timeout_seconds=config.ad_boost_soft_exit_timeout_seconds,
             ad_boost_hard_exit_timeout_seconds=config.ad_boost_hard_exit_timeout_seconds,
@@ -333,6 +325,7 @@ class AdbActionActuator(ActionActuator):
                 entry_started_at,
                 sample_context="post_entry",
                 sample_reference_stage="boost_entry_tap",
+                include_ui_dump=False,
             )
             probe_samples.append(entry_probe)
 
@@ -357,7 +350,8 @@ class AdbActionActuator(ActionActuator):
                 probe = self._capture_probe_sample(
                     watch_started_at,
                     sample_context="ad_open_monitor",
-                    sample_reference_stage="boost_watch_tap"
+                    sample_reference_stage="boost_watch_tap",
+                    include_ui_dump=False,
                 )
                 probe_samples.append(probe)
                 
@@ -379,10 +373,8 @@ class AdbActionActuator(ActionActuator):
 
             current_state = "ad"
             store_redirects_handled = 0
-            ad_closes_handled = 0
             ad_soft_timeouts_handled = 0
             ad_hard_timeouts_handled = 0
-            last_closed_ui_sha256 = None
             ad_active = True
 
             exit_monitor_start_time = self._monotonic_fn()
@@ -393,7 +385,7 @@ class AdbActionActuator(ActionActuator):
                 t_is_game: bool,
                 t_is_store: bool,
                 t_is_playable: bool,
-                t_has_exit: bool,
+                t_has_exit: bool | None,
                 t_has_overlay: bool,
                 t_action: str,
                 t_reason: str,
@@ -410,7 +402,6 @@ class AdbActionActuator(ActionActuator):
                     is_game_activity=t_is_game,
                     has_exit_marker=t_has_exit,
                     has_ad_markers=t_has_overlay,
-                    has_reward_claim_marker=None,
                     action_taken=t_action,
                     action_reason=t_reason,
                 )
@@ -429,7 +420,8 @@ class AdbActionActuator(ActionActuator):
                 probe = self._capture_probe_sample(
                     watch_started_at,
                     sample_context="ad_exit_monitor",
-                    sample_reference_stage="ad_opened"
+                    sample_reference_stage="ad_opened",
+                    include_ui_dump=False,
                 )
                 probe_samples.append(probe)
 
@@ -439,31 +431,28 @@ class AdbActionActuator(ActionActuator):
                     ) and probe.focus_activity == self._config.app_activity
                 )
 
-                has_ad_markers = False
-                if probe.ui_text_excerpt:
-                    has_ad_markers = any(m in probe.ui_text_excerpt for m in self._config.ad_boost_exit_ui_markers)
-                
-                is_playable_ad = False
-                if probe.ui_text_excerpt and "Playable" in probe.ui_text_excerpt:
-                    is_playable_ad = True
-
                 is_store = probe.focus_package == "com.android.vending" or (
                     probe.focus_activity and "MarketDeepLinkHandlerActivity" in probe.focus_activity
                 )
 
                 if is_game_activity:
-                    if not has_ad_markers:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, False, has_ad_markers, "NONE", "natively_returned_overlay_safe")
-                        if current_state != "game":
-                            self._record_stage_event(
-                                stage_events, "returned_to_game", elapsed_started_at=watch_started_at
-                            )
-                            current_state = "game"
-                        ad_active = False
-                        break
-                    else:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, False, has_ad_markers, "NONE", "natively_returned_overlay_unsafe")
-                        continue
+                    _append_trace(
+                        probe,
+                        is_game_activity,
+                        is_store,
+                        False,
+                        None,
+                        False,
+                        "NONE",
+                        "natively_returned",
+                    )
+                    if current_state != "game":
+                        self._record_stage_event(
+                            stage_events, "returned_to_game", elapsed_started_at=watch_started_at
+                        )
+                        current_state = "game"
+                    ad_active = False
+                    break
                 
                 if is_store:
                     if current_state != "store":
@@ -473,9 +462,18 @@ class AdbActionActuator(ActionActuator):
                         current_state = "store"
                         
                     if store_redirects_handled < self._config.ad_boost_store_max_redirects:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, False, has_ad_markers, self._config.ad_boost_exit_keyevent, "store_escape")
+                        _append_trace(
+                            probe,
+                            is_game_activity,
+                            is_store,
+                            False,
+                            None,
+                            False,
+                            self._config.ad_boost_exit_keyevent,
+                            "store_escape",
+                        )
                         self._run_command(
-                            self._adb_command("shell", "input", "keyevent", "KEYCODE_BACK"),
+                            self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
                             attempted_summaries,
                         )
                         self._record_stage_event(
@@ -483,68 +481,86 @@ class AdbActionActuator(ActionActuator):
                         )
                         store_redirects_handled += 1
                     else:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, False, has_ad_markers, "NONE", "store_escape_limit_reached")
+                        _append_trace(
+                            probe,
+                            is_game_activity,
+                            is_store,
+                            False,
+                            None,
+                            False,
+                            "NONE",
+                            "store_escape_limit_reached",
+                        )
                     continue
                 
-                # If neither store nor game, we consider it back to ad
                 if current_state == "store" and not is_store:
                     self._record_stage_event(
                         stage_events, "returned_to_ad", elapsed_started_at=watch_started_at
                     )
                     current_state = "ad"
-                
-                has_exit_marker = False
-                found_marker = None
-                if probe.ui_text_excerpt:
-                    found_marker = next((m for m in self._config.ad_boost_exit_ui_markers if m in probe.ui_text_excerpt), None)
-                    if found_marker:
-                        has_exit_marker = True
-                        
-                if has_exit_marker:
-                    if probe.ui_text_sha256 != last_closed_ui_sha256 and ad_closes_handled < self._config.ad_boost_max_close_actions:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, has_exit_marker, has_ad_markers, self._config.ad_boost_exit_keyevent, f"affordance_click_{found_marker}")
-                        self._record_stage_event(
-                            stage_events, "ad_close_affordance_detected", elapsed_started_at=watch_started_at, detail=found_marker
-                        )
-                        self._run_command(
-                            self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
-                            attempted_summaries,
-                        )
-                        self._record_stage_event(
-                            stage_events, "ad_close_action_sent", elapsed_started_at=watch_started_at, detail=self._config.ad_boost_exit_keyevent
-                        )
-                        last_closed_ui_sha256 = probe.ui_text_sha256
-                        ad_closes_handled += 1
-                    else:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, has_exit_marker, has_ad_markers, "NONE", f"affordance_ignored_{found_marker}")
+
+                elapsed_since_open = self._monotonic_fn() - watch_started_at
+                total_timeouts_handled = ad_soft_timeouts_handled + ad_hard_timeouts_handled
+
+                if (
+                    elapsed_since_open >= self._config.ad_boost_soft_exit_timeout_seconds
+                    and ad_soft_timeouts_handled == 0
+                    and total_timeouts_handled < 2
+                ):
+                    _append_trace(
+                        probe,
+                        is_game_activity,
+                        is_store,
+                        False,
+                        None,
+                        False,
+                        self._config.ad_boost_exit_keyevent,
+                        "soft_timeout_escape",
+                    )
+                    self._record_stage_event(
+                        stage_events, "ad_soft_timeout_back_sent", elapsed_started_at=watch_started_at
+                    )
+                    self._run_command(
+                        self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
+                        attempted_summaries,
+                    )
+                    ad_soft_timeouts_handled += 1
+
+                elif (
+                    elapsed_since_open >= self._config.ad_boost_hard_exit_timeout_seconds
+                    and ad_hard_timeouts_handled == 0
+                    and total_timeouts_handled < 2
+                ):
+                    _append_trace(
+                        probe,
+                        is_game_activity,
+                        is_store,
+                        False,
+                        None,
+                        False,
+                        self._config.ad_boost_exit_keyevent,
+                        "hard_timeout_escape",
+                    )
+                    self._record_stage_event(
+                        stage_events, "ad_hard_timeout_back_sent", elapsed_started_at=watch_started_at
+                    )
+                    self._run_command(
+                        self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
+                        attempted_summaries,
+                    )
+                    ad_hard_timeouts_handled += 1
+
                 else:
-                    elapsed_since_open = self._monotonic_fn() - watch_started_at
-                    total_timeouts_handled = ad_soft_timeouts_handled + ad_hard_timeouts_handled
-
-                    if elapsed_since_open >= self._config.ad_boost_soft_exit_timeout_seconds and ad_soft_timeouts_handled == 0 and total_timeouts_handled < 2:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, has_exit_marker, has_ad_markers, self._config.ad_boost_exit_keyevent, "soft_timeout_escape")
-                        self._record_stage_event(
-                            stage_events, "ad_soft_timeout_back_sent", elapsed_started_at=watch_started_at
-                        )
-                        self._run_command(
-                            self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
-                            attempted_summaries,
-                        )
-                        ad_soft_timeouts_handled += 1
-
-                    elif elapsed_since_open >= self._config.ad_boost_hard_exit_timeout_seconds and ad_hard_timeouts_handled == 0 and total_timeouts_handled < 2:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, has_exit_marker, has_ad_markers, self._config.ad_boost_exit_keyevent, "hard_timeout_escape")
-                        self._record_stage_event(
-                            stage_events, "ad_hard_timeout_back_sent", elapsed_started_at=watch_started_at
-                        )
-                        self._run_command(
-                            self._adb_command("shell", "input", "keyevent", self._config.ad_boost_exit_keyevent),
-                            attempted_summaries,
-                        )
-                        ad_hard_timeouts_handled += 1
-
-                    else:
-                        _append_trace(probe, is_game_activity, is_store, is_playable_ad, has_exit_marker, has_ad_markers, "NONE", "monitoring")
+                    _append_trace(
+                        probe,
+                        is_game_activity,
+                        is_store,
+                        False,
+                        None,
+                        False,
+                        "NONE",
+                        "monitoring",
+                    )
 
             if ad_active:
                 raise RuntimeError("ad_active_timeout: Ad exit affordance did not appear and game did not auto-return.")
@@ -555,7 +571,8 @@ class AdbActionActuator(ActionActuator):
             stabilization_probe = self._capture_probe_sample(
                 watch_started_at,
                 sample_context="post_ad_stabilization",
-                sample_reference_stage="game_returned"
+                sample_reference_stage="game_returned",
+                include_ui_dump=False,
             )
             probe_samples.append(stabilization_probe)
 
@@ -656,7 +673,6 @@ class AdbActionActuator(ActionActuator):
                     is_game_activity=True,
                     has_exit_marker=None,
                     has_ad_markers=False,
-                    has_reward_claim_marker=None,
                     action_taken=tap_detail,
                     action_reason=f"bounded_claim_tap_{attempt_index}",
                 )
@@ -1012,6 +1028,7 @@ class AdbActionActuator(ActionActuator):
         sample_context: str | None = None,
         sample_reference_stage: str | None = None,
         esc_attempt_index: int | None = None,
+        include_ui_dump: bool = True,
     ) -> ActuatorProbeSample:
         elapsed_seconds = round(self._monotonic_fn() - started_at, 3)
         focus_window: str | None = None
@@ -1041,16 +1058,17 @@ class AdbActionActuator(ActionActuator):
         except Exception as exc:
             probe_errors.append(f"activity:{exc}")
 
-        try:
-            self._command_runner.capture(
-                self._adb_command("shell", "uiautomator", "dump", _UI_DUMP_REMOTE_PATH)
-            )
-            ui_dump_xml = self._command_runner.capture(
-                self._adb_command("shell", "cat", _UI_DUMP_REMOTE_PATH)
-            )
-            ui_text_excerpt, ui_text_sha256 = self._extract_ui_text_summary(ui_dump_xml)
-        except Exception as exc:
-            probe_errors.append(f"ui:{exc}")
+        if include_ui_dump:
+            try:
+                self._command_runner.capture(
+                    self._adb_command("shell", "uiautomator", "dump", _UI_DUMP_REMOTE_PATH)
+                )
+                ui_dump_xml = self._command_runner.capture(
+                    self._adb_command("shell", "cat", _UI_DUMP_REMOTE_PATH)
+                )
+                ui_text_excerpt, ui_text_sha256 = self._extract_ui_text_summary(ui_dump_xml)
+            except Exception as exc:
+                probe_errors.append(f"ui:{exc}")
 
         return ActuatorProbeSample(
             sample_offset_seconds=elapsed_seconds,

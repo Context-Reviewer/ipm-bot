@@ -71,7 +71,6 @@ class ActuatorSignalTrace:
     is_game_activity: bool
     has_exit_marker: bool | None
     has_ad_markers: bool
-    has_reward_claim_marker: bool | None
     action_taken: str
     action_reason: str
 
@@ -141,10 +140,8 @@ class ActuatorConfigSnapshot:
     ad_boost_probe_interval_seconds: float | None = None
     ad_boost_stabilization_seconds: float | None = None
     ad_boost_exit_timeout_seconds: float | None = None
-    ad_boost_exit_ui_markers: tuple[str, ...] | None = None
     ad_boost_exit_keyevent: str | None = None
     ad_boost_store_max_redirects: int | None = None
-    ad_boost_max_close_actions: int | None = None
     ad_boost_verbose_signal_tracing: bool | None = None
     ad_boost_soft_exit_timeout_seconds: float | None = None
     ad_boost_hard_exit_timeout_seconds: float | None = None
@@ -208,8 +205,6 @@ class ActuatorConfigSnapshot:
             raise ValueError("Actuator config snapshot ad boost exit timeout must be greater than zero.")
         if self.ad_boost_store_max_redirects is not None and self.ad_boost_store_max_redirects < 0:
             raise ValueError("Actuator config snapshot ad boost store max redirects must be non-negative.")
-        if self.ad_boost_max_close_actions is not None and self.ad_boost_max_close_actions < 0:
-            raise ValueError("Actuator config snapshot ad boost max close actions must be non-negative.")
         if self.ad_boost_soft_exit_timeout_seconds is not None and self.ad_boost_soft_exit_timeout_seconds <= 0:
             raise ValueError("Actuator config snapshot ad boost soft exit timeout must be greater than zero.")
         if self.ad_boost_hard_exit_timeout_seconds is not None and self.ad_boost_hard_exit_timeout_seconds <= 0:

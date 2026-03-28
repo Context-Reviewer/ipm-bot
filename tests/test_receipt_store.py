@@ -63,7 +63,6 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(payload["claim_attempted"], receipt.claim_attempted)
             self.assertEqual(payload["number_of_claim_taps"], receipt.number_of_claim_taps)
             self.assertEqual(payload["claim_tap_timestamps"], receipt.claim_tap_timestamps)
-            self.assertEqual(payload["resulting_save_hashes"], receipt.resulting_save_hashes)
             self.assertEqual(payload["candidate_hashes"], receipt.candidate_hashes)
             self.assertEqual(payload["save_path"], receipt.save_path)
             self.assertEqual(payload["final_candidate_hash"], receipt.final_candidate_hash)
@@ -726,7 +725,6 @@ def _sample_receipt(
         claim_attempted=actuator_execution.claim_attempted,
         number_of_claim_taps=actuator_execution.number_of_claim_taps,
         claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
-        resulting_save_hashes=["def456"],
         planner_decision=PlannerDecision(
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",

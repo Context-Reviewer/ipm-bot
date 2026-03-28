@@ -180,9 +180,64 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertTrue(receipt.claim_attempted)
             self.assertEqual(receipt.number_of_claim_taps, 1)
             self.assertEqual(receipt.claim_tap_timestamps, [0.25])
-            self.assertEqual(receipt.resulting_save_hashes, receipt.candidate_hashes)
             self.assertTrue(
                 any("Reward application proven" in message for message in receipt.verifier_messages)
+            )
+
+    def test_claim_attempt_with_cash_only_drift_is_ambiguous(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=10,
+                        arks_claimed=5,
+                        cash=125.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
+            self.assertEqual(receipt.failure_reason, FailureReason.AMBIGUOUS_TRANSITION)
+            self.assertTrue(
+                any(
+                    "did not prove reward application" in message
+                    for message in receipt.verifier_messages
+                )
             )
 
     def test_timeout_no_save_change_receipt(self) -> None:
@@ -466,6 +521,57 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertEqual(receipt.actuator_execution.actuator_execution_status, "COMPLETED")
             self.assertTrue(receipt.verifier_messages)
+
+    def test_claim_reward_signals_are_not_inferred_when_actuator_metadata_omits_claim_attempt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=15,
+                        arks_claimed=6,
+                        cash=125.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertFalse(receipt.claim_attempted)
+            self.assertEqual(receipt.number_of_claim_taps, 0)
 
     def test_idle_does_not_invoke_actuator(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

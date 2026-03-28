@@ -264,7 +264,6 @@ def _sample_receipt(
         ),
         actuator_config_snapshot=ActuatorConfigSnapshot(actuator_type="stub"),
         verifier_messages=["verification message"],
-        resulting_save_hashes=["def456"],
         planner_decision=PlannerDecision(
             selected_action=action,
             decision_reason=decision_reason,
