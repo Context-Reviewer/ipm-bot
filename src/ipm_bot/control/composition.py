@@ -231,6 +231,52 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         default=3,
         help="Maximum number of deterministic close actions to send per actively monitored ad session.",
     )
+    parser.add_argument(
+        "--ad-boost-verbose-signal-tracing",
+        action="store_true",
+        help="Print deterministic state-machine signal resolution metrics directly to stdout.",
+    )
+    parser.add_argument(
+        "--ad-boost-soft-exit-timeout-seconds",
+        type=float,
+        default=25.0,
+        help="Amount of time sequentially elapsed inside an ad view to trigger a fallback back payload without an affordance.",
+    )
+    parser.add_argument(
+        "--ad-boost-hard-exit-timeout-seconds",
+        type=float,
+        default=45.0,
+        help="Absolute final ad-view bounded time sequentially elapsed to issue a second fallback payload without an affordance.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-claim-tap",
+        type=str,
+        default="454,975",
+        help="Coordinate (x,y) for bounded post-ad reward claim taps.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-claim-retry-count",
+        type=int,
+        default=1,
+        help="Bounded number of deterministic post-ad reward claim taps to send after returning to game.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-claim-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded post-ad reward claim taps.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-claim-settle-seconds",
+        type=float,
+        default=2.0,
+        help="Post-claim settle delay before verification begins.",
+    )
+    parser.add_argument(
+        "--ad-post-reward-auto-claim-disabled",
+        action="store_true",
+        help="Explicitly disable the optional post-ad UI reward claim verification and tap step.",
+    )
 
 
 def build_actuator(args: argparse.Namespace) -> ActionActuator:
@@ -282,6 +328,14 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             ad_boost_exit_keyevent=args.ad_boost_exit_keyevent,
             ad_boost_store_max_redirects=args.ad_boost_store_max_redirects,
             ad_boost_max_close_actions=args.ad_boost_max_close_actions,
+            ad_boost_verbose_signal_tracing=args.ad_boost_verbose_signal_tracing,
+            ad_boost_soft_exit_timeout_seconds=args.ad_boost_soft_exit_timeout_seconds,
+            ad_boost_hard_exit_timeout_seconds=args.ad_boost_hard_exit_timeout_seconds,
+            ad_post_reward_claim_tap=parse_tap_point(args.ad_post_reward_claim_tap),
+            ad_post_reward_claim_retry_count=args.ad_post_reward_claim_retry_count,
+            ad_post_reward_claim_interval_seconds=args.ad_post_reward_claim_interval_seconds,
+            ad_post_reward_claim_settle_seconds=args.ad_post_reward_claim_settle_seconds,
+            ad_post_reward_auto_claim_enabled=not getattr(args, "ad_post_reward_auto_claim_disabled", False),
         ),
         command_runner=SubprocessCommandRunner(),
     )

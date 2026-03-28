@@ -74,6 +74,14 @@ def _serialize_receipt(
         "failure_reason": receipt.failure_reason,
         "elapsed_seconds": receipt.elapsed_seconds,
         "changed_save_count": receipt.changed_save_count,
+        "claim_attempted": receipt.claim_attempted,
+        "number_of_claim_taps": receipt.number_of_claim_taps,
+        "claim_tap_timestamps": list(
+            [] if receipt.claim_tap_timestamps is None else receipt.claim_tap_timestamps
+        ),
+        "resulting_save_hashes": list(
+            [] if receipt.resulting_save_hashes is None else receipt.resulting_save_hashes
+        ),
         "candidate_hashes": list(receipt.candidate_hashes),
         "final_candidate_hash": receipt.final_candidate_hash,
         "contract_identity": {
@@ -119,6 +127,9 @@ def _serialize_receipt(
             "actuator_execution_status": receipt.actuator_execution.actuator_execution_status,
             "actuator_command_count": receipt.actuator_execution.actuator_command_count,
             "actuator_command_summary": list(receipt.actuator_execution.actuator_command_summary),
+            "claim_attempted": receipt.actuator_execution.claim_attempted,
+            "number_of_claim_taps": receipt.actuator_execution.number_of_claim_taps,
+            "claim_tap_timestamps": list(receipt.actuator_execution.claim_tap_timestamps),
             "stage_events": [
                 {
                     "stage_name": sample.stage_name,
@@ -188,6 +199,22 @@ def _serialize_actuator_config(receipt: ActionAttemptReceipt) -> dict[str, objec
         payload["ark_post_watch_ui_dump_max_text_length"] = (
             snapshot.ark_post_watch_ui_dump_max_text_length
         )
+    if snapshot.ad_boost_verbose_signal_tracing is not None:
+        payload["ad_boost_verbose_signal_tracing"] = snapshot.ad_boost_verbose_signal_tracing
+    if snapshot.ad_boost_soft_exit_timeout_seconds is not None:
+        payload["ad_boost_soft_exit_timeout_seconds"] = snapshot.ad_boost_soft_exit_timeout_seconds
+    if snapshot.ad_boost_hard_exit_timeout_seconds is not None:
+        payload["ad_boost_hard_exit_timeout_seconds"] = snapshot.ad_boost_hard_exit_timeout_seconds
+    if snapshot.ad_post_reward_claim_tap is not None:
+        payload["ad_post_reward_claim_tap"] = snapshot.ad_post_reward_claim_tap
+    if snapshot.ad_post_reward_claim_retry_count is not None:
+        payload["ad_post_reward_claim_retry_count"] = snapshot.ad_post_reward_claim_retry_count
+    if snapshot.ad_post_reward_claim_interval_seconds is not None:
+        payload["ad_post_reward_claim_interval_seconds"] = snapshot.ad_post_reward_claim_interval_seconds
+    if snapshot.ad_post_reward_claim_settle_seconds is not None:
+        payload["ad_post_reward_claim_settle_seconds"] = snapshot.ad_post_reward_claim_settle_seconds
+    if snapshot.ad_post_reward_auto_claim_enabled is not None:
+        payload["ad_post_reward_auto_claim_enabled"] = snapshot.ad_post_reward_auto_claim_enabled
     return payload
 
 

@@ -402,6 +402,7 @@ def _sample_receipt(
         ),
         actuator_config_snapshot=ActuatorConfigSnapshot(actuator_type="stub"),
         verifier_messages=["verification message"],
+        resulting_save_hashes=["def456"],
         planner_decision=resolved_planner_decision,
         actuation_attempted=resolved_actuation_attempted,
         save_source_metadata=SaveSourceMetadata(

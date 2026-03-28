@@ -124,6 +124,10 @@ class ActionAttemptReceipt:
     runtime_context: ReceiptRuntimeContext
     actuator_execution: ActuatorExecutionMetadata
     verifier_messages: list[str]
+    claim_attempted: bool = False
+    number_of_claim_taps: int = 0
+    claim_tap_timestamps: list[float] | None = None
+    resulting_save_hashes: list[str] | None = None
     actuator_config_snapshot: ActuatorConfigSnapshot | None = None
     planner_decision: PlannerDecision | None = None
     actuation_attempted: bool | None = None
@@ -152,6 +156,22 @@ class ActionAttemptReceipt:
             raise ValueError(
                 "Receipt final_candidate_hash must match the most recent candidate hash."
             )
+        claim_tap_timestamps = [] if self.claim_tap_timestamps is None else self.claim_tap_timestamps
+        if self.number_of_claim_taps < 0:
+            raise ValueError("Receipt number_of_claim_taps must be non-negative.")
+        if self.number_of_claim_taps != len(claim_tap_timestamps):
+            raise ValueError(
+                "Receipt number_of_claim_taps must match the number of claim tap timestamps."
+            )
+        if any(timestamp < 0 for timestamp in claim_tap_timestamps):
+            raise ValueError("Receipt claim tap timestamps must be non-negative.")
+        if self.claim_attempted != (self.number_of_claim_taps > 0):
+            raise ValueError(
+                "Receipt claim_attempted must match whether any claim taps were recorded."
+            )
+        resulting_save_hashes = [] if self.resulting_save_hashes is None else self.resulting_save_hashes
+        if resulting_save_hashes != self.candidate_hashes:
+            raise ValueError("Receipt resulting_save_hashes must match candidate_hashes.")
         if self.final_status == "PASS" and self.failure_reason is not FailureReason.NONE:
             raise ValueError("Passing receipts must use failure reason NONE.")
         if self.final_status != "PASS" and self.failure_reason is FailureReason.NONE:
@@ -365,6 +385,7 @@ def run_action_until_verified(
             before=snapshot_before,
             after=observation.snapshot,
             contract=contract,
+            actuator_execution=actuator_execution,
         )
         last_verifier_messages = evaluation.verification.messages
         if evaluation.verification.status == "PASS":
@@ -500,34 +521,121 @@ def _evaluate_candidate(
     before: PlayerSnapshot,
     after: PlayerSnapshot,
     contract: ActionContract,
+    actuator_execution: ActuatorExecutionMetadata,
 ) -> CandidateEvaluation:
     base_result = verify_transition(before, after, dict(contract.expectations))
-    if action != "activate_ad_boost":
+    if not actuator_execution.claim_attempted and action != "activate_ad_boost":
         return _finalize_candidate(before, after, action, contract, base_result)
 
     before_fields = before.flat_fields()
     after_fields = after.flat_fields()
 
-    before_ads_watched = _require_int_field(before_fields, "ads_watched")
-    after_ads_watched = _require_int_field(after_fields, "ads_watched")
-    _require_field(before_fields, "save_timestamp")
-    _require_field(after_fields, "save_timestamp")
-    _require_bool_field(after_fields, "ad_boost_active")
+    if action == "activate_ad_boost":
+        before_ads_watched = _require_int_field(before_fields, "ads_watched")
+        after_ads_watched = _require_int_field(after_fields, "ads_watched")
+        _require_field(before_fields, "save_timestamp")
+        _require_field(after_fields, "save_timestamp")
+        _require_bool_field(after_fields, "ad_boost_active")
 
-    if after_ads_watched < before_ads_watched:
-        return CandidateEvaluation(
-            verification=VerificationResult(
-                status="FAIL",
-                success=False,
-                messages=[
-                    "Field 'ads_watched' decreased after attempting to activate ad boost.",
-                    *base_result.messages,
-                ],
-            ),
-            terminal_failure_reason=FailureReason.VERIFICATION_FAILED,
-        )
+        if after_ads_watched < before_ads_watched:
+            return CandidateEvaluation(
+                verification=VerificationResult(
+                    status="FAIL",
+                    success=False,
+                    messages=[
+                        "Field 'ads_watched' decreased after attempting to activate ad boost.",
+                        *base_result.messages,
+                    ],
+                ),
+                terminal_failure_reason=FailureReason.VERIFICATION_FAILED,
+            )
+
+    reward_claim_evaluation = _evaluate_claim_proof(
+        action=action,
+        before=before,
+        after=after,
+        base_result=base_result,
+        claim_attempted=actuator_execution.claim_attempted,
+    )
+    if reward_claim_evaluation is not None:
+        return reward_claim_evaluation
 
     return _finalize_candidate(before, after, action, contract, base_result)
+
+
+def _evaluate_claim_proof(
+    *,
+    action: str,
+    before: PlayerSnapshot,
+    after: PlayerSnapshot,
+    base_result: VerificationResult,
+    claim_attempted: bool,
+) -> CandidateEvaluation | None:
+    if not claim_attempted:
+        return None
+    if base_result.status != "PASS":
+        return None
+
+    proof_messages = _reward_proof_messages(before, after)
+    if proof_messages:
+        return CandidateEvaluation(
+            verification=VerificationResult(
+                status="PASS",
+                success=True,
+                messages=base_result.messages + proof_messages,
+            )
+        )
+
+    return CandidateEvaluation(
+        verification=VerificationResult(
+            status="AMBIGUOUS",
+            success=False,
+            messages=[
+                f"Claim taps were issued during action '{action}', but the save diff did not prove reward application.",
+                *base_result.messages,
+            ],
+        ),
+        terminal_failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
+    )
+
+
+def _reward_proof_messages(
+    before: PlayerSnapshot,
+    after: PlayerSnapshot,
+) -> list[str]:
+    before_fields = before.flat_fields()
+    after_fields = after.flat_fields()
+    messages: list[str] = []
+
+    before_arks_claimed = _require_int_field(before_fields, "arks_claimed")
+    after_arks_claimed = _require_int_field(after_fields, "arks_claimed")
+    if after_arks_claimed > before_arks_claimed:
+        messages.append(
+            f"Reward application proven: 'arks_claimed' increased from {before_arks_claimed!r} to {after_arks_claimed!r}."
+        )
+
+    before_dark_matter = _require_int_field(before_fields, "dark_matter")
+    after_dark_matter = _require_int_field(after_fields, "dark_matter")
+    if after_dark_matter > before_dark_matter:
+        messages.append(
+            f"Reward application proven: 'dark_matter' increased from {before_dark_matter!r} to {after_dark_matter!r}."
+        )
+
+    before_cash = _require_numeric_field(before_fields, "cash")
+    after_cash = _require_numeric_field(after_fields, "cash")
+    if after_cash > before_cash:
+        messages.append(
+            f"Reward application proven: 'cash' increased from {before_cash!r} to {after_cash!r}."
+        )
+
+    before_ready = _require_bool_field(before_fields, "ark_reward_ready_to_claim")
+    after_ready = _require_bool_field(after_fields, "ark_reward_ready_to_claim")
+    if before_ready and not after_ready:
+        messages.append(
+            "Reward application proven: 'ark_reward_ready_to_claim' transitioned from True to False."
+        )
+
+    return messages
 
 
 def _finalize_candidate(
@@ -702,6 +810,10 @@ def _build_receipt(
         ),
         actuator_execution=actuator_execution,
         verifier_messages=list(verifier_messages),
+        claim_attempted=actuator_execution.claim_attempted,
+        number_of_claim_taps=actuator_execution.number_of_claim_taps,
+        claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
+        resulting_save_hashes=list(candidate_hashes),
     )
 
 
@@ -757,3 +869,10 @@ def _require_int_field(fields: Mapping[str, object], field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"Field '{field_name}' must be an int for action classification.")
     return value
+
+
+def _require_numeric_field(fields: Mapping[str, object], field_name: str) -> float:
+    value = _require_field(fields, field_name)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Field '{field_name}' must be numeric for action classification.")
+    return float(value)

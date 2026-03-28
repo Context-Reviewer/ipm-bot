@@ -232,6 +232,127 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertEqual(metadata.stage_events[-1].stage_name, "run_end")
         self.assertIn("ad_active_timeout", metadata.stage_events[-1].error)
 
+    def test_activate_ad_boost_handles_soft_timeout_fallback_and_succeeds(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_same_package_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.facebook.ads.AudienceNetworkActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_watch_timeout_seconds=60.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=15.0,
+                ad_boost_soft_exit_timeout_seconds=5.0,
+                ad_boost_hard_exit_timeout_seconds=10.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            cmd = " ".join(command)
+            if "dumpsys window windows" in cmd:
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                elif clock.monotonic() < 9.0:
+                    return dumpsys_window_same_package_ad
+                else:
+                    return dumpsys_window_game
+            elif "cat" in cmd and "ipm_bot_window_dump.xml" in cmd:
+                return '<?xml version="1.0" encoding="UTF-8"?><hierarchy node="[0,0][100,100]"><node text="Playable"/></hierarchy>'
+            elif "dumpsys activity activities" in cmd:
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+        
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertTrue(any(e.stage_name == "ad_soft_timeout_back_sent" for e in metadata.stage_events))
+        self.assertFalse(any(e.stage_name == "ad_hard_timeout_back_sent" for e in metadata.stage_events))
+        # ensure traces caught the fallback and the playable status
+        playable_traces = [t for t in metadata.signal_traces if t.is_playable_ad]
+        self.assertTrue(len(playable_traces) > 0)
+        escape_trace = next((t for t in metadata.signal_traces if t.action_reason == "soft_timeout_escape"), None)
+        self.assertIsNotNone(escape_trace)
+        self.assertEqual(escape_trace.action_taken, "KEYCODE_BACK")
+
+    def test_activate_ad_boost_handles_hard_timeout_fallback_and_succeeds(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_same_package_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.facebook.ads.AudienceNetworkActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_watch_timeout_seconds=60.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=20.0,
+                ad_boost_soft_exit_timeout_seconds=5.0,
+                ad_boost_hard_exit_timeout_seconds=10.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            cmd = " ".join(command)
+            if "dumpsys window windows" in cmd:
+                # < 3.0 -> game
+                # < 13.0 -> ad (surpasses both 5.0 and 10.0 bounds)
+                # > 13.0 -> game
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 13.0:
+                    return dumpsys_window_same_package_ad
+                return dumpsys_window_game
+            elif "cat" in cmd and "ipm_bot_window_dump.xml" in cmd:
+                return '<?xml version="1.0" encoding="UTF-8"?><hierarchy node="[0,0][100,100]"><node text="Playable"/></hierarchy>'
+            elif "dumpsys activity activities" in cmd:
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+        
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertTrue(any(e.stage_name == "ad_soft_timeout_back_sent" for e in metadata.stage_events))
+        self.assertTrue(any(e.stage_name == "ad_hard_timeout_back_sent" for e in metadata.stage_events))
+        # Ensure only 2 timeouts mapped
+        timeout_traces = [t for t in metadata.signal_traces if "timeout_escape" in t.action_reason]
+        self.assertEqual(len(timeout_traces), 2)
+
     def test_activate_ad_boost_aborts_if_game_does_not_return_after_exit_tap(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
@@ -281,6 +402,97 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertEqual(metadata.stage_events[-2].stage_name, "ad_close_action_sent")
         self.assertEqual(metadata.stage_events[-1].stage_name, "run_end")
         self.assertIn("ad_active_timeout", metadata.stage_events[-1].error)
+
+    def test_activate_ad_boost_executes_bounded_post_ad_claim_sequence_when_enabled(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
+            "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_watch_timeout_seconds=60.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_post_reward_auto_claim_enabled=True,
+                ad_post_reward_claim_tap=TapPoint(x=454, y=975),
+                ad_post_reward_claim_retry_count=2,
+                ad_post_reward_claim_interval_seconds=1.25,
+                ad_post_reward_claim_settle_seconds=2.5,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 7.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return '<?xml version="1.0" encoding="UTF-8"?><hierarchy/>'
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(
+            runner.commands[-2:],
+            [
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "454",
+                    "975",
+                ],
+                [
+                    "adb",
+                    "-s",
+                    "emulator-5554",
+                    "shell",
+                    "input",
+                    "tap",
+                    "454",
+                    "975",
+                ],
+            ],
+        )
+        self.assertTrue(metadata.claim_attempted)
+        self.assertEqual(metadata.number_of_claim_taps, 2)
+        self.assertEqual(len(metadata.claim_tap_timestamps), 2)
+        self.assertEqual(
+            [
+                event.stage_name
+                for event in metadata.stage_events
+                if event.stage_name.startswith("post_ad_reward_claim")
+            ],
+            [
+                "post_ad_reward_claim_tap",
+                "post_ad_reward_claim_tap",
+                "post_ad_reward_claim_settle",
+            ],
+        )
+        self.assertEqual(sleeper.durations, [1.5, 2.0, 2.0, 2.0, 3.0, 1.25, 2.5])
 
     def test_activate_ad_boost_handles_store_redirect_and_succeeds(self) -> None:
         dumpsys_window_game = (
@@ -619,6 +831,9 @@ class AdbActuatorTests(unittest.TestCase):
         )
         self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
         self.assertEqual(metadata.actuator_command_count, 6)
+        self.assertTrue(metadata.claim_attempted)
+        self.assertEqual(metadata.number_of_claim_taps, 1)
+        self.assertEqual(len(metadata.claim_tap_timestamps), 1)
         self.assertEqual(sleeper.durations, [1.25, 20.0, 1.0, 2.5])
         self.assertEqual(
             metadata.actuator_command_summary,
@@ -719,6 +934,9 @@ class AdbActuatorTests(unittest.TestCase):
             metadata.stage_events[1].stage_name,
             "entry_observation",
         )
+        self.assertTrue(metadata.claim_attempted)
+        self.assertEqual(metadata.number_of_claim_taps, 1)
+        self.assertEqual(len(metadata.claim_tap_timestamps), 1)
         self.assertEqual(sleeper.durations, [1.25, 1.5, 6.5, 1.0, 2.5])
 
     def test_claim_ark_reward_emits_multiple_escape_attempts_when_configured(self) -> None:
@@ -880,6 +1098,9 @@ class AdbActuatorTests(unittest.TestCase):
                 ("post_esc_settle", None),
             ],
         )
+        self.assertTrue(metadata.claim_attempted)
+        self.assertEqual(metadata.number_of_claim_taps, 1)
+        self.assertEqual(len(metadata.claim_tap_timestamps), 1)
         self.assertEqual(sleeper.durations, [1.25, 6.0, 1.0, 1.25, 1.25, 2.5])
 
     def test_claim_ark_reward_records_probe_error_when_ui_dump_is_unavailable(self) -> None:

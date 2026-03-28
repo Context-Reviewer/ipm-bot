@@ -128,6 +128,63 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.actuator_execution.actuator_command_count, 1)
             self.assertTrue(receipt.verifier_messages)
 
+    def test_pass_receipt_for_claim_ark_reward_when_reward_application_is_proven(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.15,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=1,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=15,
+                        arks_claimed=6,
+                        cash=100.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="claim_ark_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_ark_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertTrue(receipt.claim_attempted)
+            self.assertEqual(receipt.number_of_claim_taps, 1)
+            self.assertEqual(receipt.claim_tap_timestamps, [0.25])
+            self.assertEqual(receipt.resulting_save_hashes, receipt.candidate_hashes)
+            self.assertTrue(
+                any("Reward application proven" in message for message in receipt.verifier_messages)
+            )
+
     def test_timeout_no_save_change_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
@@ -300,6 +357,64 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(actuator.actions, ["activate_ad_boost"])
             self.assertEqual(receipt.actuator_execution.actuator_execution_status, "COMPLETED")
             self.assertTrue(receipt.verifier_messages)
+
+    def test_activate_ad_boost_claim_attempt_without_reward_proof_is_ambiguous(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                dark_matter=10,
+                arks_claimed=5,
+                cash=100.0,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        dark_matter=10,
+                        arks_claimed=5,
+                        cash=100.0,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
+            self.assertEqual(receipt.failure_reason, FailureReason.AMBIGUOUS_TRANSITION)
+            self.assertTrue(receipt.claim_attempted)
+            self.assertEqual(receipt.number_of_claim_taps, 1)
+            self.assertTrue(
+                any(
+                    "did not prove reward application" in message
+                    for message in receipt.verifier_messages
+                )
+            )
 
     def test_ambiguous_transition_receipt_for_claim_ark_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -599,11 +714,17 @@ def _write_save(
     ads_watched: int,
     save_timestamp: datetime,
     ark_reward_ready_to_claim: bool,
+    dark_matter: int = 0,
+    arks_claimed: int = 0,
+    cash: float = 0.0,
     player_level: int = 5,
 ) -> None:
     payload = {
+        "cash": cash,
+        "darkMatter": dark_matter,
         "adBoostActive": ad_boost_active,
         "adsWatched": ads_watched,
+        "arksClaimed": arks_claimed,
         "saveTimestamp": save_timestamp.isoformat(),
         "arkRewardReadyToClaim": ark_reward_ready_to_claim,
         "playerLevel": player_level,
@@ -625,6 +746,26 @@ class RecordingActuator:
             actuator_execution_status="COMPLETED",
             actuator_command_count=1,
             actuator_command_summary=[f"recording:{action}"],
+        )
+
+
+class ClaimingActuator:
+    actuator_type = "claiming"
+    config_snapshot = ActuatorConfigSnapshot(actuator_type="claiming")
+
+    def __init__(self) -> None:
+        self.actions: list[str] = []
+
+    def execute(self, action: str) -> ActuatorExecutionMetadata:
+        self.actions.append(action)
+        return ActuatorExecutionMetadata(
+            actuator_type=self.actuator_type,
+            actuator_execution_status="COMPLETED",
+            actuator_command_count=1,
+            actuator_command_summary=[f"claiming:{action}"],
+            claim_attempted=True,
+            number_of_claim_taps=1,
+            claim_tap_timestamps=[0.25],
         )
 
 

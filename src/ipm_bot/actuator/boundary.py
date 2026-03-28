@@ -59,6 +59,30 @@ class ActuatorStageEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class ActuatorSignalTrace:
+    timestamp_offset_seconds: float
+    stage: str
+    focus_activity: str | None
+    focus_package: str | None
+    ui_text_excerpt: str | None
+    is_ad_activity: bool
+    is_playable_ad: bool
+    is_store: bool
+    is_game_activity: bool
+    has_exit_marker: bool | None
+    has_ad_markers: bool
+    has_reward_claim_marker: bool | None
+    action_taken: str
+    action_reason: str
+
+    def __post_init__(self) -> None:
+        if self.timestamp_offset_seconds < 0:
+            raise ValueError("Actuator signal trace timestamp offset must be non-negative.")
+        if not self.stage:
+            raise ValueError("Actuator signal trace stage must not be empty.")
+
+
+@dataclass(frozen=True, slots=True)
 class ActuatorExecutionMetadata:
     actuator_type: str
     actuator_execution_status: ActuatorExecutionStatus
@@ -66,6 +90,10 @@ class ActuatorExecutionMetadata:
     actuator_command_summary: list[str]
     stage_events: list[ActuatorStageEvent] = field(default_factory=list)
     probe_samples: list[ActuatorProbeSample] = field(default_factory=list)
+    signal_traces: list[ActuatorSignalTrace] = field(default_factory=list)
+    claim_attempted: bool = False
+    number_of_claim_taps: int = 0
+    claim_tap_timestamps: list[float] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.actuator_type:
@@ -75,6 +103,18 @@ class ActuatorExecutionMetadata:
         if self.actuator_command_count != len(self.actuator_command_summary):
             raise ValueError(
                 "Actuator command count must match the number of command summary entries."
+            )
+        if self.number_of_claim_taps < 0:
+            raise ValueError("Actuator claim tap count must be non-negative.")
+        if self.number_of_claim_taps != len(self.claim_tap_timestamps):
+            raise ValueError(
+                "Actuator claim tap count must match the number of claim tap timestamps."
+            )
+        if any(timestamp < 0 for timestamp in self.claim_tap_timestamps):
+            raise ValueError("Actuator claim tap timestamps must be non-negative.")
+        if self.claim_attempted != (self.number_of_claim_taps > 0):
+            raise ValueError(
+                "Actuator claim_attempted must match whether any claim taps were recorded."
             )
 
 
@@ -105,6 +145,14 @@ class ActuatorConfigSnapshot:
     ad_boost_exit_keyevent: str | None = None
     ad_boost_store_max_redirects: int | None = None
     ad_boost_max_close_actions: int | None = None
+    ad_boost_verbose_signal_tracing: bool | None = None
+    ad_boost_soft_exit_timeout_seconds: float | None = None
+    ad_boost_hard_exit_timeout_seconds: float | None = None
+    ad_post_reward_claim_tap: str | None = None
+    ad_post_reward_claim_retry_count: int | None = None
+    ad_post_reward_claim_interval_seconds: float | None = None
+    ad_post_reward_claim_settle_seconds: float | None = None
+    ad_post_reward_auto_claim_enabled: bool | None = None
 
     def __post_init__(self) -> None:
         if not self.actuator_type:
@@ -162,7 +210,16 @@ class ActuatorConfigSnapshot:
             raise ValueError("Actuator config snapshot ad boost store max redirects must be non-negative.")
         if self.ad_boost_max_close_actions is not None and self.ad_boost_max_close_actions < 0:
             raise ValueError("Actuator config snapshot ad boost max close actions must be non-negative.")
-
+        if self.ad_boost_soft_exit_timeout_seconds is not None and self.ad_boost_soft_exit_timeout_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost soft exit timeout must be greater than zero.")
+        if self.ad_boost_hard_exit_timeout_seconds is not None and self.ad_boost_hard_exit_timeout_seconds <= 0:
+            raise ValueError("Actuator config snapshot ad boost hard exit timeout must be greater than zero.")
+        if self.ad_post_reward_claim_retry_count is not None and self.ad_post_reward_claim_retry_count < 0:
+            raise ValueError("Actuator config snapshot ad post reward claim retry count must be non-negative.")
+        if self.ad_post_reward_claim_interval_seconds is not None and self.ad_post_reward_claim_interval_seconds < 0:
+            raise ValueError("Actuator config snapshot ad post reward claim interval must be non-negative.")
+        if self.ad_post_reward_claim_settle_seconds is not None and self.ad_post_reward_claim_settle_seconds < 0:
+            raise ValueError("Actuator config snapshot ad post reward claim settle seconds must be non-negative.")
 
 class ActuatorExecutionError(Exception):
     """Raised when a concrete actuator fails while issuing commands."""

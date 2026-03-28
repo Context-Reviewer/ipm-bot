@@ -60,6 +60,10 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(payload["failure_reason"], receipt.failure_reason)
             self.assertEqual(payload["elapsed_seconds"], receipt.elapsed_seconds)
             self.assertEqual(payload["changed_save_count"], receipt.changed_save_count)
+            self.assertEqual(payload["claim_attempted"], receipt.claim_attempted)
+            self.assertEqual(payload["number_of_claim_taps"], receipt.number_of_claim_taps)
+            self.assertEqual(payload["claim_tap_timestamps"], receipt.claim_tap_timestamps)
+            self.assertEqual(payload["resulting_save_hashes"], receipt.resulting_save_hashes)
             self.assertEqual(payload["candidate_hashes"], receipt.candidate_hashes)
             self.assertEqual(payload["save_path"], receipt.save_path)
             self.assertEqual(payload["final_candidate_hash"], receipt.final_candidate_hash)
@@ -174,6 +178,18 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["actuator_execution"]["actuator_command_summary"],
                 receipt.actuator_execution.actuator_command_summary,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["claim_attempted"],
+                receipt.actuator_execution.claim_attempted,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["number_of_claim_taps"],
+                receipt.actuator_execution.number_of_claim_taps,
+            )
+            self.assertEqual(
+                payload["actuator_execution"]["claim_tap_timestamps"],
+                receipt.actuator_execution.claim_tap_timestamps,
             )
             self.assertEqual(
                 payload["actuator_execution"]["stage_events"],
@@ -298,6 +314,38 @@ class ReceiptStoreTests(unittest.TestCase):
             self.assertEqual(
                 payload["actuator_config"]["ark_post_watch_ui_dump_max_text_length"],
                 receipt.actuator_config_snapshot.ark_post_watch_ui_dump_max_text_length,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_boost_verbose_signal_tracing"],
+                receipt.actuator_config_snapshot.ad_boost_verbose_signal_tracing,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_boost_soft_exit_timeout_seconds"],
+                receipt.actuator_config_snapshot.ad_boost_soft_exit_timeout_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_boost_hard_exit_timeout_seconds"],
+                receipt.actuator_config_snapshot.ad_boost_hard_exit_timeout_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_claim_tap"],
+                receipt.actuator_config_snapshot.ad_post_reward_claim_tap,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_claim_retry_count"],
+                receipt.actuator_config_snapshot.ad_post_reward_claim_retry_count,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_claim_interval_seconds"],
+                receipt.actuator_config_snapshot.ad_post_reward_claim_interval_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_claim_settle_seconds"],
+                receipt.actuator_config_snapshot.ad_post_reward_claim_settle_seconds,
+            )
+            self.assertEqual(
+                payload["actuator_config"]["ad_post_reward_auto_claim_enabled"],
+                receipt.actuator_config_snapshot.ad_post_reward_auto_claim_enabled,
             )
 
     def test_write_receipt_includes_explicit_adb_pull_save_source_fields(self) -> None:
@@ -524,12 +572,23 @@ def _sample_receipt(
             ark_post_watch_probe_count=2,
             ark_post_watch_probe_interval_seconds=2.0,
             ark_post_watch_ui_dump_max_text_length=240,
+            ad_boost_verbose_signal_tracing=True,
+            ad_boost_soft_exit_timeout_seconds=15.0,
+            ad_boost_hard_exit_timeout_seconds=30.0,
+            ad_post_reward_claim_tap="454,975",
+            ad_post_reward_claim_retry_count=2,
+            ad_post_reward_claim_interval_seconds=1.25,
+            ad_post_reward_claim_settle_seconds=2.5,
+            ad_post_reward_auto_claim_enabled=True,
         )
         actuator_execution = ActuatorExecutionMetadata(
             actuator_type="adb",
             actuator_execution_status="COMPLETED",
             actuator_command_count=2,
             actuator_command_summary=["adb shell am start -n ...", "adb shell input tap 852 311"],
+            claim_attempted=True,
+            number_of_claim_taps=2,
+            claim_tap_timestamps=[12.5, 13.75],
         )
         if with_observability:
             actuator_execution = ActuatorExecutionMetadata(
@@ -537,6 +596,9 @@ def _sample_receipt(
                 actuator_execution_status="COMPLETED",
                 actuator_command_count=2,
                 actuator_command_summary=["adb shell am start -n ...", "adb shell input tap 852 311"],
+                claim_attempted=True,
+                number_of_claim_taps=2,
+                claim_tap_timestamps=[12.5, 13.75],
                 stage_events=[
                     ActuatorStageEvent(
                         stage_name=(
@@ -661,6 +723,10 @@ def _sample_receipt(
         actuator_execution=actuator_execution,
         actuator_config_snapshot=actuator_config_snapshot,
         verifier_messages=["Field 'ad_boost_active' matched the expected value: value=True."],
+        claim_attempted=actuator_execution.claim_attempted,
+        number_of_claim_taps=actuator_execution.number_of_claim_taps,
+        claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
+        resulting_save_hashes=["def456"],
         planner_decision=PlannerDecision(
             selected_action="activate_ad_boost",
             decision_reason="ad_boost_inactive",
