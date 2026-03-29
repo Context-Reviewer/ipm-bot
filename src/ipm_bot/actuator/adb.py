@@ -25,6 +25,18 @@ from .boundary import (
 
 _UI_DUMP_REMOTE_PATH = "/sdcard/ipm_bot_window_dump.xml"
 
+AD_ACTIVITY_ALLOWLIST: tuple[str, ...] = (
+    "com.google.android.gms.ads.AdActivity",
+    "com.facebook.ads.AudienceNetworkActivity",
+    "com.applovin.adview.AppLovinFullscreenActivity",
+)
+
+STORE_ACTIVITY_ALLOWLIST: tuple[str, ...] = (
+    "com.google.android.finsky.activities.MainActivity",
+    "com.google.android.finsky.activities.MarketDeepLinkHandlerActivity",
+    "com.android.vending.AssetBrowserActivity",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class TapPoint:
@@ -394,12 +406,11 @@ class AdbActionActuator(ActionActuator):
                 )
                 probe_samples.append(probe)
                 
-                if (
-                    probe.focus_package != self._config.app_package
-                    or (probe.focus_activity and "AdActivity" in probe.focus_activity)
-                    or (probe.focus_activity and probe.focus_activity != self._config.app_activity)
-                    or (probe.focus_package and "ad" in probe.focus_package.lower())
-                ):
+                focus_classification = self._classify_focus_activity(
+                    focus_package=probe.focus_package,
+                    focus_activity=probe.focus_activity,
+                )
+                if focus_classification in {"ad", "store"}:
                     ad_opened = True
                     ad_opened_at = self._monotonic_fn()
                     break
@@ -423,6 +434,7 @@ class AdbActionActuator(ActionActuator):
             
             def _append_trace(
                 t_probe: ActuatorProbeSample,
+                t_is_ad: bool,
                 t_is_game: bool,
                 t_is_store: bool,
                 t_is_playable: bool,
@@ -437,7 +449,7 @@ class AdbActionActuator(ActionActuator):
                     focus_activity=t_probe.focus_activity,
                     focus_package=t_probe.focus_package,
                     ui_text_excerpt=t_probe.ui_text_excerpt,
-                    is_ad_activity=not (t_is_game or t_is_store),
+                    is_ad_activity=t_is_ad,
                     is_playable_ad=t_is_playable,
                     is_store=t_is_store,
                     is_game_activity=t_is_game,
@@ -466,19 +478,18 @@ class AdbActionActuator(ActionActuator):
                 )
                 probe_samples.append(probe)
 
-                is_game_activity = (
-                    probe.focus_package == self._config.app_package and not (
-                        probe.focus_activity and "AdActivity" in probe.focus_activity
-                    ) and probe.focus_activity == self._config.app_activity
+                focus_classification = self._classify_focus_activity(
+                    focus_package=probe.focus_package,
+                    focus_activity=probe.focus_activity,
                 )
-
-                is_store = probe.focus_package == "com.android.vending" or (
-                    probe.focus_activity and "MarketDeepLinkHandlerActivity" in probe.focus_activity
-                )
+                is_game_activity = focus_classification == "game"
+                is_ad_activity = focus_classification == "ad"
+                is_store = focus_classification == "store"
 
                 if is_game_activity:
                     _append_trace(
                         probe,
+                        is_ad_activity,
                         is_game_activity,
                         is_store,
                         False,
@@ -505,6 +516,7 @@ class AdbActionActuator(ActionActuator):
                     if store_redirects_handled < self._config.ad_boost_store_max_redirects:
                         _append_trace(
                             probe,
+                            is_ad_activity,
                             is_game_activity,
                             is_store,
                             False,
@@ -524,6 +536,7 @@ class AdbActionActuator(ActionActuator):
                     else:
                         _append_trace(
                             probe,
+                            is_ad_activity,
                             is_game_activity,
                             is_store,
                             False,
@@ -547,7 +560,8 @@ class AdbActionActuator(ActionActuator):
                 total_timeouts_handled = ad_soft_timeouts_handled + ad_hard_timeouts_handled
 
                 if (
-                    not ad_exit_override_attempted
+                    is_ad_activity
+                    and not ad_exit_override_attempted
                     and self._config.ad_exit_override_enabled
                     and elapsed_since_ad_open >= self._config.ad_exit_override_delay_seconds
                     and self._focus_activity_matches_exit_override_allowlist(probe.focus_activity)
@@ -566,12 +580,16 @@ class AdbActionActuator(ActionActuator):
                     continue
 
                 if (
-                    elapsed_since_watch >= self._config.ad_boost_soft_exit_timeout_seconds
+                    is_ad_activity
+                    and
+                    not ad_exit_override_attempted
+                    and elapsed_since_watch >= self._config.ad_boost_soft_exit_timeout_seconds
                     and ad_soft_timeouts_handled == 0
                     and total_timeouts_handled < 2
                 ):
                     _append_trace(
                         probe,
+                        is_ad_activity,
                         is_game_activity,
                         is_store,
                         False,
@@ -590,12 +608,14 @@ class AdbActionActuator(ActionActuator):
                     ad_soft_timeouts_handled += 1
 
                 elif (
-                    elapsed_since_watch >= self._config.ad_boost_hard_exit_timeout_seconds
+                    is_ad_activity
+                    and elapsed_since_watch >= self._config.ad_boost_hard_exit_timeout_seconds
                     and ad_hard_timeouts_handled == 0
                     and total_timeouts_handled < 2
                 ):
                     _append_trace(
                         probe,
+                        is_ad_activity,
                         is_game_activity,
                         is_store,
                         False,
@@ -616,13 +636,14 @@ class AdbActionActuator(ActionActuator):
                 else:
                     _append_trace(
                         probe,
+                        is_ad_activity,
                         is_game_activity,
                         is_store,
                         False,
                         None,
                         False,
                         "NONE",
-                        "monitoring",
+                        "monitoring" if is_ad_activity else "unknown_focus",
                     )
 
             if ad_active:
@@ -1311,6 +1332,39 @@ class AdbActionActuator(ActionActuator):
             allowlisted_activity == focus_activity
             for allowlisted_activity in self._config.ad_exit_override_activity_allowlist
         )
+
+    def _focus_activity_is_allowlisted_ad(self, focus_activity: str | None) -> bool:
+        if focus_activity is None:
+            return False
+        return any(
+            allowlisted_activity == focus_activity
+            for allowlisted_activity in AD_ACTIVITY_ALLOWLIST
+        )
+
+    def _focus_activity_is_allowlisted_store(self, focus_activity: str | None) -> bool:
+        if focus_activity is None:
+            return False
+        return any(
+            allowlisted_activity == focus_activity
+            for allowlisted_activity in STORE_ACTIVITY_ALLOWLIST
+        )
+
+    def _classify_focus_activity(
+        self,
+        *,
+        focus_package: str | None,
+        focus_activity: str | None,
+    ) -> str:
+        if (
+            focus_package == self._config.app_package
+            and focus_activity == self._config.app_activity
+        ):
+            return "game"
+        if self._focus_activity_is_allowlisted_store(focus_activity):
+            return "store"
+        if self._focus_activity_is_allowlisted_ad(focus_activity):
+            return "ad"
+        return "unknown"
 
     def _parse_focus_snapshot(self, dumpsys_output: str) -> tuple[str | None, str | None, str | None]:
         for raw_line in dumpsys_output.splitlines():
