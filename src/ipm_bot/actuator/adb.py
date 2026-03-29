@@ -382,6 +382,7 @@ class AdbActionActuator(ActionActuator):
             )
 
             ad_opened = False
+            ad_opened_at: float | None = None
             open_deadline = watch_started_at + self._config.ad_boost_open_timeout_seconds
             while self._monotonic_fn() < open_deadline:
                 self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
@@ -400,6 +401,7 @@ class AdbActionActuator(ActionActuator):
                     or (probe.focus_package and "ad" in probe.focus_package.lower())
                 ):
                     ad_opened = True
+                    ad_opened_at = self._monotonic_fn()
                     break
 
             if not ad_opened:
@@ -538,13 +540,16 @@ class AdbActionActuator(ActionActuator):
                     )
                     current_state = "ad"
 
-                elapsed_since_open = self._monotonic_fn() - watch_started_at
+                elapsed_since_watch = self._monotonic_fn() - watch_started_at
+                elapsed_since_ad_open = (
+                    0.0 if ad_opened_at is None else self._monotonic_fn() - ad_opened_at
+                )
                 total_timeouts_handled = ad_soft_timeouts_handled + ad_hard_timeouts_handled
 
                 if (
                     not ad_exit_override_attempted
                     and self._config.ad_exit_override_enabled
-                    and elapsed_since_open >= self._config.ad_exit_override_delay_seconds
+                    and elapsed_since_ad_open >= self._config.ad_exit_override_delay_seconds
                     and self._focus_activity_matches_exit_override_allowlist(probe.focus_activity)
                 ):
                     ad_exit_override_attempted = True
@@ -561,7 +566,7 @@ class AdbActionActuator(ActionActuator):
                     continue
 
                 if (
-                    elapsed_since_open >= self._config.ad_boost_soft_exit_timeout_seconds
+                    elapsed_since_watch >= self._config.ad_boost_soft_exit_timeout_seconds
                     and ad_soft_timeouts_handled == 0
                     and total_timeouts_handled < 2
                 ):
@@ -585,7 +590,7 @@ class AdbActionActuator(ActionActuator):
                     ad_soft_timeouts_handled += 1
 
                 elif (
-                    elapsed_since_open >= self._config.ad_boost_hard_exit_timeout_seconds
+                    elapsed_since_watch >= self._config.ad_boost_hard_exit_timeout_seconds
                     and ad_hard_timeouts_handled == 0
                     and total_timeouts_handled < 2
                 ):

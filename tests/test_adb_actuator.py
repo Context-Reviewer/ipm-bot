@@ -690,7 +690,7 @@ class AdbActuatorTests(unittest.TestCase):
             if "dumpsys window windows" in " ".join(command):
                 if clock.monotonic() < 3.0:
                     return dumpsys_window_game
-                if clock.monotonic() < 7.0:
+                if clock.monotonic() < 10.0:
                     return dumpsys_window_applovin
                 return dumpsys_window_game
             if "dumpsys activity activities" in " ".join(command):
@@ -728,7 +728,7 @@ class AdbActuatorTests(unittest.TestCase):
         )
         self.assertTrue(metadata.ad_exit_override_attempted)
         self.assertEqual(metadata.ad_exit_override_tap_count, 2)
-        self.assertEqual(len(metadata.ad_exit_override_tap_timestamps), 2)
+        self.assertEqual(metadata.ad_exit_override_tap_timestamps, [6.0, 6.5])
         self.assertEqual(
             metadata.ad_exit_override_activity,
             "com.applovin.adview.AppLovinFullscreenActivity",
@@ -743,6 +743,60 @@ class AdbActuatorTests(unittest.TestCase):
         )
         self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
         self.assertFalse(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
+
+    def test_activate_ad_boost_keeps_legacy_back_flow_when_override_is_disabled_for_allowlisted_activity(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_applovin = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.applovin.adview.AppLovinFullscreenActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=20.0,
+                ad_boost_soft_exit_timeout_seconds=4.0,
+                ad_boost_hard_exit_timeout_seconds=10.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 7.0:
+                    return dumpsys_window_applovin
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertFalse(metadata.ad_exit_override_attempted)
+        self.assertEqual(metadata.ad_exit_override_tap_count, 0)
+        self.assertEqual(metadata.ad_exit_override_tap_timestamps, [])
+        self.assertIsNone(metadata.ad_exit_override_activity)
+        self.assertTrue(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
+        self.assertFalse(any(event.stage_name == "ad_exit_override_tap" for event in metadata.stage_events))
+        self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
 
     def test_activate_ad_boost_does_not_execute_ad_exit_override_for_non_allowlisted_activity(self) -> None:
         dumpsys_window_game = (
