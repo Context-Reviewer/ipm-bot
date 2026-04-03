@@ -81,10 +81,10 @@ class PlannerTests(unittest.TestCase):
 
         decision = decide_next_action_details(snapshot)
 
-        self.assertEqual(decision.selected_action, "idle")
-        self.assertEqual(decision.decision_reason, "no_action_needed")
-        self.assertFalse(decision.actuation_required)
-        self.assertEqual(decide_next_action(snapshot), "idle")
+        self.assertEqual(decision.selected_action, "claim_ark_reward")
+        self.assertEqual(decision.decision_reason, "ark_reward_ready_with_active_boost")
+        self.assertTrue(decision.actuation_required)
+        self.assertEqual(decide_next_action(snapshot), "claim_ark_reward")
 
     def test_save_snapshot_can_refine_idle_reason_when_smelter_is_near_completion(self) -> None:
         snapshot = _snapshot(
@@ -172,6 +172,33 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(decision.selected_action, "idle")
         self.assertNotEqual(decision.decision_reason, "ad_boost_suppressed_after_repeated_failures")
+
+    def test_claim_ark_reward_selected_when_boost_active_and_ready(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=True,
+        )
+
+        decision = decide_next_action_details(snapshot)
+
+        self.assertEqual(decision.selected_action, "claim_ark_reward")
+        self.assertEqual(decision.decision_reason, "ark_reward_ready_with_active_boost")
+        self.assertTrue(decision.actuation_required)
+
+    def test_claim_ark_reward_suppressed_returns_idle(self) -> None:
+        snapshot = _snapshot(
+            ad_boost_active=True,
+            ark_reward_ready_to_claim=True,
+        )
+
+        decision = decide_next_action_details(
+            snapshot,
+            claim_reward_suppressed=True,
+        )
+
+        self.assertEqual(decision.selected_action, "idle")
+        self.assertEqual(decision.decision_reason, "claim_reward_suppressed_after_repeated_failures")
+        self.assertFalse(decision.actuation_required)
 
     def test_unattended_safe_allows_idle_and_ad_boost(self) -> None:
         snapshot_idle = _snapshot(

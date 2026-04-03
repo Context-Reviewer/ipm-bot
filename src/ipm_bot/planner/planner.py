@@ -32,6 +32,7 @@ def decide_next_action(
     *,
     unattended_safe: bool = False,
     ad_boost_suppressed: bool = False,
+    claim_reward_suppressed: bool = False,
 ) -> str:
     """Choose the next action from the current normalized save state."""
 
@@ -40,6 +41,7 @@ def decide_next_action(
         save_snapshot=save_snapshot,
         unattended_safe=unattended_safe,
         ad_boost_suppressed=ad_boost_suppressed,
+        claim_reward_suppressed=claim_reward_suppressed,
     ).selected_action
 
 
@@ -49,6 +51,7 @@ def decide_next_action_details(
     *,
     unattended_safe: bool = False,
     ad_boost_suppressed: bool = False,
+    claim_reward_suppressed: bool = False,
 ) -> PlannerDecision:
     """Choose the next action and expose the deterministic rule that selected it."""
 
@@ -78,9 +81,19 @@ def decide_next_action_details(
             actuation_required=True,
         )
 
-    # Ark remains available for explicit/manual experiments, but production auto-selection
-    # does not choose it because recorded live runs showed incompatible provider-specific
-    # UI paths that are outside the current no-detection/no-branching constraints.
+    if ark_reward_ready:
+        if claim_reward_suppressed:
+            return PlannerDecision(
+                selected_action="idle",
+                decision_reason="claim_reward_suppressed_after_repeated_failures",
+                actuation_required=False,
+            )
+        return PlannerDecision(
+            selected_action="claim_ark_reward",
+            decision_reason="ark_reward_ready_with_active_boost",
+            actuation_required=True,
+        )
+
     decision = _idle_decision_from_save_snapshot(save_snapshot)
 
     if unattended_safe and decision.selected_action not in _UNATTENDED_SAFE_ACTIONS:
