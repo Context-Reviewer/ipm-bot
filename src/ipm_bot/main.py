@@ -14,7 +14,11 @@ from ipm_bot.actuator.boundary import ActionActuator
 from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
 from ipm_bot.control.composition import add_tick_composition_arguments, build_actuator, build_save_source
 from ipm_bot.control.contracts import get_action_contract
-from ipm_bot.control.receipt_store import check_ad_boost_suppressed, write_receipt
+from ipm_bot.control.receipt_store import (
+    check_ad_boost_suppressed,
+    check_reward_claim_suppressed,
+    write_receipt,
+)
 from ipm_bot.control.save_source import (
     SaveRefreshController,
     SaveSnapshot,
@@ -104,6 +108,7 @@ def run_single_control_tick(
 
     if not ad_boost_suppressed:
         ad_boost_suppressed = check_ad_boost_suppressed(receipt_dir)
+        claim_reward_suppressed = check_reward_claim_suppressed(receipt_dir)
 
     save_source_metadata = save_source.prepare(save_path)
     prepared_save_path = Path(save_source_metadata.prepared_local_path)
@@ -114,8 +119,9 @@ def run_single_control_tick(
         snapshot_before,
         save_snapshot=save_snapshot,
         unattended_safe=unattended_safe,
-        ad_boost_suppressed=ad_boost_suppressed,
-    )
+            ad_boost_suppressed=ad_boost_suppressed,
+            claim_reward_suppressed=claim_reward_suppressed,
+        )
     planner_timing_observability = _observe_planner_timing(
         planner_decision=planner_decision,
         save_snapshot_observability=save_snapshot_observability,

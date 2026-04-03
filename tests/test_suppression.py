@@ -21,7 +21,11 @@ from ipm_bot.actuator.runner import (
 from ipm_bot.actuator.stub import StubActionActuator
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
-from ipm_bot.control.receipt_store import check_ad_boost_suppressed, write_receipt
+from ipm_bot.control.receipt_store import (
+    check_ad_boost_suppressed,
+    check_reward_claim_suppressed,
+    write_receipt,
+)
 from ipm_bot.control.save_source import LocalSaveSource, SaveSourceMetadata, SaveSourceConfigSnapshot
 from ipm_bot.main import run_single_control_tick
 from ipm_bot.planner.planner import PlannerDecision
@@ -124,6 +128,41 @@ class ControlTickSuppressionIntegrationTests(unittest.TestCase):
                 enriched_receipt.planner_decision.decision_reason,
                 "ad_boost_suppressed_after_repeated_failures",
             )
+
+
+class CheckRewardClaimSuppressedTests(unittest.TestCase):
+
+    def test_reward_claim_suppressed_after_consecutive_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            receipt_dir = Path(tmpdir)
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_ark_reward", "FAIL")
+
+            result = check_reward_claim_suppressed(receipt_dir, threshold=3)
+
+            self.assertTrue(result)
+
+    def test_reward_claim_suppression_breaks_on_pass_or_other_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            receipt_dir = Path(tmpdir)
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_ark_reward", "PASS")
+
+            result = check_reward_claim_suppressed(receipt_dir, threshold=3)
+
+            self.assertFalse(result)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            receipt_dir = Path(tmpdir)
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "idle", "PASS")
+
+            result = check_reward_claim_suppressed(receipt_dir, threshold=3)
+
+            self.assertFalse(result)
 
 
 def _write_fake_receipt(
