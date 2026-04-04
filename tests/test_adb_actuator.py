@@ -1188,6 +1188,12 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertIn("ad_active_timeout", metadata.stage_events[-1].error)
 
     def test_claim_ark_reward_emits_expected_multi_step_commands(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
         runner = RecordingCommandRunner()
         clock = RecordingClock()
         sleeper = RecordingSleeper(clock)
@@ -1196,6 +1202,7 @@ class AdbActuatorTests(unittest.TestCase):
                 adb_path="adb",
                 device_serial="emulator-5554",
                 app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
                 activate_ad_boost_tap=TapPoint(x=111, y=222),
                 claim_ark_reward_tap=TapPoint(x=333, y=444),
                 claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
@@ -1205,122 +1212,48 @@ class AdbActuatorTests(unittest.TestCase):
                 ark_ad_wait_seconds=20.0,
                 ark_skip_close_wait_seconds=1.0,
                 ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
             monotonic_fn=clock.monotonic,
         )
 
-        metadata = actuator.execute("claim_ark_reward")
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 2.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 6.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
 
-        self.assertEqual(
-            runner.commands,
-            [
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "monkey",
-                    "-p",
-                    "com.example.idleplanetminer",
-                    "-c",
-                    "android.intent.category.LAUNCHER",
-                    "1",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "333",
-                    "444",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "555",
-                    "666",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "12",
-                    "34",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "keyevent",
-                    "KEYCODE_ESCAPE",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "777",
-                    "889",
-                ],
-            ],
-        )
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
         self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
-        self.assertEqual(metadata.actuator_command_count, 6)
+        self.assertEqual(metadata.actuator_command_count, 4)
         self.assertTrue(metadata.claim_attempted)
         self.assertEqual(metadata.number_of_claim_taps, 1)
         self.assertEqual(len(metadata.claim_tap_timestamps), 1)
-        self.assertEqual(sleeper.durations, [1.25, 20.0, 1.0, 2.5])
-        self.assertEqual(
-            metadata.actuator_command_summary,
-            [
-                "adb -s emulator-5554 shell monkey -p com.example.idleplanetminer -c android.intent.category.LAUNCHER 1",
-                "adb -s emulator-5554 shell input tap 333 444",
-                "adb -s emulator-5554 shell input tap 555 666",
-                "adb -s emulator-5554 shell input tap 12 34",
-                "adb -s emulator-5554 shell input keyevent KEYCODE_ESCAPE",
-                "adb -s emulator-5554 shell input tap 777 889",
-            ],
-        )
-        self.assertEqual(
-            [event.stage_name for event in metadata.stage_events],
-            [
-                "ark_entry_tap",
-                "ark_watch_tap",
-                "probe_window_start",
-                "ad_close_tap",
-                "esc_attempt_1",
-                "post_esc_settle_start",
-                "claim_tap",
-                "run_end",
-            ],
-        )
-        self.assertEqual(metadata.probe_samples, [])
+        self.assertTrue(any(event.stage_name == "ad_open_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "return_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "claim_tap" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name == "ad_close_tap" for event in metadata.stage_events))
+        self.assertTrue(metadata.probe_samples)
 
     def test_claim_ark_reward_collects_probe_samples_when_enabled(self) -> None:
-        dumpsys_output = (
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
             "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
         )
-        runner = RecordingCommandRunner(
-            captured_outputs={
-                "adb -s emulator-5554 shell dumpsys window windows": dumpsys_output,
-                "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
-            }
-        )
+        runner = RecordingCommandRunner()
         clock = RecordingClock()
         sleeper = RecordingSleeper(clock)
         actuator = AdbActionActuator(
@@ -1328,6 +1261,7 @@ class AdbActuatorTests(unittest.TestCase):
                 adb_path="adb",
                 device_serial="emulator-5554",
                 app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
                 claim_ark_reward_tap=TapPoint(x=333, y=444),
                 claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
                 claim_ark_skip_tap=TapPoint(x=12, y=34),
@@ -1336,8 +1270,9 @@ class AdbActuatorTests(unittest.TestCase):
                 ark_ad_wait_seconds=8.0,
                 ark_skip_close_wait_seconds=1.0,
                 ark_return_wait_seconds=2.5,
-                ark_post_watch_probe_count=2,
-                ark_post_watch_probe_interval_seconds=1.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=10.0,
                 ark_post_watch_ui_dump_max_text_length=80,
             ),
             command_runner=runner,
@@ -1345,46 +1280,148 @@ class AdbActuatorTests(unittest.TestCase):
             monotonic_fn=clock.monotonic,
         )
 
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 2.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 6.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
         metadata = actuator.execute("claim_ark_reward")
 
-        self.assertEqual(len(metadata.probe_samples), 6)
-        self.assertEqual(metadata.probe_samples[0].sample_context, "post_entry")
-        self.assertEqual(metadata.probe_samples[0].sample_reference_stage, "ark_entry_tap")
-        self.assertIsNone(metadata.probe_samples[0].esc_attempt_index)
-        self.assertEqual(metadata.probe_samples[1].sample_context, "post_watch")
-        self.assertEqual(metadata.probe_samples[1].sample_reference_stage, "ark_watch_tap")
-        self.assertIsNone(metadata.probe_samples[1].esc_attempt_index)
-        self.assertEqual(metadata.probe_samples[1].focus_package, "com.google.android.gms")
-        self.assertEqual(
-            metadata.probe_samples[1].focus_activity,
-            "com.google.android.gms.ads.AdActivity",
-        )
-        self.assertIsNone(metadata.probe_samples[1].ui_text_excerpt)
-        self.assertEqual(
-            metadata.probe_samples[1].dumpsys_activity_output,
-            "ACTIVITY MANAGER ACTIVITIES",
-        )
-        self.assertIn("mCurrentFocus=Window", metadata.probe_samples[1].dumpsys_window_output)
-        self.assertIsNone(metadata.probe_samples[1].ui_dump_xml)
-        self.assertIsNone(metadata.probe_samples[1].probe_error)
-        self.assertEqual(metadata.probe_samples[3].sample_context, "pre_esc")
-        self.assertEqual(metadata.probe_samples[3].esc_attempt_index, 1)
-        self.assertEqual(metadata.probe_samples[4].sample_context, "post_esc")
-        self.assertEqual(metadata.probe_samples[4].esc_attempt_index, 1)
-        self.assertEqual(metadata.probe_samples[5].sample_context, "post_esc_settle")
+        self.assertTrue(metadata.probe_samples)
+        self.assertTrue(any(sample.sample_context == "ad_open_monitor" for sample in metadata.probe_samples))
+        self.assertTrue(any(sample.sample_context == "ad_monitor" for sample in metadata.probe_samples))
+        self.assertTrue(any(sample.focus_activity == "com.google.android.gms.ads.AdActivity" for sample in metadata.probe_samples))
         self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
         self.assertTrue(metadata.claim_attempted)
         self.assertEqual(metadata.number_of_claim_taps, 1)
         self.assertEqual(len(metadata.claim_tap_timestamps), 1)
-        self.assertEqual(sleeper.durations, [1.25, 1.5, 6.5, 1.0, 2.5])
 
     def test_claim_ark_reward_emits_multiple_escape_attempts_when_configured(self) -> None:
-        dumpsys_output = (
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
             "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=3.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ark_esc_attempts=3,
+                ark_esc_interval_seconds=1.25,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=6.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 2.0:
+                    return dumpsys_window_game
+                return dumpsys_window_ad
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("claim_ark_reward")
+
+        metadata = context.exception.metadata
+
+        self.assertEqual(metadata.actuator_execution_status, "FAILED")
+        self.assertTrue(any(event.stage_name == "ad_close_tap" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "esc_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "esc_attempt_2" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "esc_attempt_3" for event in metadata.stage_events))
+        self.assertFalse(metadata.claim_attempted)
+
+    def test_claim_ark_reward_handles_external_ad_and_returns(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_ad = (
+            "mCurrentFocus=Window{42 u0 com.google.android.gms/com.google.android.gms.ads.AdActivity}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 2.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 6.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
+
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(any(event.stage_name == "ad_open_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "return_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name == "ad_close_tap" for event in metadata.stage_events))
+
+    def test_claim_ark_reward_aborts_if_ad_never_opens(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
         )
         runner = RecordingCommandRunner(
             captured_outputs={
-                "adb -s emulator-5554 shell dumpsys window windows": dumpsys_output,
+                "adb -s emulator-5554 shell dumpsys window windows": dumpsys_window_game,
                 "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
             }
         )
@@ -1395,6 +1432,7 @@ class AdbActuatorTests(unittest.TestCase):
                 adb_path="adb",
                 device_serial="emulator-5554",
                 app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
                 claim_ark_reward_tap=TapPoint(x=333, y=444),
                 claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
                 claim_ark_skip_tap=TapPoint(x=12, y=34),
@@ -1403,135 +1441,22 @@ class AdbActuatorTests(unittest.TestCase):
                 ark_ad_wait_seconds=6.0,
                 ark_skip_close_wait_seconds=1.0,
                 ark_return_wait_seconds=2.5,
-                ark_esc_attempts=3,
-                ark_esc_interval_seconds=1.25,
-                ark_post_watch_probe_count=1,
-                ark_post_watch_probe_interval_seconds=1.0,
+                ad_boost_open_timeout_seconds=3.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=6.0,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
             monotonic_fn=clock.monotonic,
         )
 
-        metadata = actuator.execute("claim_ark_reward")
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("claim_ark_reward")
 
-        self.assertEqual(
-            runner.commands,
-            [
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "monkey",
-                    "-p",
-                    "com.example.idleplanetminer",
-                    "-c",
-                    "android.intent.category.LAUNCHER",
-                    "1",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "333",
-                    "444",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "555",
-                    "666",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "12",
-                    "34",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "keyevent",
-                    "KEYCODE_ESCAPE",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "keyevent",
-                    "KEYCODE_ESCAPE",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "keyevent",
-                    "KEYCODE_ESCAPE",
-                ],
-                [
-                    "adb",
-                    "-s",
-                    "emulator-5554",
-                    "shell",
-                    "input",
-                    "tap",
-                    "777",
-                    "889",
-                ],
-            ],
-        )
-        self.assertEqual(
-            [event.stage_name for event in metadata.stage_events],
-            [
-                "ark_entry_tap",
-                "ark_watch_tap",
-                "probe_window_start",
-                "ad_close_tap",
-                "esc_attempt_1",
-                "esc_attempt_2",
-                "esc_attempt_3",
-                "post_esc_settle_start",
-                "claim_tap",
-                "run_end",
-            ],
-        )
-        self.assertEqual(
-            [(sample.sample_context, sample.esc_attempt_index) for sample in metadata.probe_samples],
-            [
-                ("post_entry", None),
-                ("post_watch", None),
-                ("pre_esc", 1),
-                ("post_esc", 1),
-                ("pre_esc", 2),
-                ("post_esc", 2),
-                ("pre_esc", 3),
-                ("post_esc", 3),
-                ("post_esc_settle", None),
-            ],
-        )
-        self.assertTrue(metadata.claim_attempted)
-        self.assertEqual(metadata.number_of_claim_taps, 1)
-        self.assertEqual(len(metadata.claim_tap_timestamps), 1)
-        self.assertEqual(sleeper.durations, [1.25, 6.0, 1.0, 1.25, 1.25, 2.5])
+        metadata = context.exception.metadata
+
+        self.assertIn("ark_ad_open_timeout", metadata.stage_events[-1].error)
+        self.assertFalse(metadata.claim_attempted)
 
     def test_claim_ark_reward_records_focus_probe_error_when_dumpsys_is_unavailable(self) -> None:
         runner = RecordingCommandRunner(
@@ -1554,17 +1479,21 @@ class AdbActuatorTests(unittest.TestCase):
                 ark_ad_wait_seconds=4.0,
                 ark_skip_close_wait_seconds=1.0,
                 ark_return_wait_seconds=2.5,
-                ark_post_watch_probe_count=1,
-                ark_post_watch_probe_interval_seconds=1.0,
+                ad_boost_open_timeout_seconds=2.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=4.0,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
             monotonic_fn=clock.monotonic,
         )
 
-        metadata = actuator.execute("claim_ark_reward")
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("claim_ark_reward")
 
-        self.assertEqual(len(metadata.probe_samples), 5)
+        metadata = context.exception.metadata
+
+        self.assertTrue(metadata.probe_samples)
         self.assertIn("focus:", metadata.probe_samples[0].probe_error)
         self.assertIsNone(metadata.probe_samples[0].ui_dump_xml)
         self.assertIsNone(metadata.probe_samples[0].dumpsys_window_output)
@@ -1572,14 +1501,13 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))
 
     def test_claim_ark_reward_does_not_issue_ui_dump_commands_when_probe_sampling_is_enabled(self) -> None:
-        runner = RecordingCommandRunner(
-            captured_outputs={
-                "adb -s emulator-5554 shell dumpsys window windows": (
-                    "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
-                ),
-                "adb -s emulator-5554 shell dumpsys activity activities": "ACTIVITY MANAGER ACTIVITIES",
-            }
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
         )
+        dumpsys_window_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
         clock = RecordingClock()
         sleeper = RecordingSleeper(clock)
         actuator = AdbActionActuator(
@@ -1596,17 +1524,30 @@ class AdbActuatorTests(unittest.TestCase):
                 ark_ad_wait_seconds=4.0,
                 ark_skip_close_wait_seconds=1.0,
                 ark_return_wait_seconds=2.5,
-                ark_post_watch_probe_count=1,
-                ark_post_watch_probe_interval_seconds=1.0,
+                ad_boost_open_timeout_seconds=3.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=8.0,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
             monotonic_fn=clock.monotonic,
         )
 
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 2.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 5.0:
+                    return dumpsys_window_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
         metadata = actuator.execute("claim_ark_reward")
 
-        self.assertEqual(metadata.probe_samples[0].sample_context, "post_entry")
         self.assertTrue(all(sample.ui_text_excerpt is None for sample in metadata.probe_samples))
         self.assertTrue(all(sample.ui_dump_xml is None for sample in metadata.probe_samples))
         self.assertFalse(any("uiautomator" in " ".join(command) for command in runner.capture_commands))

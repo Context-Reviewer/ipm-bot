@@ -968,6 +968,8 @@ class AdbActionActuator(ActionActuator):
         claim_tap_timestamps: list[float] = []
         entry_started_at: float | None = None
         watch_started_at: float | None = None
+        ad_opened_at: float | None = None
+        return_detected = False
         try:
             launch_command = self._launch_command()
             if launch_command is not None:
@@ -1020,89 +1022,114 @@ class AdbActionActuator(ActionActuator):
                     f"{self._config.claim_ark_reward_watch_tap.y}"
                 ),
             )
-            self._record_stage_event(
-                stage_events,
-                "probe_window_start",
-                elapsed_started_at=watch_started_at,
-                detail=(
-                    f"count={self._config.ark_post_watch_probe_count},"
-                    f"interval={self._config.ark_post_watch_probe_interval_seconds},"
-                    f"wait_budget={self._config.ark_ad_wait_seconds}"
-                ),
-            )
-            probe_samples.extend(
-                self._collect_post_watch_probes(
-                    wait_budget_seconds=self._config.ark_ad_wait_seconds,
+            open_deadline = watch_started_at + self._config.ad_boost_open_timeout_seconds
+            while self._monotonic_fn() < open_deadline:
+                self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
+                probe = self._capture_probe_sample(
+                    watch_started_at,
+                    sample_context="ad_open_monitor",
+                    sample_reference_stage="ark_watch_tap",
                     include_ui_dump=False,
                 )
-            )
+                probe_samples.append(probe)
+                focus_classification = self._classify_focus_activity(
+                    focus_package=probe.focus_package,
+                    focus_activity=probe.focus_activity,
+                )
+                if focus_classification in {"ad", "store"}:
+                    ad_opened_at = self._monotonic_fn()
+                    break
 
-            self._run_command(
-                self._adb_command(
-                    "shell",
-                    "input",
-                    "tap",
-                    str(self._config.claim_ark_skip_tap.x),
-                    str(self._config.claim_ark_skip_tap.y),
-                ),
-                attempted_summaries,
-            )
+            if ad_opened_at is None:
+                raise RuntimeError("ark_ad_open_timeout: ad did not open after watch tap.")
+
             self._record_stage_event(
                 stage_events,
-                "ad_close_tap",
+                "ad_open_detected",
                 elapsed_started_at=watch_started_at,
-                detail=f"{self._config.claim_ark_skip_tap.x},{self._config.claim_ark_skip_tap.y}",
             )
-            self._sleep_fn(self._config.ark_skip_close_wait_seconds)
+            self._record_stage_event(
+                stage_events,
+                "ad_monitor_start",
+                elapsed_started_at=watch_started_at,
+            )
 
-            for attempt_index in range(1, self._config.ark_esc_attempts + 1):
-                if watch_started_at is not None and self._config.ark_post_watch_probe_count > 0:
-                    probe_samples.append(
-                        self._capture_probe_sample(
-                            watch_started_at,
-                            sample_context="pre_esc",
-                            sample_reference_stage="ark_watch_tap",
-                            esc_attempt_index=attempt_index,
-                            include_ui_dump=False,
-                        )
-                    )
-                self._run_command(
-                    self._adb_command("shell", "input", "keyevent", "KEYCODE_ESCAPE"),
-                    attempted_summaries,
+            exit_deadline = ad_opened_at + self._config.ad_boost_exit_timeout_seconds
+            exit_attempted = False
+            last_classification: str | None = None
+            while self._monotonic_fn() < exit_deadline:
+                self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
+                probe = self._capture_probe_sample(
+                    watch_started_at,
+                    sample_context="ad_monitor",
+                    sample_reference_stage="ad_open_detected",
+                    include_ui_dump=False,
                 )
-                self._record_stage_event(
-                    stage_events,
-                    f"esc_attempt_{attempt_index}",
-                    elapsed_started_at=watch_started_at,
+                probe_samples.append(probe)
+                focus_classification = self._classify_focus_activity(
+                    focus_package=probe.focus_package,
+                    focus_activity=probe.focus_activity,
                 )
-                if watch_started_at is not None and self._config.ark_post_watch_probe_count > 0:
-                    probe_samples.append(
-                        self._capture_probe_sample(
-                            watch_started_at,
-                            sample_context="post_esc",
-                            sample_reference_stage="ark_watch_tap",
-                            esc_attempt_index=attempt_index,
-                            include_ui_dump=False,
-                        )
+                if focus_classification != last_classification:
+                    self._record_stage_event(
+                        stage_events,
+                        "ad_monitor_transition",
+                        elapsed_started_at=watch_started_at,
+                        detail=f"{last_classification or 'none'}->{focus_classification}",
                     )
-                if attempt_index < self._config.ark_esc_attempts:
-                    self._sleep_fn(self._config.ark_esc_interval_seconds)
+                    last_classification = focus_classification
+                if focus_classification == "game":
+                    return_detected = True
+                    self._record_stage_event(
+                        stage_events,
+                        "return_detected",
+                        elapsed_started_at=watch_started_at,
+                    )
+                    break
+
+                elapsed_since_open = self._monotonic_fn() - ad_opened_at
+                if not exit_attempted and elapsed_since_open >= self._config.ark_ad_wait_seconds:
+                    self._run_command(
+                        self._adb_command(
+                            "shell",
+                            "input",
+                            "tap",
+                            str(self._config.claim_ark_skip_tap.x),
+                            str(self._config.claim_ark_skip_tap.y),
+                        ),
+                        attempted_summaries,
+                    )
+                    self._record_stage_event(
+                        stage_events,
+                        "ad_close_tap",
+                        elapsed_started_at=watch_started_at,
+                        detail=f"{self._config.claim_ark_skip_tap.x},{self._config.claim_ark_skip_tap.y}",
+                    )
+                    self._sleep_fn(self._config.ark_skip_close_wait_seconds)
+
+                    for attempt_index in range(1, self._config.ark_esc_attempts + 1):
+                        self._run_command(
+                            self._adb_command("shell", "input", "keyevent", "KEYCODE_ESCAPE"),
+                            attempted_summaries,
+                        )
+                        self._record_stage_event(
+                            stage_events,
+                            f"esc_attempt_{attempt_index}",
+                            elapsed_started_at=watch_started_at,
+                        )
+                        if attempt_index < self._config.ark_esc_attempts:
+                            self._sleep_fn(self._config.ark_esc_interval_seconds)
+                    exit_attempted = True
+
+            if not return_detected:
+                raise RuntimeError("ark_ad_exit_timeout: ad did not return to game.")
 
             self._record_stage_event(
                 stage_events,
-                "post_esc_settle_start",
+                "post_return_settle_start",
                 elapsed_started_at=watch_started_at,
             )
             self._sleep_fn(self._config.ark_return_wait_seconds)
-            if watch_started_at is not None and self._config.ark_post_watch_probe_count > 0:
-                probe_samples.append(
-                    self._capture_probe_sample(
-                        watch_started_at,
-                        sample_context="post_esc_settle",
-                        sample_reference_stage="ark_watch_tap",
-                        include_ui_dump=False,
-                    )
-                )
 
             self._run_command(
                 self._adb_command(
