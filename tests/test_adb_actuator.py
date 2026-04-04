@@ -176,6 +176,60 @@ class AdbActuatorTests(unittest.TestCase):
             ["boost_entry_tap", "boost_watch_tap", "ad_opened", "ad_soft_timeout_back_sent", "returned_to_game", "run_end"]
         )
 
+    def test_activate_ad_boost_monitors_unity_ad_activity_in_same_package(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                activate_ad_boost_tap=TapPoint(x=111, y=222),
+                activate_ad_boost_watch_tap=TapPoint(x=333, y=555),
+                ark_popup_wait_seconds=1.5,
+                ad_boost_open_timeout_seconds=10.0,
+                ad_boost_probe_interval_seconds=2.0,
+                ad_boost_stabilization_seconds=3.0,
+                ad_boost_exit_timeout_seconds=10.0,
+                ad_boost_soft_exit_timeout_seconds=5.0,
+                ad_boost_hard_exit_timeout_seconds=8.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                if clock.monotonic() < 3.0:
+                    return dumpsys_window_game
+                if clock.monotonic() < 9.0:
+                    return dumpsys_window_unity_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("activate_ad_boost")
+
+        self.assertEqual(metadata.actuator_type, "adb")
+        self.assertEqual(metadata.actuator_execution_status, "COMPLETED")
+        self.assertIn(["adb", "-s", "emulator-5554", "shell", "input", "keyevent", "KEYCODE_BACK"], runner.commands)
+        self.assertEqual(
+            [e.stage_name for e in metadata.stage_events],
+            ["boost_entry_tap", "boost_watch_tap", "ad_opened", "ad_soft_timeout_back_sent", "returned_to_game", "run_end"]
+        )
+
     def test_activate_ad_boost_aborts_if_game_never_returns_before_exit_timeout(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"

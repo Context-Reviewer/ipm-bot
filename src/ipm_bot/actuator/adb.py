@@ -29,6 +29,12 @@ AD_ACTIVITY_ALLOWLIST: tuple[str, ...] = (
     "com.google.android.gms.ads.AdActivity",
     "com.facebook.ads.AudienceNetworkActivity",
     "com.applovin.adview.AppLovinFullscreenActivity",
+    "com.unity3d.ads.adplayer.FullScreenWebViewDisplay",
+)
+
+AD_ACTIVITY_SUBSTRINGS: tuple[str, ...] = (
+    "adplayer",
+    "ads",
 )
 
 STORE_ACTIVITY_ALLOWLIST: tuple[str, ...] = (
@@ -1336,10 +1342,13 @@ class AdbActionActuator(ActionActuator):
     def _focus_activity_is_allowlisted_ad(self, focus_activity: str | None) -> bool:
         if focus_activity is None:
             return False
-        return any(
+        if any(
             allowlisted_activity == focus_activity
             for allowlisted_activity in AD_ACTIVITY_ALLOWLIST
-        )
+        ):
+            return True
+        focus_activity_lower = focus_activity.lower()
+        return any(token in focus_activity_lower for token in AD_ACTIVITY_SUBSTRINGS)
 
     def _focus_activity_is_allowlisted_store(self, focus_activity: str | None) -> bool:
         if focus_activity is None:
