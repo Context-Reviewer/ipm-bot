@@ -43,6 +43,10 @@ STORE_ACTIVITY_ALLOWLIST: tuple[str, ...] = (
     "com.android.vending.AssetBrowserActivity",
 )
 
+STORE_PACKAGE_ALLOWLIST: tuple[str, ...] = (
+    "com.android.vending",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class TapPoint:
@@ -174,6 +178,13 @@ class AdbActuatorConfig:
 @dataclass(frozen=True, slots=True)
 class PostWatchProbeStep:
     wait_budget_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimStoreReturnResult:
+    store_redirects_handled: int
+    return_detected: bool
+    resumed_ad_monitor: bool
 
 
 class CommandRunner(Protocol):
@@ -1055,8 +1066,8 @@ class AdbActionActuator(ActionActuator):
             )
 
             exit_deadline = ad_opened_at + self._config.ad_boost_exit_timeout_seconds
-            exit_attempted = False
             last_classification: str | None = None
+            store_redirects_handled = 0
             while self._monotonic_fn() < exit_deadline:
                 self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
                 probe = self._capture_probe_sample(
@@ -1078,6 +1089,27 @@ class AdbActionActuator(ActionActuator):
                         detail=f"{last_classification or 'none'}->{focus_classification}",
                     )
                     last_classification = focus_classification
+                if focus_classification == "store":
+                    if store_redirects_handled == 0:
+                        self._record_stage_event(
+                            stage_events,
+                            "store_redirect_detected",
+                            elapsed_started_at=watch_started_at,
+                        )
+                    store_exit_result = self._attempt_claim_store_return(
+                        attempted_summaries=attempted_summaries,
+                        stage_events=stage_events,
+                        probe_samples=probe_samples,
+                        watch_started_at=watch_started_at,
+                        store_redirects_handled=store_redirects_handled,
+                    )
+                    store_redirects_handled = store_exit_result.store_redirects_handled
+                    if store_exit_result.return_detected:
+                        return_detected = True
+                        break
+                    if store_exit_result.resumed_ad_monitor:
+                        last_classification = "ad"
+                    continue
                 if focus_classification == "game":
                     return_detected = True
                     self._record_stage_event(
@@ -1087,42 +1119,64 @@ class AdbActionActuator(ActionActuator):
                     )
                     break
 
-                elapsed_since_open = self._monotonic_fn() - ad_opened_at
-                if not exit_attempted and elapsed_since_open >= self._config.ark_ad_wait_seconds:
+            if not return_detected:
+                self._record_stage_event(
+                    stage_events,
+                    "ad_hard_timeout_reached",
+                    elapsed_started_at=watch_started_at,
+                )
+                self._run_command(
+                    self._adb_command(
+                        "shell",
+                        "input",
+                        "tap",
+                        str(self._config.claim_ark_skip_tap.x),
+                        str(self._config.claim_ark_skip_tap.y),
+                    ),
+                    attempted_summaries,
+                )
+                self._record_stage_event(
+                    stage_events,
+                    "ad_close_tap",
+                    elapsed_started_at=watch_started_at,
+                    detail=f"{self._config.claim_ark_skip_tap.x},{self._config.claim_ark_skip_tap.y}",
+                )
+                self._sleep_fn(self._config.ark_skip_close_wait_seconds)
+
+                for attempt_index in range(1, self._config.ark_esc_attempts + 1):
                     self._run_command(
-                        self._adb_command(
-                            "shell",
-                            "input",
-                            "tap",
-                            str(self._config.claim_ark_skip_tap.x),
-                            str(self._config.claim_ark_skip_tap.y),
-                        ),
+                        self._adb_command("shell", "input", "keyevent", "KEYCODE_ESCAPE"),
                         attempted_summaries,
                     )
                     self._record_stage_event(
                         stage_events,
-                        "ad_close_tap",
+                        f"esc_attempt_{attempt_index}",
                         elapsed_started_at=watch_started_at,
-                        detail=f"{self._config.claim_ark_skip_tap.x},{self._config.claim_ark_skip_tap.y}",
                     )
-                    self._sleep_fn(self._config.ark_skip_close_wait_seconds)
+                    if attempt_index < self._config.ark_esc_attempts:
+                        self._sleep_fn(self._config.ark_esc_interval_seconds)
 
-                    for attempt_index in range(1, self._config.ark_esc_attempts + 1):
-                        self._run_command(
-                            self._adb_command("shell", "input", "keyevent", "KEYCODE_ESCAPE"),
-                            attempted_summaries,
-                        )
+                if watch_started_at is not None:
+                    timeout_probe = self._capture_probe_sample(
+                        watch_started_at,
+                        sample_context="post_exit_attempt",
+                        sample_reference_stage="ad_open_detected",
+                        include_ui_dump=False,
+                    )
+                    probe_samples.append(timeout_probe)
+                    focus_classification = self._classify_focus_activity(
+                        focus_package=timeout_probe.focus_package,
+                        focus_activity=timeout_probe.focus_activity,
+                    )
+                    if focus_classification == "game":
+                        return_detected = True
                         self._record_stage_event(
                             stage_events,
-                            f"esc_attempt_{attempt_index}",
+                            "return_detected",
                             elapsed_started_at=watch_started_at,
                         )
-                        if attempt_index < self._config.ark_esc_attempts:
-                            self._sleep_fn(self._config.ark_esc_interval_seconds)
-                    exit_attempted = True
-
-            if not return_detected:
-                raise RuntimeError("ark_ad_exit_timeout: ad did not return to game.")
+                if not return_detected:
+                    raise RuntimeError("ark_ad_exit_timeout: ad did not return to game.")
 
             self._record_stage_event(
                 stage_events,
@@ -1385,6 +1439,14 @@ class AdbActionActuator(ActionActuator):
             for allowlisted_activity in STORE_ACTIVITY_ALLOWLIST
         )
 
+    def _focus_package_is_allowlisted_store(self, focus_package: str | None) -> bool:
+        if focus_package is None:
+            return False
+        return any(
+            allowlisted_package == focus_package
+            for allowlisted_package in STORE_PACKAGE_ALLOWLIST
+        )
+
     def _classify_focus_activity(
         self,
         *,
@@ -1396,6 +1458,8 @@ class AdbActionActuator(ActionActuator):
             and focus_activity == self._config.app_activity
         ):
             return "game"
+        if self._focus_package_is_allowlisted_store(focus_package):
+            return "store"
         if self._focus_activity_is_allowlisted_store(focus_activity):
             return "store"
         if self._focus_activity_is_allowlisted_ad(focus_activity):
@@ -1433,6 +1497,66 @@ class AdbActionActuator(ActionActuator):
         excerpt = joined_text[: self._config.ark_post_watch_ui_dump_max_text_length]
         digest = hashlib.sha256(joined_text.encode("utf-8")).hexdigest()
         return excerpt, digest
+
+    def _attempt_claim_store_return(
+        self,
+        *,
+        attempted_summaries: list[str],
+        stage_events: list[ActuatorStageEvent],
+        probe_samples: list[ActuatorProbeSample],
+        watch_started_at: float,
+        store_redirects_handled: int,
+    ) -> ClaimStoreReturnResult:
+        redirects_handled = store_redirects_handled
+        while redirects_handled < self._config.ad_boost_store_max_redirects:
+            attempt_index = redirects_handled + 1
+            self._run_command(
+                self._adb_command("shell", "input", "keyevent", "KEYCODE_BACK"),
+                attempted_summaries,
+            )
+            self._record_stage_event(
+                stage_events,
+                "store_back_sent",
+                elapsed_started_at=watch_started_at,
+                detail=f"attempt={attempt_index}",
+            )
+            redirects_handled += 1
+            self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
+            store_probe = self._capture_probe_sample(
+                watch_started_at,
+                sample_context="post_store_back_attempt",
+                sample_reference_stage="store_back_sent",
+                include_ui_dump=False,
+            )
+            probe_samples.append(store_probe)
+            focus_classification = self._classify_focus_activity(
+                focus_package=store_probe.focus_package,
+                focus_activity=store_probe.focus_activity,
+            )
+            if focus_classification == "game":
+                self._record_stage_event(
+                    stage_events,
+                    "return_detected",
+                    elapsed_started_at=watch_started_at,
+                )
+                return ClaimStoreReturnResult(
+                    store_redirects_handled=redirects_handled,
+                    return_detected=True,
+                    resumed_ad_monitor=False,
+                )
+            if focus_classification != "store":
+                if focus_classification == "ad":
+                    self._record_stage_event(
+                        stage_events,
+                        "returned_to_ad",
+                        elapsed_started_at=watch_started_at,
+                    )
+                return ClaimStoreReturnResult(
+                    store_redirects_handled=redirects_handled,
+                    return_detected=False,
+                    resumed_ad_monitor=True,
+                )
+        raise RuntimeError("ark_store_exit_timeout: store did not return to game.")
 
     def _run_command(self, command: list[str], attempted_summaries: list[str]) -> None:
         command_summary = self._summarize_command(command)
