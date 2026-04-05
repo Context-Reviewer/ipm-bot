@@ -88,6 +88,11 @@ class AdbActuatorConfig:
     ad_boost_exit_timeout_seconds: float = 120.0
     ad_boost_exit_keyevent: str = "KEYCODE_BACK"
     ad_boost_store_max_redirects: int = 3
+    claim_ark_same_app_endcard_close_tap: TapPoint | None = None
+    claim_ark_same_app_endcard_close_attempts: int = 0
+    claim_ark_same_app_endcard_close_interval_seconds: float = 1.0
+    claim_ark_same_app_back_attempts: int = 1
+    claim_ark_same_app_back_interval_seconds: float = 1.0
     ad_boost_verbose_signal_tracing: bool = False
     ad_boost_soft_exit_timeout_seconds: float = 25.0
     ad_boost_hard_exit_timeout_seconds: float = 45.0
@@ -147,6 +152,14 @@ class AdbActuatorConfig:
             raise ValueError("ad_boost_exit_keyevent must not be blank.")
         if self.ad_boost_store_max_redirects < 0:
             raise ValueError("ad_boost_store_max_redirects must be non-negative.")
+        if self.claim_ark_same_app_endcard_close_attempts < 0:
+            raise ValueError("claim_ark_same_app_endcard_close_attempts must be non-negative.")
+        if self.claim_ark_same_app_endcard_close_interval_seconds < 0:
+            raise ValueError("claim_ark_same_app_endcard_close_interval_seconds must be non-negative.")
+        if self.claim_ark_same_app_back_attempts < 0:
+            raise ValueError("claim_ark_same_app_back_attempts must be non-negative.")
+        if self.claim_ark_same_app_back_interval_seconds < 0:
+            raise ValueError("claim_ark_same_app_back_interval_seconds must be non-negative.")
         if self.ad_boost_soft_exit_timeout_seconds <= 0:
             raise ValueError("ad_boost_soft_exit_timeout_seconds must be greater than zero.")
         if self.ad_boost_hard_exit_timeout_seconds <= 0:
@@ -184,7 +197,13 @@ class PostWatchProbeStep:
 class ClaimStoreReturnResult:
     store_redirects_handled: int
     return_detected: bool
-    resumed_ad_monitor: bool
+    focus_classification_after_exit: str
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimSameAppReturnResult:
+    return_detected: bool
+    focus_classification_after_recovery: str
 
 
 class CommandRunner(Protocol):
@@ -252,6 +271,20 @@ class AdbActionActuator(ActionActuator):
             ad_boost_exit_timeout_seconds=config.ad_boost_exit_timeout_seconds,
             ad_boost_exit_keyevent=config.ad_boost_exit_keyevent,
             ad_boost_store_max_redirects=config.ad_boost_store_max_redirects,
+            claim_ark_same_app_endcard_close_tap=(
+                None
+                if config.claim_ark_same_app_endcard_close_tap is None
+                else (
+                    f"{config.claim_ark_same_app_endcard_close_tap.x},"
+                    f"{config.claim_ark_same_app_endcard_close_tap.y}"
+                )
+            ),
+            claim_ark_same_app_endcard_close_attempts=config.claim_ark_same_app_endcard_close_attempts,
+            claim_ark_same_app_endcard_close_interval_seconds=(
+                config.claim_ark_same_app_endcard_close_interval_seconds
+            ),
+            claim_ark_same_app_back_attempts=config.claim_ark_same_app_back_attempts,
+            claim_ark_same_app_back_interval_seconds=config.claim_ark_same_app_back_interval_seconds,
             ad_boost_verbose_signal_tracing=config.ad_boost_verbose_signal_tracing,
             ad_boost_soft_exit_timeout_seconds=config.ad_boost_soft_exit_timeout_seconds,
             ad_boost_hard_exit_timeout_seconds=config.ad_boost_hard_exit_timeout_seconds,
@@ -1107,8 +1140,29 @@ class AdbActionActuator(ActionActuator):
                     if store_exit_result.return_detected:
                         return_detected = True
                         break
-                    if store_exit_result.resumed_ad_monitor:
-                        last_classification = "ad"
+                    if store_exit_result.focus_classification_after_exit == "ad":
+                        self._record_stage_event(
+                            stage_events,
+                            "post_store_same_app_detected",
+                            elapsed_started_at=watch_started_at,
+                        )
+                        same_app_exit_result = self._attempt_claim_same_app_return(
+                            attempted_summaries=attempted_summaries,
+                            stage_events=stage_events,
+                            probe_samples=probe_samples,
+                            watch_started_at=watch_started_at,
+                        )
+                        if same_app_exit_result.return_detected:
+                            return_detected = True
+                            break
+                        last_classification = same_app_exit_result.focus_classification_after_recovery
+                        continue
+                    if store_exit_result.focus_classification_after_exit == "game":
+                        return_detected = True
+                        break
+                    last_classification = store_exit_result.focus_classification_after_exit
+                    if last_classification == "ad":
+                        last_classification = None
                     continue
                 if focus_classification == "game":
                     return_detected = True
@@ -1516,16 +1570,15 @@ class AdbActionActuator(ActionActuator):
             )
             self._record_stage_event(
                 stage_events,
-                "store_back_sent",
+                f"store_back_attempt_{attempt_index}",
                 elapsed_started_at=watch_started_at,
-                detail=f"attempt={attempt_index}",
             )
             redirects_handled += 1
             self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
             store_probe = self._capture_probe_sample(
                 watch_started_at,
                 sample_context="post_store_back_attempt",
-                sample_reference_stage="store_back_sent",
+                sample_reference_stage=f"store_back_attempt_{attempt_index}",
                 include_ui_dump=False,
             )
             probe_samples.append(store_probe)
@@ -1542,21 +1595,128 @@ class AdbActionActuator(ActionActuator):
                 return ClaimStoreReturnResult(
                     store_redirects_handled=redirects_handled,
                     return_detected=True,
-                    resumed_ad_monitor=False,
+                    focus_classification_after_exit="game",
                 )
             if focus_classification != "store":
-                if focus_classification == "ad":
-                    self._record_stage_event(
-                        stage_events,
-                        "returned_to_ad",
-                        elapsed_started_at=watch_started_at,
-                    )
                 return ClaimStoreReturnResult(
                     store_redirects_handled=redirects_handled,
                     return_detected=False,
-                    resumed_ad_monitor=True,
+                    focus_classification_after_exit=focus_classification,
                 )
+        self._record_stage_event(
+            stage_events,
+            "store_return_timeout",
+            elapsed_started_at=watch_started_at,
+            error="ark_store_exit_timeout: store did not return to game.",
+        )
         raise RuntimeError("ark_store_exit_timeout: store did not return to game.")
+
+    def _attempt_claim_same_app_return(
+        self,
+        *,
+        attempted_summaries: list[str],
+        stage_events: list[ActuatorStageEvent],
+        probe_samples: list[ActuatorProbeSample],
+        watch_started_at: float,
+    ) -> ClaimSameAppReturnResult:
+        # Recorded reward-claim runs can unwind from Play Store into a same-package ad end-card
+        # before the game regains focus, so we treat this as a separate bounded recovery branch.
+        close_tap = self._config.claim_ark_same_app_endcard_close_tap
+        if close_tap is not None:
+            for attempt_index in range(1, self._config.claim_ark_same_app_endcard_close_attempts + 1):
+                self._run_command(
+                    self._adb_command(
+                        "shell",
+                        "input",
+                        "tap",
+                        str(close_tap.x),
+                        str(close_tap.y),
+                    ),
+                    attempted_summaries,
+                )
+                stage_name = f"same_app_endcard_close_attempt_{attempt_index}"
+                self._record_stage_event(
+                    stage_events,
+                    stage_name,
+                    elapsed_started_at=watch_started_at,
+                    detail=f"{close_tap.x},{close_tap.y}",
+                )
+                if self._config.claim_ark_same_app_endcard_close_interval_seconds > 0:
+                    self._sleep_fn(self._config.claim_ark_same_app_endcard_close_interval_seconds)
+                close_probe = self._capture_probe_sample(
+                    watch_started_at,
+                    sample_context="post_same_app_endcard_close_attempt",
+                    sample_reference_stage=stage_name,
+                    include_ui_dump=False,
+                )
+                probe_samples.append(close_probe)
+                focus_classification = self._classify_focus_activity(
+                    focus_package=close_probe.focus_package,
+                    focus_activity=close_probe.focus_activity,
+                )
+                if focus_classification == "game":
+                    self._record_stage_event(
+                        stage_events,
+                        "return_detected",
+                        elapsed_started_at=watch_started_at,
+                    )
+                    return ClaimSameAppReturnResult(
+                        return_detected=True,
+                        focus_classification_after_recovery="game",
+                    )
+                if focus_classification == "store":
+                    return ClaimSameAppReturnResult(
+                        return_detected=False,
+                        focus_classification_after_recovery="store",
+                    )
+
+        for attempt_index in range(1, self._config.claim_ark_same_app_back_attempts + 1):
+            self._run_command(
+                self._adb_command("shell", "input", "keyevent", "KEYCODE_BACK"),
+                attempted_summaries,
+            )
+            stage_name = f"same_app_back_attempt_{attempt_index}"
+            self._record_stage_event(
+                stage_events,
+                stage_name,
+                elapsed_started_at=watch_started_at,
+            )
+            if self._config.claim_ark_same_app_back_interval_seconds > 0:
+                self._sleep_fn(self._config.claim_ark_same_app_back_interval_seconds)
+            back_probe = self._capture_probe_sample(
+                watch_started_at,
+                sample_context="post_same_app_back_attempt",
+                sample_reference_stage=stage_name,
+                include_ui_dump=False,
+            )
+            probe_samples.append(back_probe)
+            focus_classification = self._classify_focus_activity(
+                focus_package=back_probe.focus_package,
+                focus_activity=back_probe.focus_activity,
+            )
+            if focus_classification == "game":
+                self._record_stage_event(
+                    stage_events,
+                    "return_detected",
+                    elapsed_started_at=watch_started_at,
+                )
+                return ClaimSameAppReturnResult(
+                    return_detected=True,
+                    focus_classification_after_recovery="game",
+                )
+            if focus_classification == "store":
+                return ClaimSameAppReturnResult(
+                    return_detected=False,
+                    focus_classification_after_recovery="store",
+                )
+
+        self._record_stage_event(
+            stage_events,
+            "same_app_return_timeout",
+            elapsed_started_at=watch_started_at,
+            error="ark_same_app_exit_timeout: same-app ad did not return to game.",
+        )
+        raise RuntimeError("ark_same_app_exit_timeout: same-app ad did not return to game.")
 
     def _run_command(self, command: list[str], attempted_summaries: list[str]) -> None:
         command_summary = self._summarize_command(command)

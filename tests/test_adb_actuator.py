@@ -1413,9 +1413,10 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertTrue(any(event.stage_name == "return_detected" for event in metadata.stage_events))
         self.assertFalse(any(event.stage_name == "ad_close_tap" for event in metadata.stage_events))
         self.assertFalse(any(event.stage_name == "store_redirect_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("same_app_") for event in metadata.stage_events))
         self.assertFalse(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
 
-    def test_claim_ark_reward_handles_store_redirect_with_bounded_back_and_returns_to_game(self) -> None:
+    def test_claim_ark_reward_handles_store_redirect_with_bounded_back_and_returns_directly_to_game(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
         )
@@ -1472,8 +1473,11 @@ class AdbActuatorTests(unittest.TestCase):
 
         self.assertTrue(metadata.claim_attempted)
         self.assertTrue(any(event.stage_name == "store_redirect_detected" for event in metadata.stage_events))
-        self.assertTrue(any(event.stage_name == "store_back_sent" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "store_back_attempt_1" for event in metadata.stage_events))
         self.assertTrue(any(event.stage_name == "return_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name == "post_store_same_app_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("same_app_endcard_close_attempt_") for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("same_app_back_attempt_") for event in metadata.stage_events))
         self.assertFalse(any(event.stage_name == "ad_close_tap" for event in metadata.stage_events))
         self.assertIn(
             ["adb", "-s", "emulator-5554", "shell", "input", "keyevent", "KEYCODE_BACK"],
@@ -1487,9 +1491,90 @@ class AdbActuatorTests(unittest.TestCase):
         )
         self.assertGreater(claim_command_index, back_command_index)
 
-    def test_claim_ark_reward_store_exit_attempts_are_bounded(self) -> None:
+    def test_claim_ark_reward_handles_store_redirect_then_same_app_endcard_close_and_returns_to_game(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        dumpsys_window_store = (
+            "mCurrentFocus=Window{42 u0 com.android.vending/com.google.android.finsky.transparentmainactivity.HsdpAlias}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                ad_boost_store_max_redirects=3,
+                claim_ark_same_app_endcard_close_tap=TapPoint(x=839, y=75),
+                claim_ark_same_app_endcard_close_attempts=2,
+                claim_ark_same_app_endcard_close_interval_seconds=0.5,
+                claim_ark_same_app_back_attempts=2,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                if t < 6.0:
+                    return dumpsys_window_store
+                if t < 6.5:
+                    return dumpsys_window_unity_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
+
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(any(event.stage_name == "store_redirect_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "store_back_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "post_store_same_app_detected" for event in metadata.stage_events))
+        self.assertTrue(
+            any(event.stage_name == "same_app_endcard_close_attempt_1" for event in metadata.stage_events)
+        )
+        self.assertFalse(any(event.stage_name.startswith("same_app_back_attempt_") for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "return_detected" for event in metadata.stage_events))
+        close_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "tap", "839", "75"]
+        )
+        claim_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "tap", "777", "889"]
+        )
+        self.assertGreater(claim_command_index, close_command_index)
+
+    def test_claim_ark_reward_same_app_endcard_close_attempts_are_bounded(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
         )
         dumpsys_window_store = (
             "mCurrentFocus=Window{42 u0 com.android.vending/com.google.android.finsky.transparentmainactivity.HsdpAlias}"
@@ -1515,6 +1600,10 @@ class AdbActuatorTests(unittest.TestCase):
                 ad_boost_probe_interval_seconds=1.0,
                 ad_boost_exit_timeout_seconds=12.0,
                 ad_boost_store_max_redirects=2,
+                claim_ark_same_app_endcard_close_tap=TapPoint(x=839, y=75),
+                claim_ark_same_app_endcard_close_attempts=2,
+                claim_ark_same_app_endcard_close_interval_seconds=0.5,
+                claim_ark_same_app_back_attempts=0,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
@@ -1523,9 +1612,14 @@ class AdbActuatorTests(unittest.TestCase):
 
         def dynamic_capture(command: list[str]) -> str:
             if "dumpsys window windows" in " ".join(command):
-                if clock.monotonic() < 2.0:
+                t = clock.monotonic()
+                if t < 2.0:
                     return dumpsys_window_game
-                return dumpsys_window_store
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                if t < 6.0:
+                    return dumpsys_window_store
+                return dumpsys_window_unity_ad
             if "dumpsys activity activities" in " ".join(command):
                 return "ACTIVITY MANAGER ACTIVITIES"
             return ""
@@ -1538,16 +1632,27 @@ class AdbActuatorTests(unittest.TestCase):
         metadata = context.exception.metadata
 
         self.assertEqual(metadata.actuator_execution_status, "FAILED")
-        self.assertIn("ark_store_exit_timeout", metadata.stage_events[-1].error)
+        self.assertIn("ark_same_app_exit_timeout", metadata.stage_events[-1].error)
+        self.assertTrue(any(event.stage_name == "post_store_same_app_detected" for event in metadata.stage_events))
+        self.assertTrue(
+            any(event.stage_name == "same_app_endcard_close_attempt_1" for event in metadata.stage_events)
+        )
+        self.assertTrue(
+            any(event.stage_name == "same_app_endcard_close_attempt_2" for event in metadata.stage_events)
+        )
+        self.assertFalse(any(event.stage_name.startswith("same_app_back_attempt_") for event in metadata.stage_events))
         self.assertEqual(
             sum(1 for command in runner.commands if "KEYCODE_BACK" in " ".join(command)),
             2,
         )
         self.assertFalse(metadata.claim_attempted)
 
-    def test_claim_ark_reward_does_not_attempt_claim_before_game_focus_is_restored(self) -> None:
+    def test_claim_ark_reward_same_app_back_attempts_are_bounded(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
         )
         dumpsys_window_store = (
             "mCurrentFocus=Window{42 u0 com.android.vending/com.google.android.finsky.transparentmainactivity.HsdpAlias}"
@@ -1573,6 +1678,7 @@ class AdbActuatorTests(unittest.TestCase):
                 ad_boost_probe_interval_seconds=1.0,
                 ad_boost_exit_timeout_seconds=12.0,
                 ad_boost_store_max_redirects=2,
+                claim_ark_same_app_back_attempts=2,
             ),
             command_runner=runner,
             sleep_fn=sleeper.sleep,
@@ -1581,9 +1687,86 @@ class AdbActuatorTests(unittest.TestCase):
 
         def dynamic_capture(command: list[str]) -> str:
             if "dumpsys window windows" in " ".join(command):
-                if clock.monotonic() < 2.0:
+                t = clock.monotonic()
+                if t < 2.0:
                     return dumpsys_window_game
-                return dumpsys_window_store
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                if t < 6.0:
+                    return dumpsys_window_store
+                return dumpsys_window_unity_ad
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("claim_ark_reward")
+
+        metadata = context.exception.metadata
+
+        self.assertIn("ark_same_app_exit_timeout", metadata.stage_events[-1].error)
+        self.assertFalse(any(event.stage_name.startswith("same_app_endcard_close_attempt_") for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "same_app_back_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "same_app_back_attempt_2" for event in metadata.stage_events))
+        self.assertEqual(
+            sum(1 for command in runner.commands if "KEYCODE_BACK" in " ".join(command)),
+            4,
+        )
+        self.assertFalse(metadata.claim_attempted)
+
+    def test_claim_ark_reward_does_not_attempt_claim_before_game_focus_is_restored(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        dumpsys_window_store = (
+            "mCurrentFocus=Window{42 u0 com.android.vending/com.google.android.finsky.transparentmainactivity.HsdpAlias}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                ad_boost_store_max_redirects=2,
+                claim_ark_same_app_endcard_close_tap=TapPoint(x=839, y=75),
+                claim_ark_same_app_endcard_close_attempts=1,
+                claim_ark_same_app_endcard_close_interval_seconds=0.5,
+                claim_ark_same_app_back_attempts=1,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                if t < 6.0:
+                    return dumpsys_window_store
+                return dumpsys_window_unity_ad
             if "dumpsys activity activities" in " ".join(command):
                 return "ACTIVITY MANAGER ACTIVITIES"
             return ""

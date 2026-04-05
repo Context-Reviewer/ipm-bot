@@ -178,6 +178,11 @@ class ActuatorConfigSnapshot:
     ad_boost_exit_timeout_seconds: float | None = None
     ad_boost_exit_keyevent: str | None = None
     ad_boost_store_max_redirects: int | None = None
+    claim_ark_same_app_endcard_close_tap: str | None = None
+    claim_ark_same_app_endcard_close_attempts: int | None = None
+    claim_ark_same_app_endcard_close_interval_seconds: float | None = None
+    claim_ark_same_app_back_attempts: int | None = None
+    claim_ark_same_app_back_interval_seconds: float | None = None
     ad_boost_verbose_signal_tracing: bool | None = None
     ad_boost_soft_exit_timeout_seconds: float | None = None
     ad_boost_hard_exit_timeout_seconds: float | None = None
