@@ -77,7 +77,7 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.actuator_execution.actuator_command_count, 1)
             self.assertTrue(receipt.verifier_messages)
 
-    def test_pass_receipt_for_claim_ark_reward(self) -> None:
+    def test_pass_receipt_for_claim_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -88,6 +88,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -101,16 +102,17 @@ class RunnerReceiptTests(unittest.TestCase):
                         ads_watched=1,
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=False,
+                        pending_reward_type=0,
                     ),
                 ),
             )
             update_thread.start()
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=1.0,
@@ -122,13 +124,14 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.failure_reason, FailureReason.NONE)
             self.assertEqual(receipt.changed_save_count, 1)
             self.assertEqual(len(receipt.candidate_hashes), 1)
+            self.assertEqual(receipt.action, "claim_reward")
             self.assertEqual(actuator.actions, ["claim_ark_reward"])
             self.assertEqual(receipt.actuator_execution.actuator_type, "recording")
             self.assertEqual(receipt.actuator_execution.actuator_execution_status, "COMPLETED")
             self.assertEqual(receipt.actuator_execution.actuator_command_count, 1)
             self.assertTrue(receipt.verifier_messages)
 
-    def test_pass_receipt_for_claim_ark_reward_when_reward_application_is_proven(self) -> None:
+    def test_pass_receipt_for_claim_reward_when_ark_reward_application_is_proven(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -139,6 +142,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
                 dark_matter=10,
                 arks_claimed=5,
                 cash=100.0,
@@ -155,6 +159,7 @@ class RunnerReceiptTests(unittest.TestCase):
                         ads_watched=1,
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=False,
+                        pending_reward_type=0,
                         dark_matter=15,
                         arks_claimed=6,
                         cash=100.0,
@@ -164,10 +169,10 @@ class RunnerReceiptTests(unittest.TestCase):
             update_thread.start()
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=1.0,
@@ -185,6 +190,62 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertFalse(receipt.ad_exit_override_attempted)
             self.assertTrue(
                 any("Reward application proven" in message for message in receipt.verifier_messages)
+            )
+
+    def test_pass_receipt_for_claim_reward_when_event_reward_counter_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                pending_reward_type=3,
+                free_rewards_claimed=[False, False, False],
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.15,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=1,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        pending_reward_type=0,
+                        free_rewards_claimed=[True, False, False],
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="claim_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertEqual(receipt.action, "claim_reward")
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
+            self.assertTrue(
+                any(
+                    "free_rewards_claimed_count' increased" in message
+                    for message in receipt.verifier_messages
+                )
             )
 
     def test_claim_attempt_with_cash_only_drift_is_ambiguous(self) -> None:
@@ -278,7 +339,7 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.actuator_execution.actuator_execution_status, "COMPLETED")
             self.assertEqual(receipt.verifier_messages, [])
 
-    def test_timeout_no_save_change_receipt_for_claim_ark_reward(self) -> None:
+    def test_timeout_no_save_change_receipt_for_claim_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -289,14 +350,15 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=0.25,
@@ -313,7 +375,7 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.actuator_execution.actuator_execution_status, "COMPLETED")
             self.assertEqual(receipt.verifier_messages, [])
 
-    def test_timeout_after_save_changes_receipt_for_claim_ark_reward(self) -> None:
+    def test_claim_reward_save_change_without_reward_proof_is_ambiguous(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -324,6 +386,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -337,16 +400,17 @@ class RunnerReceiptTests(unittest.TestCase):
                         ads_watched=2,
                         save_timestamp=started_at,
                         ark_reward_ready_to_claim=True,
+                        pending_reward_type=1,
                     ),
                 ),
             )
             update_thread.start()
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=0.4,
@@ -354,10 +418,10 @@ class RunnerReceiptTests(unittest.TestCase):
 
             update_thread.join()
 
-            self.assertEqual(receipt.final_status, "FAIL")
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
             self.assertEqual(
                 receipt.failure_reason,
-                FailureReason.TIMEOUT_AFTER_SAVE_CHANGES,
+                FailureReason.AMBIGUOUS_TRANSITION,
             )
             self.assertEqual(receipt.changed_save_count, 1)
             self.assertEqual(len(receipt.candidate_hashes), 1)
@@ -474,7 +538,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 )
             )
 
-    def test_ambiguous_transition_receipt_for_claim_ark_reward(self) -> None:
+    def test_ambiguous_transition_receipt_for_claim_reward(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -485,6 +549,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -498,16 +563,17 @@ class RunnerReceiptTests(unittest.TestCase):
                         ads_watched=1,
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=True,
+                        pending_reward_type=1,
                     ),
                 ),
             )
             update_thread.start()
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=1.0,
@@ -901,10 +967,10 @@ class RunnerReceiptTests(unittest.TestCase):
             update_thread.start()
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=0.2,
@@ -939,10 +1005,10 @@ class RunnerReceiptTests(unittest.TestCase):
             snapshot_before = parse_player_snapshot(save_path)
 
             receipt = run_action_until_verified(
-                action="claim_ark_reward",
+                action="claim_reward",
                 save_path=save_path,
                 snapshot_before=snapshot_before,
-                contract=get_action_contract("claim_ark_reward"),
+                contract=get_action_contract("claim_reward"),
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=0.1,
@@ -976,6 +1042,10 @@ def _write_save(
     arks_claimed: int = 0,
     cash: float = 0.0,
     player_level: int = 5,
+    pending_reward_type: int | None = None,
+    reward_is_dark_matter: bool | None = None,
+    free_rewards_claimed: list[bool] | None = None,
+    miner_pass_rewards_claimed: list[bool] | None = None,
 ) -> None:
     payload = {
         "cash": cash,
@@ -987,6 +1057,14 @@ def _write_save(
         "arkRewardReadyToClaim": ark_reward_ready_to_claim,
         "playerLevel": player_level,
     }
+    if pending_reward_type is not None:
+        payload["pendingRewardType"] = pending_reward_type
+    if reward_is_dark_matter is not None:
+        payload["rewardIsDarkMatterBool"] = reward_is_dark_matter
+    if free_rewards_claimed is not None:
+        payload["freeRewardsClaimed"] = free_rewards_claimed
+    if miner_pass_rewards_claimed is not None:
+        payload["minerPassRewardsClaimed"] = miner_pass_rewards_claimed
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 

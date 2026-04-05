@@ -135,9 +135,9 @@ class CheckRewardClaimSuppressedTests(unittest.TestCase):
     def test_reward_claim_suppressed_after_consecutive_failures(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             receipt_dir = Path(tmpdir)
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_reward", "FAIL")
 
             result = check_reward_claim_suppressed(receipt_dir, threshold=3)
 
@@ -146,9 +146,9 @@ class CheckRewardClaimSuppressedTests(unittest.TestCase):
     def test_reward_claim_suppression_breaks_on_pass_or_other_action(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             receipt_dir = Path(tmpdir)
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_ark_reward", "PASS")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_reward", "PASS")
 
             result = check_reward_claim_suppressed(receipt_dir, threshold=3)
 
@@ -156,13 +156,24 @@ class CheckRewardClaimSuppressedTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             receipt_dir = Path(tmpdir)
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
-            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_reward", "FAIL")
             _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "idle", "PASS")
 
             result = check_reward_claim_suppressed(receipt_dir, threshold=3)
 
             self.assertFalse(result)
+
+    def test_legacy_claim_ark_reward_receipts_still_contribute_to_suppression(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            receipt_dir = Path(tmpdir)
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-00-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-01-00Z", "claim_ark_reward", "FAIL")
+            _write_fake_receipt(receipt_dir, "2026-03-24T10-02-00Z", "claim_ark_reward", "FAIL")
+
+            result = check_reward_claim_suppressed(receipt_dir, threshold=3)
+
+            self.assertTrue(result)
 
 
 def _write_fake_receipt(

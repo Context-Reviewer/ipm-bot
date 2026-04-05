@@ -42,6 +42,10 @@ class EventState:
     last_closed_local_event_global_id: str | None = None
     last_miner_pass_owned: int | None = None
     is_miner_pass_activated: bool | None = None
+    free_rewards_claimed_count: int | None = None
+    free_rewards_total_count: int | None = None
+    miner_pass_rewards_claimed_count: int | None = None
+    miner_pass_rewards_total_count: int | None = None
     free_rewards_claimed_ref: int | None = None
     miner_pass_rewards_claimed_ref: int | None = None
 
@@ -100,6 +104,12 @@ class PlayerSnapshot:
             ),
             "last_miner_pass_owned": self.event.last_miner_pass_owned,
             "is_miner_pass_activated": self.event.is_miner_pass_activated,
+            "free_rewards_claimed_count": self.event.free_rewards_claimed_count,
+            "free_rewards_total_count": self.event.free_rewards_total_count,
+            "miner_pass_rewards_claimed_count": (
+                self.event.miner_pass_rewards_claimed_count
+            ),
+            "miner_pass_rewards_total_count": self.event.miner_pass_rewards_total_count,
             "save_timestamp": self.metadata.save_timestamp,
             "initial_data_uploaded_to_firestore": (
                 self.metadata.initial_data_uploaded_to_firestore

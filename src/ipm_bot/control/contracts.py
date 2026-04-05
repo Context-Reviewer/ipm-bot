@@ -80,14 +80,19 @@ ACTION_CONTRACTS: dict[str, ActionContract] = {
         supporting_fields=("ads_watched", "save_timestamp"),
         default_timeout_seconds=30.0,
     ),
-    "claim_ark_reward": ActionContract(
+    "claim_reward": ActionContract(
         expectations={
             "must_not_change": ["player_level"],
-            "expected_values": {
-                "ark_reward_ready_to_claim": False,
-            },
         },
-        supporting_fields=("save_timestamp",),
+        supporting_fields=(
+            "save_timestamp",
+            "pending_reward_type",
+            "ark_reward_ready_to_claim",
+            "arks_claimed",
+            "dark_matter",
+            "free_rewards_claimed_count",
+            "miner_pass_rewards_claimed_count",
+        ),
         default_timeout_seconds=30.0,
     ),
     "idle": ActionContract(
@@ -101,6 +106,8 @@ ACTION_CONTRACTS: dict[str, ActionContract] = {
 def get_action_contract(action: str) -> ActionContract:
     """Return the canonical contract for a supported action."""
 
+    if action == "claim_ark_reward":
+        action = "claim_reward"
     contract = ACTION_CONTRACTS.get(action)
     if contract is None:
         raise ValueError(f"No action contract configured for action '{action}'.")

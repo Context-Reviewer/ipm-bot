@@ -68,9 +68,9 @@ def run_experiment(
 
     save_refresh_controller = None
     effective_poll_interval_seconds = poll_interval_seconds
-    if manual_observation_mode and action_override != "claim_ark_reward":
+    if manual_observation_mode and action_override not in {"claim_reward", "claim_ark_reward"}:
         raise ValueError(
-            "Manual observation mode currently requires --action-override claim_ark_reward."
+            "Manual observation mode currently requires --action-override claim_reward."
         )
     if isinstance(save_source, AdbPulledSaveSource):
         save_refresh_controller = save_source.build_refresh_controller(
@@ -131,7 +131,7 @@ def _build_parser() -> argparse.ArgumentParser:
     add_tick_composition_arguments(parser)
     parser.add_argument(
         "--action-override",
-        choices=("activate_ad_boost", "claim_ark_reward", "idle"),
+        choices=("activate_ad_boost", "claim_reward", "claim_ark_reward", "idle"),
         default=None,
         help="Experiment-only explicit action override that bypasses planner selection.",
     )

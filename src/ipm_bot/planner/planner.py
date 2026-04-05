@@ -8,6 +8,7 @@ from typing import Iterable
 from ipm_bot.control.save_source import SaveProductionSlotSnapshot, SaveSnapshot
 from ipm_bot.control.timing import summarize_production_timing
 from ipm_bot.save.models import PlayerSnapshot
+from ipm_bot.planner.reward_state import map_snapshot_to_reward_state
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,20 +56,25 @@ def decide_next_action_details(
 ) -> PlannerDecision:
     """Choose the next action and expose the deterministic rule that selected it."""
 
-    ark_reward_ready = snapshot.ad.ark_reward_ready_to_claim
-    if ark_reward_ready is None:
-        raise ValueError("Missing required snapshot field: ark_reward_ready_to_claim.")
-
     ad_boost_active = snapshot.ad.ad_boost_active
     if ad_boost_active is None:
         raise ValueError("Missing required snapshot field: ad_boost_active.")
-    if not ad_boost_active:
-        if _should_defer_for_imminent_completion(save_snapshot):
+    reward_state = map_snapshot_to_reward_state(snapshot)
+
+    if reward_state.reward_available:
+        if claim_reward_suppressed:
             return PlannerDecision(
                 selected_action="idle",
-                decision_reason="defer_ad_boost_for_imminent_completion",
+                decision_reason="claim_reward_suppressed_after_repeated_failures",
                 actuation_required=False,
             )
+        return PlannerDecision(
+            selected_action="claim_reward",
+            decision_reason=f"reward_available:{reward_state.reward_type}",
+            actuation_required=True,
+        )
+
+    if not ad_boost_active:
         if ad_boost_suppressed:
             return PlannerDecision(
                 selected_action="idle",
@@ -81,17 +87,11 @@ def decide_next_action_details(
             actuation_required=True,
         )
 
-    if ark_reward_ready:
-        if claim_reward_suppressed:
-            return PlannerDecision(
-                selected_action="idle",
-                decision_reason="claim_reward_suppressed_after_repeated_failures",
-                actuation_required=False,
-            )
+    if _should_defer_for_imminent_completion(save_snapshot):
         return PlannerDecision(
-            selected_action="claim_ark_reward",
-            decision_reason="ark_reward_ready_with_active_boost",
-            actuation_required=True,
+            selected_action="idle",
+            decision_reason="defer_ad_boost_for_imminent_completion",
+            actuation_required=False,
         )
 
     decision = _idle_decision_from_save_snapshot(save_snapshot)

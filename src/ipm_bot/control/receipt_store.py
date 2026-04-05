@@ -481,9 +481,10 @@ def check_reward_claim_suppressed(
     """Return True if recent receipts show enough consecutive failed reward-claim attempts.
 
     Reads persisted receipt JSON files in reverse chronological order (filenames
-    sort naturally by timestamp).  Counts consecutive ``claim_ark_reward``
-    receipts whose ``final_status`` is not ``"PASS"``.  Returns ``True`` when the
-    count reaches *threshold*.
+    sort naturally by timestamp).  Counts consecutive reward-claim receipts
+    whose ``final_status`` is not ``"PASS"``.  Accepts both the current
+    ``claim_reward`` action name and the older ``claim_ark_reward`` alias.
+    Returns ``True`` when the count reaches *threshold*.
 
     Fails open: returns ``False`` if the directory is missing, empty, or any
     file cannot be read/parsed.
@@ -509,7 +510,7 @@ def check_reward_claim_suppressed(
 
         action = payload.get("action")
         final_status = payload.get("final_status")
-        if action != "claim_ark_reward":
+        if action not in {"claim_reward", "claim_ark_reward"}:
             return False
         if final_status == "PASS":
             return False

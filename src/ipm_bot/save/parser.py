@@ -188,6 +188,12 @@ def parse_player_snapshot(
         for key, value in values.items()
         if isinstance(value, _MemberReference)
     }
+    free_rewards_claimed = _extract_reward_claim_list(source, values, "freeRewardsClaimed")
+    miner_pass_rewards_claimed = _extract_reward_claim_list(
+        source,
+        values,
+        "minerPassRewardsClaimed",
+    )
 
     currencies = CurrencyState(
         cash=_expect_type(values, "cash", float),
@@ -222,6 +228,14 @@ def parse_player_snapshot(
         ),
         last_miner_pass_owned=_expect_type(values, "lastMinerPassOwned", int),
         is_miner_pass_activated=_expect_type(values, "isMinerPassActivated", bool),
+        free_rewards_claimed_count=_count_claimed_rewards(free_rewards_claimed),
+        free_rewards_total_count=_count_total_rewards(free_rewards_claimed),
+        miner_pass_rewards_claimed_count=_count_claimed_rewards(
+            miner_pass_rewards_claimed
+        ),
+        miner_pass_rewards_total_count=_count_total_rewards(
+            miner_pass_rewards_claimed
+        ),
         free_rewards_claimed_ref=unresolved_references.get("freeRewardsClaimed"),
         miner_pass_rewards_claimed_ref=unresolved_references.get(
             "minerPassRewardsClaimed"
@@ -291,6 +305,95 @@ def _detect_source_format(source: str | Path | bytes | Mapping[str, Any]) -> str
     if path.suffix.lower() == ".json":
         return "json"
     return "binaryformatter-playerdata"
+
+
+def _extract_reward_claim_list(
+    source: str | Path | bytes | Mapping[str, Any],
+    values: Mapping[str, Any],
+    field_name: str,
+) -> tuple[bool, ...] | None:
+    direct_value = values.get(field_name)
+    direct_list = _coerce_bool_list(direct_value)
+    if direct_list is not None:
+        return direct_list
+    if not isinstance(source, (str, Path, bytes)):
+        return None
+    try:
+        from .sub_records import ArraySubRecord, ClassSubRecord, parse_sub_records
+    except Exception:
+        return None
+    try:
+        result = parse_sub_records(source)
+    except Exception:
+        return None
+
+    object_id = None
+    for ref_object_id, ref_field_name in result.top_level_field_names.items():
+        if ref_field_name == field_name:
+            object_id = ref_object_id
+            break
+    if object_id is None:
+        return None
+
+    def _resolve_bool_list(record_object_id: int) -> tuple[bool, ...] | None:
+        record = result.sub_records.get(record_object_id)
+        if record is None:
+            return None
+        if isinstance(record, ArraySubRecord):
+            return tuple(bool(value) for value in record.values)
+        if isinstance(record, ClassSubRecord):
+            size = _extract_int_member(record.member_values, "_size", "size")
+            items_object_id = _extract_ref_object_id(
+                record.member_values.get("_items"),
+                record.member_values.get("items"),
+            )
+            if items_object_id is None:
+                return None
+            resolved_items = _resolve_bool_list(items_object_id)
+            if resolved_items is None:
+                return None
+            if size is None:
+                return resolved_items
+            return resolved_items[:size]
+        return None
+
+    return _resolve_bool_list(object_id)
+
+
+def _coerce_bool_list(value: Any) -> tuple[bool, ...] | None:
+    if not isinstance(value, list):
+        return None
+    if any(not isinstance(item, bool) for item in value):
+        return None
+    return tuple(value)
+
+
+def _extract_int_member(member_values: Mapping[str, Any], *field_names: str) -> int | None:
+    for field_name in field_names:
+        value = member_values.get(field_name)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+    return None
+
+
+def _extract_ref_object_id(*values: Any) -> int | None:
+    for value in values:
+        object_id = getattr(value, "object_id", None)
+        if isinstance(object_id, int):
+            return object_id
+    return None
+
+
+def _count_claimed_rewards(values: tuple[bool, ...] | None) -> int | None:
+    if values is None:
+        return None
+    return sum(1 for value in values if value)
+
+
+def _count_total_rewards(values: tuple[bool, ...] | None) -> int | None:
+    if values is None:
+        return None
+    return len(values)
 
 
 def _parse_raw_player_data(data: bytes) -> _TopLevelParse:

@@ -41,6 +41,143 @@ from ipm_bot.actuator.stub import StubActionActuator
 
 
 class ControlTickTests(unittest.TestCase):
+    def test_two_tick_sequence_boost_then_claim_reward(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_path = root / "save.json"
+
+            tick_one_payload = {
+                "adBoostActive": False,
+                "adsWatched": 1,
+                "saveTimestamp": "2026-03-22T14:31:05",
+                "arkRewardReadyToClaim": False,
+                "playerLevel": 5,
+            }
+            tick_two_payload = {
+                "adBoostActive": True,
+                "adsWatched": 2,
+                "saveTimestamp": "2026-03-22T14:36:05",
+                "arkRewardReadyToClaim": True,
+                "playerLevel": 5,
+            }
+
+            receipt_one = _sample_receipt(
+                action="activate_ad_boost",
+                final_status="PASS",
+                failure_reason=FailureReason.NONE,
+                planner_decision=PlannerDecision(
+                    selected_action="activate_ad_boost",
+                    decision_reason="ad_boost_inactive",
+                    actuation_required=True,
+                ),
+            )
+            receipt_two = _sample_receipt(
+                action="claim_reward",
+                final_status="PASS",
+                failure_reason=FailureReason.NONE,
+                planner_decision=PlannerDecision(
+                    selected_action="claim_reward",
+                    decision_reason="reward_available:none",
+                    actuation_required=True,
+                ),
+            )
+
+            with (
+                patch("ipm_bot.main.check_ad_boost_suppressed", return_value=False),
+                patch("ipm_bot.main.check_reward_claim_suppressed", return_value=False),
+                patch("ipm_bot.main.run_action_until_verified", side_effect=[receipt_one, receipt_two]) as runner,
+                patch("ipm_bot.main.write_receipt", return_value=root / "receipt.json"),
+            ):
+                save_path.write_text(json.dumps(tick_one_payload), encoding="utf-8")
+                action_one, receipt_one_out, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=None,
+                    poll_interval_seconds=0.5,
+                    actuator=StubActionActuator(),
+                    save_source=LocalSaveSource(),
+                )
+
+                save_path.write_text(json.dumps(tick_two_payload), encoding="utf-8")
+                action_two, receipt_two_out, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=None,
+                    poll_interval_seconds=0.5,
+                    actuator=StubActionActuator(),
+                    save_source=LocalSaveSource(),
+                )
+
+            self.assertEqual(action_one, "activate_ad_boost")
+            self.assertEqual(receipt_one_out.planner_decision.selected_action, "activate_ad_boost")
+            self.assertEqual(action_two, "claim_reward")
+            self.assertEqual(receipt_two_out.planner_decision.selected_action, "claim_reward")
+            self.assertEqual(runner.call_count, 2)
+            self.assertNotEqual(action_one, action_two)
+
+    def test_ad_boost_suppressed_does_not_block_claim_reward_when_active(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="claim_reward",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+            planner_decision=PlannerDecision(
+                selected_action="claim_reward",
+                decision_reason="reward_available:none",
+                actuation_required=True,
+            ),
+        )
+
+        exit_code, stdout_value, runner_mock, _, payloads = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+            ad_boost_suppressed=True,
+            claim_reward_suppressed=False,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_reward")
+        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "claim_reward")
+        self.assertIn("Selected action: claim_reward", stdout_value)
+
+    def test_claim_reward_suppressed_returns_idle_in_control_tick(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="idle",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+            planner_decision=PlannerDecision(
+                selected_action="idle",
+                decision_reason="claim_reward_suppressed_after_repeated_failures",
+                actuation_required=False,
+            ),
+            actuation_attempted=False,
+        )
+
+        exit_code, stdout_value, runner_mock, _, payloads = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+            ad_boost_suppressed=False,
+            claim_reward_suppressed=True,
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(runner_mock.call_count, 1)
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "idle")
+        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "idle")
+        self.assertFalse(payloads[0]["planner_decision"]["actuation_required"])
+        self.assertIn("Selected action: idle", stdout_value)
     def test_pass_returns_exit_code_zero_and_writes_receipt(self) -> None:
         save_payload = {
             "adBoostActive": False,
@@ -123,7 +260,7 @@ class ControlTickTests(unittest.TestCase):
             "playerLevel": 5,
         }
         receipt = _sample_receipt(
-            action="activate_ad_boost",
+            action="claim_reward",
             final_status="AMBIGUOUS",
             failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
         )
@@ -135,7 +272,7 @@ class ControlTickTests(unittest.TestCase):
 
         self.assertEqual(exit_code, int(ExitCode.AMBIGUOUS))
         self.assertEqual(runner_mock.call_count, 1)
-        self.assertEqual(runner_mock.call_args.kwargs["action"], "activate_ad_boost")
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_reward")
         self.assertIn("Failure reason: AMBIGUOUS_TRANSITION", stdout_value)
 
     def test_idle_planner_decision_is_persisted_with_no_actuation_required(self) -> None:
@@ -184,12 +321,12 @@ class ControlTickTests(unittest.TestCase):
             "playerLevel": 5,
         }
         receipt = _sample_receipt(
-            action="claim_ark_reward",
+            action="claim_reward",
             final_status="PASS",
             failure_reason=FailureReason.NONE,
             planner_decision=PlannerDecision(
-                selected_action="claim_ark_reward",
-                decision_reason="ark_reward_ready_with_active_boost",
+                selected_action="claim_reward",
+                decision_reason="reward_available:none",
                 actuation_required=True,
             ),
         )
@@ -201,15 +338,15 @@ class ControlTickTests(unittest.TestCase):
 
         self.assertEqual(exit_code, int(ExitCode.PASS))
         self.assertEqual(runner_mock.call_count, 1)
-        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_ark_reward")
-        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "claim_ark_reward")
+        self.assertEqual(runner_mock.call_args.kwargs["action"], "claim_reward")
+        self.assertEqual(payloads[0]["planner_decision"]["selected_action"], "claim_reward")
         self.assertEqual(
             payloads[0]["planner_decision"]["decision_reason"],
-            "ark_reward_ready_with_active_boost",
+            "reward_available:none",
         )
         self.assertTrue(payloads[0]["planner_decision"]["actuation_required"])
         self.assertTrue(payloads[0]["actuation_attempted"])
-        self.assertIn("Selected action: claim_ark_reward", stdout_value)
+        self.assertIn("Selected action: claim_reward", stdout_value)
 
     def test_run_single_control_tick_passes_save_snapshot_into_planner_for_binary_save(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -315,6 +452,8 @@ def _run_main_with_receipt(
     *,
     save_payload: dict[str, object],
     receipt: ActionAttemptReceipt,
+    ad_boost_suppressed: bool = False,
+    claim_reward_suppressed: bool = False,
 ) -> tuple[int, str, object, list[Path], list[dict[str, object]]]:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
@@ -332,8 +471,8 @@ def _run_main_with_receipt(
 
         with (
             patch("sys.stdout", stdout),
-            patch("ipm_bot.main.check_ad_boost_suppressed", return_value=False),
-            patch("ipm_bot.main.check_reward_claim_suppressed", return_value=False),
+            patch("ipm_bot.main.check_ad_boost_suppressed", return_value=ad_boost_suppressed),
+            patch("ipm_bot.main.check_reward_claim_suppressed", return_value=claim_reward_suppressed),
             patch("ipm_bot.main.run_action_until_verified", return_value=receipt) as runner_mock,
             patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp),
         ):
@@ -358,10 +497,10 @@ def _sample_receipt(
     contract = get_action_contract(action)
     resolved_planner_decision = planner_decision
     if resolved_planner_decision is None:
-        if action == "claim_ark_reward":
+        if action == "claim_reward":
             resolved_planner_decision = PlannerDecision(
                 selected_action=action,
-                decision_reason="ark_reward_ready_with_active_boost",
+                decision_reason="reward_available:none",
                 actuation_required=True,
             )
         elif action == "activate_ad_boost":

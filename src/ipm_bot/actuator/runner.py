@@ -19,6 +19,7 @@ from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
 from ipm_bot.control.save_source import SaveRefreshController, SaveRefreshTelemetry, SaveSourceMetadata
 from ipm_bot.planner.planner import PlannerDecision
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
+from ipm_bot.planner.reward_state import evaluate_reward_application
 from ipm_bot.save.models import PlayerSnapshot
 from ipm_bot.verifier.verifier import VerificationResult, VerificationStatus, verify_transition
 
@@ -293,7 +294,7 @@ def run_action_until_verified(
         )
 
     try:
-        actuator_execution = actuator.execute(action)
+        actuator_execution = actuator.execute(_resolve_actuator_action(action))
         actuation_completed_at = time.monotonic()
     except ActuatorExecutionError as exc:
         actuation_completed_at = time.monotonic()
@@ -568,7 +569,7 @@ def _evaluate_candidate(
         reward_followup_attempted = (
             actuator_execution.claim_attempted or actuator_execution.branch_attempted
         )
-        if not reward_followup_attempted and action != "activate_ad_boost":
+        if not reward_followup_attempted and action not in {"activate_ad_boost", "claim_reward"}:
             return _finalize_candidate(before, after, action, contract, base_result)
 
         before_fields = before.flat_fields()
@@ -631,7 +632,7 @@ def _evaluate_claim_proof(
     branch_attempted: bool,
     branch_policy: str,
 ) -> CandidateEvaluation | None:
-    if not claim_attempted and not branch_attempted:
+    if action != "claim_reward" and not claim_attempted and not branch_attempted:
         return None
     if base_result.status != "PASS":
         return None
@@ -671,6 +672,16 @@ def _reward_proof_messages(
     before_fields = before.flat_fields()
     after_fields = after.flat_fields()
     messages: list[str] = []
+    reward_state = evaluate_reward_application(before, after)
+
+    before_pending_reward_type = before.ad.pending_reward_type
+    after_pending_reward_type = after.ad.pending_reward_type
+    if before_pending_reward_type != after_pending_reward_type:
+        messages.append(
+            "Reward application proven: "
+            f"'pending_reward_type' changed from {before_pending_reward_type!r} "
+            f"to {after_pending_reward_type!r}."
+        )
 
     before_arks_claimed = _require_int_field(before_fields, "arks_claimed")
     after_arks_claimed = _require_int_field(after_fields, "arks_claimed")
@@ -691,6 +702,49 @@ def _reward_proof_messages(
     if before_ready and not after_ready:
         messages.append(
             "Reward application proven: 'ark_reward_ready_to_claim' transitioned from True to False."
+        )
+
+    before_free_rewards_claimed = _optional_int_field(
+        before_fields,
+        "free_rewards_claimed_count",
+    )
+    after_free_rewards_claimed = _optional_int_field(
+        after_fields,
+        "free_rewards_claimed_count",
+    )
+    if (
+        before_free_rewards_claimed is not None
+        and after_free_rewards_claimed is not None
+        and after_free_rewards_claimed > before_free_rewards_claimed
+    ):
+        messages.append(
+            "Reward application proven: "
+            f"'free_rewards_claimed_count' increased from {before_free_rewards_claimed!r} "
+            f"to {after_free_rewards_claimed!r}."
+        )
+
+    before_miner_pass_rewards_claimed = _optional_int_field(
+        before_fields,
+        "miner_pass_rewards_claimed_count",
+    )
+    after_miner_pass_rewards_claimed = _optional_int_field(
+        after_fields,
+        "miner_pass_rewards_claimed_count",
+    )
+    if (
+        before_miner_pass_rewards_claimed is not None
+        and after_miner_pass_rewards_claimed is not None
+        and after_miner_pass_rewards_claimed > before_miner_pass_rewards_claimed
+    ):
+        messages.append(
+            "Reward application proven: "
+            f"'miner_pass_rewards_claimed_count' increased from "
+            f"{before_miner_pass_rewards_claimed!r} to {after_miner_pass_rewards_claimed!r}."
+        )
+
+    if reward_state.reward_applied is True and not messages:
+        messages.append(
+            "Reward application proven by RewardState transition evidence."
         )
 
     return messages
@@ -957,3 +1011,18 @@ def _require_int_field(fields: Mapping[str, object], field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"Field '{field_name}' must be an int for action classification.")
     return value
+
+
+def _optional_int_field(fields: Mapping[str, object], field_name: str) -> int | None:
+    value = fields.get(field_name)
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"Field '{field_name}' must be an int for action classification.")
+    return value
+
+
+def _resolve_actuator_action(action: str) -> str:
+    if action == "claim_reward":
+        return "claim_ark_reward"
+    return action
