@@ -123,6 +123,72 @@ def add_tick_composition_arguments(parser: argparse.ArgumentParser) -> None:
         help="Tap coordinates for the Ark final claim button as X,Y when using the ADB actuator.",
     )
     parser.add_argument(
+        "--claim-ark-adplayer-close-tap",
+        type=str,
+        default=None,
+        help="Optional coordinate (x,y) for a same-package Unity ad-player close control.",
+    )
+    parser.add_argument(
+        "--claim-ark-adplayer-close-attempts",
+        type=int,
+        default=0,
+        help="Bounded number of deterministic same-package Unity ad-player close taps.",
+    )
+    parser.add_argument(
+        "--claim-ark-adplayer-close-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded same-package Unity ad-player close taps.",
+    )
+    parser.add_argument(
+        "--claim-ark-adplayer-back-attempts",
+        type=int,
+        default=0,
+        help="Bounded number of same-package Unity ad-player BACK attempts.",
+    )
+    parser.add_argument(
+        "--claim-ark-adplayer-back-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded same-package Unity ad-player BACK attempts.",
+    )
+    parser.add_argument(
+        "--claim-ark-adplayer-grace-seconds",
+        type=float,
+        default=0.0,
+        help="Initial grace window before bounded same-package Unity ad-player recovery begins.",
+    )
+    parser.add_argument(
+        "--claim-ark-same-app-endcard-close-tap",
+        type=str,
+        default=None,
+        help="Optional coordinate (x,y) for a same-package ad end-card close control after store return.",
+    )
+    parser.add_argument(
+        "--claim-ark-same-app-endcard-close-attempts",
+        type=int,
+        default=0,
+        help="Bounded number of deterministic same-package ad end-card close taps after store return.",
+    )
+    parser.add_argument(
+        "--claim-ark-same-app-endcard-close-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded same-package ad end-card close taps.",
+    )
+    parser.add_argument(
+        "--claim-ark-same-app-back-attempts",
+        type=int,
+        default=1,
+        help="Bounded number of same-package BACK attempts after store return when close taps do not restore game focus.",
+    )
+    parser.add_argument(
+        "--claim-ark-same-app-back-interval-seconds",
+        type=float,
+        default=1.0,
+        help="Wait time between bounded same-package BACK attempts after store return.",
+    )
+    parser.add_argument(
         "--ark-popup-wait-seconds",
         type=float,
         default=1.5,
@@ -356,6 +422,23 @@ def build_actuator(args: argparse.Namespace) -> ActionActuator:
             claim_ark_reward_watch_tap=parse_tap_point(args.claim_ark_watch_tap),
             claim_ark_skip_tap=parse_tap_point(args.claim_ark_skip_tap),
             claim_ark_reward_final_claim_tap=parse_tap_point(args.claim_ark_final_claim_tap),
+            claim_ark_adplayer_close_tap=parse_optional_tap_point(
+                args.claim_ark_adplayer_close_tap
+            ),
+            claim_ark_adplayer_close_attempts=args.claim_ark_adplayer_close_attempts,
+            claim_ark_adplayer_close_interval_seconds=args.claim_ark_adplayer_close_interval_seconds,
+            claim_ark_adplayer_back_attempts=args.claim_ark_adplayer_back_attempts,
+            claim_ark_adplayer_back_interval_seconds=args.claim_ark_adplayer_back_interval_seconds,
+            claim_ark_adplayer_grace_seconds=args.claim_ark_adplayer_grace_seconds,
+            claim_ark_same_app_endcard_close_tap=parse_optional_tap_point(
+                args.claim_ark_same_app_endcard_close_tap
+            ),
+            claim_ark_same_app_endcard_close_attempts=args.claim_ark_same_app_endcard_close_attempts,
+            claim_ark_same_app_endcard_close_interval_seconds=(
+                args.claim_ark_same_app_endcard_close_interval_seconds
+            ),
+            claim_ark_same_app_back_attempts=args.claim_ark_same_app_back_attempts,
+            claim_ark_same_app_back_interval_seconds=args.claim_ark_same_app_back_interval_seconds,
             ark_popup_wait_seconds=args.ark_popup_wait_seconds,
             ark_ad_wait_seconds=args.ark_ad_wait_seconds,
             ark_skip_close_wait_seconds=args.ark_skip_close_wait_seconds,
@@ -436,6 +519,14 @@ def parse_tap_point(raw_value: str) -> TapPoint:
     except ValueError as exc:
         raise ValueError(f"Invalid tap coordinate value: {raw_value!r}") from exc
     return TapPoint(x=x, y=y)
+
+
+def parse_optional_tap_point(raw_value: str | None) -> TapPoint | None:
+    """Parse an optional tap coordinate string in X,Y form."""
+
+    if raw_value is None:
+        return None
+    return parse_tap_point(raw_value)
 
 
 def parse_activity_allowlist(raw_value: str) -> tuple[str, ...]:

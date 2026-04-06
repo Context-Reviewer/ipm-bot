@@ -47,6 +47,8 @@ STORE_PACKAGE_ALLOWLIST: tuple[str, ...] = (
     "com.android.vending",
 )
 
+UNITY_ADPLAYER_ACTIVITY = "com.unity3d.ads.adplayer.FullScreenWebViewDisplay"
+
 
 @dataclass(frozen=True, slots=True)
 class TapPoint:
@@ -88,6 +90,12 @@ class AdbActuatorConfig:
     ad_boost_exit_timeout_seconds: float = 120.0
     ad_boost_exit_keyevent: str = "KEYCODE_BACK"
     ad_boost_store_max_redirects: int = 3
+    claim_ark_adplayer_close_tap: TapPoint | None = None
+    claim_ark_adplayer_close_attempts: int = 0
+    claim_ark_adplayer_close_interval_seconds: float = 1.0
+    claim_ark_adplayer_back_attempts: int = 0
+    claim_ark_adplayer_back_interval_seconds: float = 1.0
+    claim_ark_adplayer_grace_seconds: float = 0.0
     claim_ark_same_app_endcard_close_tap: TapPoint | None = None
     claim_ark_same_app_endcard_close_attempts: int = 0
     claim_ark_same_app_endcard_close_interval_seconds: float = 1.0
@@ -152,6 +160,16 @@ class AdbActuatorConfig:
             raise ValueError("ad_boost_exit_keyevent must not be blank.")
         if self.ad_boost_store_max_redirects < 0:
             raise ValueError("ad_boost_store_max_redirects must be non-negative.")
+        if self.claim_ark_adplayer_close_attempts < 0:
+            raise ValueError("claim_ark_adplayer_close_attempts must be non-negative.")
+        if self.claim_ark_adplayer_close_interval_seconds < 0:
+            raise ValueError("claim_ark_adplayer_close_interval_seconds must be non-negative.")
+        if self.claim_ark_adplayer_back_attempts < 0:
+            raise ValueError("claim_ark_adplayer_back_attempts must be non-negative.")
+        if self.claim_ark_adplayer_back_interval_seconds < 0:
+            raise ValueError("claim_ark_adplayer_back_interval_seconds must be non-negative.")
+        if self.claim_ark_adplayer_grace_seconds < 0:
+            raise ValueError("claim_ark_adplayer_grace_seconds must be non-negative.")
         if self.claim_ark_same_app_endcard_close_attempts < 0:
             raise ValueError("claim_ark_same_app_endcard_close_attempts must be non-negative.")
         if self.claim_ark_same_app_endcard_close_interval_seconds < 0:
@@ -202,6 +220,12 @@ class ClaimStoreReturnResult:
 
 @dataclass(frozen=True, slots=True)
 class ClaimSameAppReturnResult:
+    return_detected: bool
+    focus_classification_after_recovery: str
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimAdPlayerRecoveryResult:
     return_detected: bool
     focus_classification_after_recovery: str
 
@@ -271,6 +295,16 @@ class AdbActionActuator(ActionActuator):
             ad_boost_exit_timeout_seconds=config.ad_boost_exit_timeout_seconds,
             ad_boost_exit_keyevent=config.ad_boost_exit_keyevent,
             ad_boost_store_max_redirects=config.ad_boost_store_max_redirects,
+            claim_ark_adplayer_close_tap=(
+                None
+                if config.claim_ark_adplayer_close_tap is None
+                else f"{config.claim_ark_adplayer_close_tap.x},{config.claim_ark_adplayer_close_tap.y}"
+            ),
+            claim_ark_adplayer_close_attempts=config.claim_ark_adplayer_close_attempts,
+            claim_ark_adplayer_close_interval_seconds=config.claim_ark_adplayer_close_interval_seconds,
+            claim_ark_adplayer_back_attempts=config.claim_ark_adplayer_back_attempts,
+            claim_ark_adplayer_back_interval_seconds=config.claim_ark_adplayer_back_interval_seconds,
+            claim_ark_adplayer_grace_seconds=config.claim_ark_adplayer_grace_seconds,
             claim_ark_same_app_endcard_close_tap=(
                 None
                 if config.claim_ark_same_app_endcard_close_tap is None
@@ -1101,6 +1135,7 @@ class AdbActionActuator(ActionActuator):
             exit_deadline = ad_opened_at + self._config.ad_boost_exit_timeout_seconds
             last_classification: str | None = None
             store_redirects_handled = 0
+            adplayer_recovery_attempted = False
             while self._monotonic_fn() < exit_deadline:
                 self._sleep_fn(self._config.ad_boost_probe_interval_seconds)
                 probe = self._capture_probe_sample(
@@ -1122,6 +1157,31 @@ class AdbActionActuator(ActionActuator):
                         detail=f"{last_classification or 'none'}->{focus_classification}",
                     )
                     last_classification = focus_classification
+                if (
+                    self._focus_is_claim_ark_adplayer(
+                        focus_package=probe.focus_package,
+                        focus_activity=probe.focus_activity,
+                    )
+                    and self._claim_ark_adplayer_recovery_enabled()
+                    and not adplayer_recovery_attempted
+                ):
+                    adplayer_recovery_attempted = True
+                    adplayer_exit_result = self._attempt_claim_adplayer_recovery(
+                        attempted_summaries=attempted_summaries,
+                        stage_events=stage_events,
+                        probe_samples=probe_samples,
+                        watch_started_at=watch_started_at,
+                    )
+                    if adplayer_exit_result.return_detected:
+                        return_detected = True
+                        self._record_stage_event(
+                            stage_events,
+                            "return_detected",
+                            elapsed_started_at=watch_started_at,
+                        )
+                        break
+                    last_classification = adplayer_exit_result.focus_classification_after_recovery
+                    continue
                 if focus_classification == "store":
                     if store_redirects_handled == 0:
                         self._record_stage_event(
@@ -1501,6 +1561,26 @@ class AdbActionActuator(ActionActuator):
             for allowlisted_package in STORE_PACKAGE_ALLOWLIST
         )
 
+    def _focus_is_claim_ark_adplayer(
+        self,
+        *,
+        focus_package: str | None,
+        focus_activity: str | None,
+    ) -> bool:
+        return (
+            focus_package == self._config.app_package
+            and focus_activity == UNITY_ADPLAYER_ACTIVITY
+        )
+
+    def _claim_ark_adplayer_recovery_enabled(self) -> bool:
+        return (
+            (
+                self._config.claim_ark_adplayer_close_tap is not None
+                and self._config.claim_ark_adplayer_close_attempts > 0
+            )
+            or self._config.claim_ark_adplayer_back_attempts > 0
+        )
+
     def _classify_focus_activity(
         self,
         *,
@@ -1551,6 +1631,180 @@ class AdbActionActuator(ActionActuator):
         excerpt = joined_text[: self._config.ark_post_watch_ui_dump_max_text_length]
         digest = hashlib.sha256(joined_text.encode("utf-8")).hexdigest()
         return excerpt, digest
+
+    def _attempt_claim_adplayer_recovery(
+        self,
+        *,
+        attempted_summaries: list[str],
+        stage_events: list[ActuatorStageEvent],
+        probe_samples: list[ActuatorProbeSample],
+        watch_started_at: float,
+    ) -> ClaimAdPlayerRecoveryResult:
+        self._record_stage_event(
+            stage_events,
+            "adplayer_detected",
+            elapsed_started_at=watch_started_at,
+            detail=UNITY_ADPLAYER_ACTIVITY,
+        )
+
+        if self._config.claim_ark_adplayer_grace_seconds > 0:
+            self._record_stage_event(
+                stage_events,
+                "adplayer_grace_wait",
+                elapsed_started_at=watch_started_at,
+                detail=str(self._config.claim_ark_adplayer_grace_seconds),
+            )
+            self._sleep_fn(self._config.claim_ark_adplayer_grace_seconds)
+            grace_probe = self._capture_probe_sample(
+                watch_started_at,
+                sample_context="post_adplayer_grace_wait",
+                sample_reference_stage="adplayer_grace_wait",
+                include_ui_dump=False,
+            )
+            probe_samples.append(grace_probe)
+            focus_classification = self._classify_focus_activity(
+                focus_package=grace_probe.focus_package,
+                focus_activity=grace_probe.focus_activity,
+            )
+            if focus_classification == "game":
+                self._record_stage_event(
+                    stage_events,
+                    "adplayer_return_detected",
+                    elapsed_started_at=watch_started_at,
+                )
+                return ClaimAdPlayerRecoveryResult(
+                    return_detected=True,
+                    focus_classification_after_recovery="game",
+                )
+            if not self._focus_is_claim_ark_adplayer(
+                focus_package=grace_probe.focus_package,
+                focus_activity=grace_probe.focus_activity,
+            ):
+                return ClaimAdPlayerRecoveryResult(
+                    return_detected=False,
+                    focus_classification_after_recovery=focus_classification,
+                )
+
+        close_tap = self._config.claim_ark_adplayer_close_tap
+        if close_tap is not None:
+            for attempt_index in range(1, self._config.claim_ark_adplayer_close_attempts + 1):
+                self._run_command(
+                    self._adb_command(
+                        "shell",
+                        "input",
+                        "tap",
+                        str(close_tap.x),
+                        str(close_tap.y),
+                    ),
+                    attempted_summaries,
+                )
+                stage_name = f"adplayer_close_attempt_{attempt_index}"
+                self._record_stage_event(
+                    stage_events,
+                    stage_name,
+                    elapsed_started_at=watch_started_at,
+                    detail=f"{close_tap.x},{close_tap.y}",
+                )
+                if self._config.claim_ark_adplayer_close_interval_seconds > 0:
+                    self._record_stage_event(
+                        stage_events,
+                        "adplayer_wait_interval",
+                        elapsed_started_at=watch_started_at,
+                        detail=(
+                            f"after={stage_name},seconds="
+                            f"{self._config.claim_ark_adplayer_close_interval_seconds}"
+                        ),
+                    )
+                    self._sleep_fn(self._config.claim_ark_adplayer_close_interval_seconds)
+                close_probe = self._capture_probe_sample(
+                    watch_started_at,
+                    sample_context="post_adplayer_close_attempt",
+                    sample_reference_stage=stage_name,
+                    include_ui_dump=False,
+                )
+                probe_samples.append(close_probe)
+                focus_classification = self._classify_focus_activity(
+                    focus_package=close_probe.focus_package,
+                    focus_activity=close_probe.focus_activity,
+                )
+                if focus_classification == "game":
+                    self._record_stage_event(
+                        stage_events,
+                        "adplayer_return_detected",
+                        elapsed_started_at=watch_started_at,
+                    )
+                    return ClaimAdPlayerRecoveryResult(
+                        return_detected=True,
+                        focus_classification_after_recovery="game",
+                    )
+                if not self._focus_is_claim_ark_adplayer(
+                    focus_package=close_probe.focus_package,
+                    focus_activity=close_probe.focus_activity,
+                ):
+                    return ClaimAdPlayerRecoveryResult(
+                        return_detected=False,
+                        focus_classification_after_recovery=focus_classification,
+                    )
+
+        for attempt_index in range(1, self._config.claim_ark_adplayer_back_attempts + 1):
+            self._run_command(
+                self._adb_command("shell", "input", "keyevent", "KEYCODE_BACK"),
+                attempted_summaries,
+            )
+            stage_name = f"adplayer_back_attempt_{attempt_index}"
+            self._record_stage_event(
+                stage_events,
+                stage_name,
+                elapsed_started_at=watch_started_at,
+            )
+            if self._config.claim_ark_adplayer_back_interval_seconds > 0:
+                self._record_stage_event(
+                    stage_events,
+                    "adplayer_wait_interval",
+                    elapsed_started_at=watch_started_at,
+                    detail=(
+                        f"after={stage_name},seconds="
+                        f"{self._config.claim_ark_adplayer_back_interval_seconds}"
+                    ),
+                )
+                self._sleep_fn(self._config.claim_ark_adplayer_back_interval_seconds)
+            back_probe = self._capture_probe_sample(
+                watch_started_at,
+                sample_context="post_adplayer_back_attempt",
+                sample_reference_stage=stage_name,
+                include_ui_dump=False,
+            )
+            probe_samples.append(back_probe)
+            focus_classification = self._classify_focus_activity(
+                focus_package=back_probe.focus_package,
+                focus_activity=back_probe.focus_activity,
+            )
+            if focus_classification == "game":
+                self._record_stage_event(
+                    stage_events,
+                    "adplayer_return_detected",
+                    elapsed_started_at=watch_started_at,
+                )
+                return ClaimAdPlayerRecoveryResult(
+                    return_detected=True,
+                    focus_classification_after_recovery="game",
+                )
+            if not self._focus_is_claim_ark_adplayer(
+                focus_package=back_probe.focus_package,
+                focus_activity=back_probe.focus_activity,
+            ):
+                return ClaimAdPlayerRecoveryResult(
+                    return_detected=False,
+                    focus_classification_after_recovery=focus_classification,
+                )
+
+        self._record_stage_event(
+            stage_events,
+            "adplayer_exit_timeout",
+            elapsed_started_at=watch_started_at,
+            error="ark_adplayer_exit_timeout: adplayer did not return to game.",
+        )
+        raise RuntimeError("ark_adplayer_exit_timeout: adplayer did not return to game.")
 
     def _attempt_claim_store_return(
         self,

@@ -178,6 +178,12 @@ class ActuatorConfigSnapshot:
     ad_boost_exit_timeout_seconds: float | None = None
     ad_boost_exit_keyevent: str | None = None
     ad_boost_store_max_redirects: int | None = None
+    claim_ark_adplayer_close_tap: str | None = None
+    claim_ark_adplayer_close_attempts: int | None = None
+    claim_ark_adplayer_close_interval_seconds: float | None = None
+    claim_ark_adplayer_back_attempts: int | None = None
+    claim_ark_adplayer_back_interval_seconds: float | None = None
+    claim_ark_adplayer_grace_seconds: float | None = None
     claim_ark_same_app_endcard_close_tap: str | None = None
     claim_ark_same_app_endcard_close_attempts: int | None = None
     claim_ark_same_app_endcard_close_interval_seconds: float | None = None
@@ -255,6 +261,22 @@ class ActuatorConfigSnapshot:
             raise ValueError("Actuator config snapshot ad boost exit timeout must be greater than zero.")
         if self.ad_boost_store_max_redirects is not None and self.ad_boost_store_max_redirects < 0:
             raise ValueError("Actuator config snapshot ad boost store max redirects must be non-negative.")
+        if self.claim_ark_adplayer_close_attempts is not None and self.claim_ark_adplayer_close_attempts < 0:
+            raise ValueError("Actuator config snapshot adplayer close attempts must be non-negative.")
+        if (
+            self.claim_ark_adplayer_close_interval_seconds is not None
+            and self.claim_ark_adplayer_close_interval_seconds < 0
+        ):
+            raise ValueError("Actuator config snapshot adplayer close interval must be non-negative.")
+        if self.claim_ark_adplayer_back_attempts is not None and self.claim_ark_adplayer_back_attempts < 0:
+            raise ValueError("Actuator config snapshot adplayer back attempts must be non-negative.")
+        if (
+            self.claim_ark_adplayer_back_interval_seconds is not None
+            and self.claim_ark_adplayer_back_interval_seconds < 0
+        ):
+            raise ValueError("Actuator config snapshot adplayer back interval must be non-negative.")
+        if self.claim_ark_adplayer_grace_seconds is not None and self.claim_ark_adplayer_grace_seconds < 0:
+            raise ValueError("Actuator config snapshot adplayer grace must be non-negative.")
         if self.ad_boost_soft_exit_timeout_seconds is not None and self.ad_boost_soft_exit_timeout_seconds <= 0:
             raise ValueError("Actuator config snapshot ad boost soft exit timeout must be greater than zero.")
         if self.ad_boost_hard_exit_timeout_seconds is not None and self.ad_boost_hard_exit_timeout_seconds <= 0:

@@ -1416,6 +1416,259 @@ class AdbActuatorTests(unittest.TestCase):
         self.assertFalse(any(event.stage_name.startswith("same_app_") for event in metadata.stage_events))
         self.assertFalse(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
 
+    def test_claim_ark_reward_adplayer_grace_allows_natural_return_without_forced_exit(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                claim_ark_adplayer_back_attempts=1,
+                claim_ark_adplayer_back_interval_seconds=1.0,
+                claim_ark_adplayer_grace_seconds=2.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
+
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(any(event.stage_name == "adplayer_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_grace_wait" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_return_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("adplayer_close_attempt_") for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("adplayer_back_attempt_") for event in metadata.stage_events))
+        self.assertFalse(any("KEYCODE_BACK" in " ".join(command) for command in runner.commands))
+
+    def test_claim_ark_reward_adplayer_close_tap_returns_to_game(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                claim_ark_adplayer_close_tap=TapPoint(x=839, y=75),
+                claim_ark_adplayer_close_attempts=1,
+                claim_ark_adplayer_close_interval_seconds=1.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
+
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(any(event.stage_name == "adplayer_close_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_return_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("adplayer_back_attempt_") for event in metadata.stage_events))
+        close_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "tap", "839", "75"]
+        )
+        claim_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "tap", "777", "889"]
+        )
+        self.assertGreater(claim_command_index, close_command_index)
+
+    def test_claim_ark_reward_adplayer_back_returns_to_game(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                claim_ark_adplayer_back_attempts=2,
+                claim_ark_adplayer_back_interval_seconds=1.0,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                if t < 4.0:
+                    return dumpsys_window_unity_ad
+                return dumpsys_window_game
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        metadata = actuator.execute("claim_ark_reward")
+
+        self.assertTrue(metadata.claim_attempted)
+        self.assertTrue(any(event.stage_name == "adplayer_back_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_return_detected" for event in metadata.stage_events))
+        self.assertFalse(any(event.stage_name.startswith("adplayer_close_attempt_") for event in metadata.stage_events))
+        back_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "keyevent", "KEYCODE_BACK"]
+        )
+        claim_command_index = runner.commands.index(
+            ["adb", "-s", "emulator-5554", "shell", "input", "tap", "777", "889"]
+        )
+        self.assertGreater(claim_command_index, back_command_index)
+
+    def test_claim_ark_reward_adplayer_recovery_is_bounded(self) -> None:
+        dumpsys_window_game = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
+        )
+        dumpsys_window_unity_ad = (
+            "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.ads.adplayer.FullScreenWebViewDisplay}"
+        )
+        runner = RecordingCommandRunner()
+        clock = RecordingClock()
+        sleeper = RecordingSleeper(clock)
+        actuator = AdbActionActuator(
+            config=AdbActuatorConfig(
+                adb_path="adb",
+                device_serial="emulator-5554",
+                app_package="com.example.idleplanetminer",
+                app_activity="com.unity3d.player.UnityPlayerActivity",
+                claim_ark_reward_tap=TapPoint(x=333, y=444),
+                claim_ark_reward_watch_tap=TapPoint(x=555, y=666),
+                claim_ark_skip_tap=TapPoint(x=12, y=34),
+                claim_ark_reward_final_claim_tap=TapPoint(x=777, y=889),
+                ark_popup_wait_seconds=1.25,
+                ark_ad_wait_seconds=20.0,
+                ark_skip_close_wait_seconds=1.0,
+                ark_return_wait_seconds=2.5,
+                ad_boost_open_timeout_seconds=4.0,
+                ad_boost_probe_interval_seconds=1.0,
+                ad_boost_exit_timeout_seconds=12.0,
+                claim_ark_adplayer_close_tap=TapPoint(x=839, y=75),
+                claim_ark_adplayer_close_attempts=1,
+                claim_ark_adplayer_close_interval_seconds=0.5,
+                claim_ark_adplayer_back_attempts=2,
+                claim_ark_adplayer_back_interval_seconds=0.5,
+                claim_ark_adplayer_grace_seconds=0.5,
+            ),
+            command_runner=runner,
+            sleep_fn=sleeper.sleep,
+            monotonic_fn=clock.monotonic,
+        )
+
+        def dynamic_capture(command: list[str]) -> str:
+            if "dumpsys window windows" in " ".join(command):
+                t = clock.monotonic()
+                if t < 2.0:
+                    return dumpsys_window_game
+                return dumpsys_window_unity_ad
+            if "dumpsys activity activities" in " ".join(command):
+                return "ACTIVITY MANAGER ACTIVITIES"
+            return ""
+
+        runner.capture = dynamic_capture
+
+        with self.assertRaises(ActuatorExecutionError) as context:
+            actuator.execute("claim_ark_reward")
+
+        metadata = context.exception.metadata
+
+        self.assertEqual(metadata.actuator_execution_status, "FAILED")
+        self.assertIn("ark_adplayer_exit_timeout", metadata.stage_events[-1].error)
+        self.assertTrue(any(event.stage_name == "adplayer_detected" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_grace_wait" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_close_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_back_attempt_1" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_back_attempt_2" for event in metadata.stage_events))
+        self.assertTrue(any(event.stage_name == "adplayer_exit_timeout" for event in metadata.stage_events))
+        self.assertFalse(metadata.claim_attempted)
+
     def test_claim_ark_reward_handles_store_redirect_with_bounded_back_and_returns_directly_to_game(self) -> None:
         dumpsys_window_game = (
             "mCurrentFocus=Window{42 u0 com.example.idleplanetminer/com.unity3d.player.UnityPlayerActivity}"
