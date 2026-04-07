@@ -19,13 +19,248 @@ from ipm_bot.actuator.boundary import (
     ActuatorExecutionError,
     ActuatorExecutionMetadata,
 )
-from ipm_bot.actuator.runner import FailureReason, run_action_until_verified
+from ipm_bot.actuator.runner import FailureReason, _evaluate_candidate, run_action_until_verified
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.save_source import SaveRefreshTelemetry
 from ipm_bot.save import parse_player_snapshot
 
 
 class RunnerReceiptTests(unittest.TestCase):
+    def test_standard_ad_contract_passes_with_economic_delta_and_ready_cleared(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=7,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
+                arks_claimed=4,
+                cash=100.0,
+                dark_matter=10,
+                last_ad_watched_date=started_at,
+                beacon_tokens=3,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.15,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=7,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        pending_reward_type=0,
+                        arks_claimed=5,
+                        cash=125.0,
+                        dark_matter=10,
+                        last_ad_watched_date=started_at + timedelta(seconds=5),
+                        beacon_tokens=4,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="claim_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertEqual(receipt.contract_evidence["standard_ad"]["arksClaimed_before"], 4)
+            self.assertEqual(receipt.contract_evidence["standard_ad"]["arksClaimed_after"], 5)
+            self.assertEqual(
+                receipt.contract_evidence["standard_ad"]["lastAdWatchedDate_before"],
+                started_at.isoformat(),
+            )
+            self.assertEqual(
+                receipt.contract_evidence["standard_ad"]["lastAdWatchedDate_after"],
+                (started_at + timedelta(seconds=5)).isoformat(),
+            )
+            self.assertTrue(
+                any("Standard ad contract satisfied" in message for message in receipt.verifier_messages)
+            )
+
+    def test_standard_ad_contract_without_reward_evidence_is_ambiguous(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=3,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
+                arks_claimed=4,
+                cash=100.0,
+                dark_matter=10,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.1,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=3,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=True,
+                        pending_reward_type=1,
+                        arks_claimed=4,
+                        cash=100.0,
+                        dark_matter=10,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="claim_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
+            self.assertEqual(receipt.failure_reason, FailureReason.AMBIGUOUS_TRANSITION)
+            self.assertEqual(
+                receipt.contract_evidence["standard_ad"]["arkRewardReadyToClaim_after"],
+                True,
+            )
+
+    def test_boost_contract_passes_and_records_boost_receipt_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = RecordingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=False,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                ad_boost_start_date=started_at,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.15,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=2,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        ad_boost_start_date=started_at + timedelta(seconds=5),
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="activate_ad_boost",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("activate_ad_boost"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.contract_evidence["boost"]["adBoostActive_before"], False)
+            self.assertEqual(receipt.contract_evidence["boost"]["adBoostActive_after"], True)
+            self.assertEqual(
+                receipt.contract_evidence["boost"]["adBoostStartDate_after"],
+                (started_at + timedelta(seconds=5)).isoformat(),
+            )
+
+    def test_integrity_context_is_logged_without_gating_standard_ad_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            started_at = datetime(2026, 3, 22, 12, 0, 0)
+            actuator = ClaimingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=7,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=True,
+                pending_reward_type=1,
+                arks_claimed=4,
+                cash=100.0,
+                dark_matter=10,
+                server_time_verified=False,
+                device_time_wrong=False,
+            )
+            snapshot_before = parse_player_snapshot(save_path)
+
+            update_thread = threading.Thread(
+                target=_delayed_write,
+                args=(
+                    save_path,
+                    0.15,
+                    dict(
+                        ad_boost_active=True,
+                        ads_watched=7,
+                        save_timestamp=started_at + timedelta(seconds=5),
+                        ark_reward_ready_to_claim=False,
+                        pending_reward_type=0,
+                        arks_claimed=5,
+                        cash=125.0,
+                        dark_matter=10,
+                        server_time_verified=True,
+                        device_time_wrong=True,
+                    ),
+                ),
+            )
+            update_thread.start()
+
+            receipt = run_action_until_verified(
+                action="claim_reward",
+                save_path=save_path,
+                snapshot_before=snapshot_before,
+                contract=get_action_contract("claim_reward"),
+                actuator=actuator,
+                poll_interval_s=0.05,
+                timeout_s=1.0,
+            )
+
+            update_thread.join()
+
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.contract_evidence["integrity"]["serverTimeVerified_before"], False)
+            self.assertEqual(receipt.contract_evidence["integrity"]["serverTimeVerified_after"], True)
+            self.assertEqual(receipt.contract_evidence["integrity"]["deviceTimeWrong_before"], False)
+            self.assertEqual(receipt.contract_evidence["integrity"]["deviceTimeWrong_after"], True)
+
     def test_pass_receipt_for_activate_ad_boost(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
@@ -89,6 +324,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
                 pending_reward_type=1,
+                arks_claimed=5,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -103,6 +339,7 @@ class RunnerReceiptTests(unittest.TestCase):
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=False,
                         pending_reward_type=0,
+                        arks_claimed=6,
                     ),
                 ),
             )
@@ -189,7 +426,7 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.branch_policy, "disabled")
             self.assertFalse(receipt.ad_exit_override_attempted)
             self.assertTrue(
-                any("Reward application proven" in message for message in receipt.verifier_messages)
+                any("Standard ad contract satisfied" in message for message in receipt.verifier_messages)
             )
 
     def test_pass_receipt_for_claim_reward_when_event_reward_counter_changes(self) -> None:
@@ -754,7 +991,7 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.branch_policy, "single_choice_default")
             self.assertEqual(receipt.branch_choice_tap_count, 2)
             self.assertTrue(
-                any("Reward application proven" in message for message in receipt.verifier_messages)
+                any("Standard ad contract satisfied" in message for message in receipt.verifier_messages)
             )
 
     def test_ad_exit_override_metadata_does_not_create_pass_without_save_proof(self) -> None:
@@ -948,6 +1185,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 ads_watched=1,
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=True,
+                arks_claimed=5,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -961,6 +1199,7 @@ class RunnerReceiptTests(unittest.TestCase):
                         ads_watched=1,
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=False,
+                        arks_claimed=6,
                     ),
                 ),
             )
@@ -1026,6 +1265,116 @@ class RunnerReceiptTests(unittest.TestCase):
             )
 
 
+class CandidateContractTests(unittest.TestCase):
+    def test_mining_claim_contract_passes_when_effect_and_claim_flag_are_observed(self) -> None:
+        before = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                reward_id=21,
+                reward_type="perk",
+                reward_is_claimed=False,
+                reward_effect_value=1,
+            )
+        )
+        after = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 5),
+                reward_id=21,
+                reward_type="perk",
+                reward_is_claimed=True,
+                reward_effect_value=2,
+            )
+        )
+
+        evaluation = _evaluate_candidate(
+            action="claim_reward",
+            before=before,
+            after=after,
+            contract=get_action_contract("claim_reward"),
+            actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+        )
+
+        self.assertEqual(evaluation.verification.status, "PASS")
+        self.assertIsNone(evaluation.terminal_failure_reason)
+
+    def test_mining_claim_effect_first_is_ambiguous_then_passes_once_claim_flag_arrives(self) -> None:
+        before = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                reward_id=22,
+                reward_type="boost",
+                reward_is_claimed=False,
+                reward_effect_value=5,
+            )
+        )
+        early_after = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 5),
+                reward_id=22,
+                reward_type="boost",
+                reward_is_claimed=False,
+                reward_effect_value=6,
+            )
+        )
+        final_after = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 10),
+                reward_id=22,
+                reward_type="boost",
+                reward_is_claimed=True,
+                reward_effect_value=6,
+            )
+        )
+        actuator_execution = ClaimingActuator().execute("claim_ark_reward")
+
+        early_evaluation = _evaluate_candidate(
+            action="claim_reward",
+            before=before,
+            after=early_after,
+            contract=get_action_contract("claim_reward"),
+            actuator_execution=actuator_execution,
+        )
+        final_evaluation = _evaluate_candidate(
+            action="claim_reward",
+            before=before,
+            after=final_after,
+            contract=get_action_contract("claim_reward"),
+            actuator_execution=actuator_execution,
+        )
+
+        self.assertEqual(early_evaluation.verification.status, "AMBIGUOUS")
+        self.assertEqual(
+            early_evaluation.terminal_failure_reason,
+            FailureReason.AMBIGUOUS_TRANSITION,
+        )
+        self.assertEqual(final_evaluation.verification.status, "PASS")
+
+    def test_mining_settlement_contract_passes_with_effect_without_claim_flag(self) -> None:
+        before = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                reward_effect_value=10,
+            )
+        )
+        after = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 5),
+                reward_effect_value=11,
+            )
+        )
+
+        evaluation = _evaluate_candidate(
+            action="claim_reward",
+            before=before,
+            after=after,
+            contract=get_action_contract("claim_reward"),
+            actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+        )
+
+        self.assertEqual(evaluation.verification.status, "PASS")
+        self.assertIsNone(evaluation.terminal_failure_reason)
+
+
 def _delayed_write(path: Path, delay_s: float, payload: dict[str, object]) -> None:
     time.sleep(delay_s)
     _write_save(path, **payload)
@@ -1046,6 +1395,15 @@ def _write_save(
     reward_is_dark_matter: bool | None = None,
     free_rewards_claimed: list[bool] | None = None,
     miner_pass_rewards_claimed: list[bool] | None = None,
+    last_ad_watched_date: datetime | None = None,
+    ad_boost_start_date: datetime | None = None,
+    beacon_tokens: int | None = None,
+    server_time_verified: bool | None = None,
+    device_time_wrong: bool | None = None,
+    reward_id: int | None = None,
+    reward_type: str | None = None,
+    reward_is_claimed: bool | None = None,
+    reward_effect_value: int | None = None,
 ) -> None:
     payload = {
         "cash": cash,
@@ -1057,15 +1415,62 @@ def _write_save(
         "arkRewardReadyToClaim": ark_reward_ready_to_claim,
         "playerLevel": player_level,
     }
+    if ad_boost_start_date is not None:
+        payload["adBoostStartDate"] = ad_boost_start_date.isoformat()
+    if last_ad_watched_date is not None:
+        payload["lastAdWatchedDate"] = last_ad_watched_date.isoformat()
     if pending_reward_type is not None:
         payload["pendingRewardType"] = pending_reward_type
     if reward_is_dark_matter is not None:
         payload["rewardIsDarkMatterBool"] = reward_is_dark_matter
+    if beacon_tokens is not None:
+        payload["beaconTokens"] = beacon_tokens
+    if server_time_verified is not None:
+        payload["serverTimeVerified"] = server_time_verified
+    if device_time_wrong is not None:
+        payload["deviceTimeWrong"] = device_time_wrong
     if free_rewards_claimed is not None:
         payload["freeRewardsClaimed"] = free_rewards_claimed
     if miner_pass_rewards_claimed is not None:
         payload["minerPassRewardsClaimed"] = miner_pass_rewards_claimed
+    if reward_id is not None:
+        payload["rewardId"] = reward_id
+    if reward_type is not None:
+        payload["rewardType"] = reward_type
+    if reward_is_claimed is not None:
+        payload["rewardIsClaimed"] = reward_is_claimed
+    if reward_effect_value is not None:
+        payload["rewardEffectValue"] = reward_effect_value
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _mapping_snapshot(
+    *,
+    save_timestamp: datetime,
+    reward_id: int | None = None,
+    reward_type: str | None = None,
+    reward_is_claimed: bool | None = None,
+    reward_effect_value: int | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "cash": 0.0,
+        "darkMatter": 0,
+        "adBoostActive": False,
+        "adsWatched": 0,
+        "arksClaimed": 0,
+        "saveTimestamp": save_timestamp.isoformat(),
+        "arkRewardReadyToClaim": False,
+        "playerLevel": 5,
+    }
+    if reward_id is not None:
+        payload["rewardId"] = reward_id
+    if reward_type is not None:
+        payload["rewardType"] = reward_type
+    if reward_is_claimed is not None:
+        payload["rewardIsClaimed"] = reward_is_claimed
+    if reward_effect_value is not None:
+        payload["rewardEffectValue"] = reward_effect_value
+    return payload
 
 
 class RecordingActuator:

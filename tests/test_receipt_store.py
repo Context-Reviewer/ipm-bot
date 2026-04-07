@@ -101,6 +101,7 @@ class ReceiptStoreTests(unittest.TestCase):
                 payload["contract_identity"]["required_expected_values"],
                 receipt.contract_identity.required_expected_values,
             )
+            self.assertEqual(payload["contract_evidence"], receipt.contract_evidence)
             self.assertEqual(
                 payload["runtime_context"]["receipt_schema_version"],
                 receipt.runtime_context.receipt_schema_version,

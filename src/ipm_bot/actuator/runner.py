@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 import time
@@ -19,7 +19,6 @@ from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
 from ipm_bot.control.save_source import SaveRefreshController, SaveRefreshTelemetry, SaveSourceMetadata
 from ipm_bot.planner.planner import PlannerDecision
 from ipm_bot.control.save_watcher import get_save_fingerprint, wait_for_save_change
-from ipm_bot.planner.reward_state import evaluate_reward_application
 from ipm_bot.save.models import PlayerSnapshot
 from ipm_bot.verifier.verifier import VerificationResult, VerificationStatus, verify_transition
 
@@ -125,6 +124,7 @@ class ActionAttemptReceipt:
     runtime_context: ReceiptRuntimeContext
     actuator_execution: ActuatorExecutionMetadata
     verifier_messages: list[str]
+    contract_evidence: dict[str, object] = field(default_factory=dict)
     claim_attempted: bool = False
     number_of_claim_taps: int = 0
     claim_tap_timestamps: list[float] | None = None
@@ -150,6 +150,8 @@ class ActionAttemptReceipt:
             raise ValueError("Receipt baseline_hash must not be empty.")
         if self.elapsed_seconds < 0:
             raise ValueError("Receipt elapsed_seconds must be non-negative.")
+        if not isinstance(self.contract_evidence, dict):
+            raise ValueError("Receipt contract_evidence must be a dictionary.")
         if self.changed_save_count < 0:
             raise ValueError("Receipt changed_save_count must be non-negative.")
         if self.changed_save_count != len(self.candidate_hashes):
@@ -256,6 +258,7 @@ def run_action_until_verified(
     verification_started = False
     candidate_hashes: list[str] = []
     last_verifier_messages: list[str] = []
+    final_candidate_snapshot: PlayerSnapshot | None = None
     actuator_execution = ActuatorExecutionMetadata(
         actuator_type=actuator.actuator_type,
         actuator_execution_status="NOT_REQUIRED",
@@ -280,6 +283,7 @@ def run_action_until_verified(
                 ["Idle action selected; no actuation or verification loop required."],
                 save_refresh_controller,
             ),
+            snapshot_before=snapshot_before,
             save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
             actuation_elapsed_seconds=0.0,
             verification_elapsed_seconds=0.0,
@@ -314,6 +318,7 @@ def run_action_until_verified(
                 [f"Action '{action}' failed before verification: {exc}"],
                 save_refresh_controller,
             ),
+            snapshot_before=snapshot_before,
             save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
             actuation_elapsed_seconds=actuation_completed_at - started_at,
             verification_elapsed_seconds=0.0,
@@ -349,6 +354,7 @@ def run_action_until_verified(
                 [f"Action '{action}' failed before verification: {exc}"],
                 save_refresh_controller,
             ),
+            snapshot_before=snapshot_before,
             save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
             actuation_elapsed_seconds=actuation_completed_at - started_at,
             verification_elapsed_seconds=0.0,
@@ -404,6 +410,8 @@ def run_action_until_verified(
                     last_verifier_messages + [f"Save watcher error: {exc}"],
                     save_refresh_controller,
                 ),
+                snapshot_before=snapshot_before,
+                final_candidate_snapshot=final_candidate_snapshot,
                 save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
                 actuation_elapsed_seconds=actuation_completed_at - started_at,
                 verification_elapsed_seconds=time.monotonic() - verification_started_at,
@@ -421,6 +429,7 @@ def run_action_until_verified(
             break
 
         candidate_hashes.append(observation.fingerprint.sha256)
+        final_candidate_snapshot = observation.snapshot
         evaluation = _evaluate_candidate(
             action=action,
             before=snapshot_before,
@@ -446,6 +455,8 @@ def run_action_until_verified(
                     evaluation.verification.messages,
                     save_refresh_controller,
                 ),
+                snapshot_before=snapshot_before,
+                final_candidate_snapshot=final_candidate_snapshot,
                 save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
                 actuation_elapsed_seconds=actuation_completed_at - started_at,
                 verification_elapsed_seconds=time.monotonic() - verification_started_at,
@@ -476,6 +487,8 @@ def run_action_until_verified(
                     evaluation.verification.messages,
                     save_refresh_controller,
                 ),
+                snapshot_before=snapshot_before,
+                final_candidate_snapshot=final_candidate_snapshot,
                 save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
                 actuation_elapsed_seconds=actuation_completed_at - started_at,
                 verification_elapsed_seconds=time.monotonic() - verification_started_at,
@@ -511,6 +524,8 @@ def run_action_until_verified(
                 ),
                 verification_starved_by_timeout=verification_starved_by_timeout,
             ),
+            snapshot_before=snapshot_before,
+            final_candidate_snapshot=final_candidate_snapshot,
             save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
             actuation_elapsed_seconds=actuation_completed_at - started_at,
             verification_elapsed_seconds=max(0.0, time.monotonic() - verification_started_at),
@@ -540,6 +555,7 @@ def run_action_until_verified(
             _with_refresh_messages([], save_refresh_controller),
             verification_starved_by_timeout=verification_starved_by_timeout,
         ),
+        snapshot_before=snapshot_before,
         save_refresh_telemetry=_refresh_telemetry(save_refresh_controller),
         actuation_elapsed_seconds=actuation_completed_at - started_at,
         verification_elapsed_seconds=max(
@@ -637,15 +653,23 @@ def _evaluate_claim_proof(
     if base_result.status != "PASS":
         return None
 
-    proof_messages = _reward_proof_messages(before, after)
-    if proof_messages:
+    standard_ad_messages = _standard_ad_proof_messages(before, after)
+    if standard_ad_messages:
         return CandidateEvaluation(
             verification=VerificationResult(
                 status="PASS",
                 success=True,
-                messages=base_result.messages + proof_messages,
+                messages=base_result.messages + standard_ad_messages,
             )
         )
+
+    mining_evaluation = _evaluate_mining_reward_contract(
+        before=before,
+        after=after,
+        base_result=base_result,
+    )
+    if mining_evaluation is not None:
+        return mining_evaluation
 
     return CandidateEvaluation(
             verification=VerificationResult(
@@ -665,89 +689,118 @@ def _evaluate_claim_proof(
     )
 
 
-def _reward_proof_messages(
+def _standard_ad_proof_messages(
     before: PlayerSnapshot,
     after: PlayerSnapshot,
 ) -> list[str]:
     before_fields = before.flat_fields()
     after_fields = after.flat_fields()
     messages: list[str] = []
-    reward_state = evaluate_reward_application(before, after)
-
-    before_pending_reward_type = before.ad.pending_reward_type
-    after_pending_reward_type = after.ad.pending_reward_type
-    if before_pending_reward_type != after_pending_reward_type:
-        messages.append(
-            "Reward application proven: "
-            f"'pending_reward_type' changed from {before_pending_reward_type!r} "
-            f"to {after_pending_reward_type!r}."
-        )
 
     before_arks_claimed = _require_int_field(before_fields, "arks_claimed")
     after_arks_claimed = _require_int_field(after_fields, "arks_claimed")
-    if after_arks_claimed > before_arks_claimed:
-        messages.append(
-            f"Reward application proven: 'arks_claimed' increased from {before_arks_claimed!r} to {after_arks_claimed!r}."
-        )
+    arks_claimed_increased = after_arks_claimed > before_arks_claimed
+
+    before_cash = _require_field(before_fields, "cash")
+    after_cash = _require_field(after_fields, "cash")
+    if not isinstance(before_cash, float) or not isinstance(after_cash, float):
+        raise ValueError("Field 'cash' must be a float for action classification.")
+    cash_increased = after_cash > before_cash
 
     before_dark_matter = _require_int_field(before_fields, "dark_matter")
     after_dark_matter = _require_int_field(after_fields, "dark_matter")
-    if after_dark_matter > before_dark_matter:
-        messages.append(
-            f"Reward application proven: 'dark_matter' increased from {before_dark_matter!r} to {after_dark_matter!r}."
-        )
+    dark_matter_increased = after_dark_matter > before_dark_matter
 
     before_ready = _require_bool_field(before_fields, "ark_reward_ready_to_claim")
     after_ready = _require_bool_field(after_fields, "ark_reward_ready_to_claim")
-    if before_ready and not after_ready:
+    ready_cleared = before_ready and not after_ready
+    if (arks_claimed_increased or cash_increased or dark_matter_increased) and ready_cleared:
         messages.append(
-            "Reward application proven: 'ark_reward_ready_to_claim' transitioned from True to False."
-        )
-
-    before_free_rewards_claimed = _optional_int_field(
-        before_fields,
-        "free_rewards_claimed_count",
-    )
-    after_free_rewards_claimed = _optional_int_field(
-        after_fields,
-        "free_rewards_claimed_count",
-    )
-    if (
-        before_free_rewards_claimed is not None
-        and after_free_rewards_claimed is not None
-        and after_free_rewards_claimed > before_free_rewards_claimed
-    ):
-        messages.append(
-            "Reward application proven: "
-            f"'free_rewards_claimed_count' increased from {before_free_rewards_claimed!r} "
-            f"to {after_free_rewards_claimed!r}."
-        )
-
-    before_miner_pass_rewards_claimed = _optional_int_field(
-        before_fields,
-        "miner_pass_rewards_claimed_count",
-    )
-    after_miner_pass_rewards_claimed = _optional_int_field(
-        after_fields,
-        "miner_pass_rewards_claimed_count",
-    )
-    if (
-        before_miner_pass_rewards_claimed is not None
-        and after_miner_pass_rewards_claimed is not None
-        and after_miner_pass_rewards_claimed > before_miner_pass_rewards_claimed
-    ):
-        messages.append(
-            "Reward application proven: "
-            f"'miner_pass_rewards_claimed_count' increased from "
-            f"{before_miner_pass_rewards_claimed!r} to {after_miner_pass_rewards_claimed!r}."
-        )
-
-    if reward_state.reward_applied is True and not messages:
-        messages.append(
-            "Reward application proven by RewardState transition evidence."
+            "Standard ad contract satisfied: reward evidence was observed and "
+            "'ark_reward_ready_to_claim' cleared."
         )
 
     return messages
+
+
+def _evaluate_mining_reward_contract(
+    *,
+    before: PlayerSnapshot,
+    after: PlayerSnapshot,
+    base_result: VerificationResult,
+) -> CandidateEvaluation | None:
+    before_free_rewards_claimed = _optional_int_field(
+        before.flat_fields(),
+        "free_rewards_claimed_count",
+    )
+    after_free_rewards_claimed = _optional_int_field(
+        after.flat_fields(),
+        "free_rewards_claimed_count",
+    )
+    free_rewards_claimed_increased = (
+        before_free_rewards_claimed is not None
+        and after_free_rewards_claimed is not None
+        and after_free_rewards_claimed > before_free_rewards_claimed
+    )
+
+    before_miner_pass_rewards_claimed = _optional_int_field(
+        before.flat_fields(),
+        "miner_pass_rewards_claimed_count",
+    )
+    after_miner_pass_rewards_claimed = _optional_int_field(
+        after.flat_fields(),
+        "miner_pass_rewards_claimed_count",
+    )
+    miner_pass_rewards_claimed_increased = (
+        before_miner_pass_rewards_claimed is not None
+        and after_miner_pass_rewards_claimed is not None
+        and after_miner_pass_rewards_claimed > before_miner_pass_rewards_claimed
+    )
+
+    before_claimed = _optional_raw_bool(before, "rewardIsClaimed")
+    after_claimed = _optional_raw_bool(after, "rewardIsClaimed")
+    has_claim_flag_evidence = before_claimed is not None or after_claimed is not None
+
+    effect_observed, effect_messages = _mining_effect_messages(before, after)
+
+    messages: list[str] = []
+    if free_rewards_claimed_increased:
+        messages.append(
+            "Mining reward contract satisfied: 'free_rewards_claimed_count' increased."
+        )
+    if miner_pass_rewards_claimed_increased:
+        messages.append(
+            "Mining reward contract satisfied: 'miner_pass_rewards_claimed_count' increased."
+        )
+    messages.extend(effect_messages)
+
+    if after_claimed is True and before_claimed is not True:
+        messages.append("Mining reward contract satisfied: 'rewardIsClaimed' became True.")
+
+    if messages and (after_claimed is True or not has_claim_flag_evidence):
+        return CandidateEvaluation(
+            verification=VerificationResult(
+                status="PASS",
+                success=True,
+                messages=base_result.messages + messages,
+            )
+        )
+
+    if effect_observed and has_claim_flag_evidence and after_claimed is not True:
+        return CandidateEvaluation(
+            verification=VerificationResult(
+                status="AMBIGUOUS",
+                success=False,
+                messages=base_result.messages
+                + effect_messages
+                + [
+                    "Mining reward effect was observed, but 'rewardIsClaimed' has not been persisted yet."
+                ],
+            ),
+            terminal_failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
+        )
+
+    return None
 
 
 def _missing_reward_proof_message(
@@ -904,6 +957,8 @@ def _build_receipt(
     started_at: float,
     candidate_hashes: list[str],
     verifier_messages: list[str],
+    snapshot_before: PlayerSnapshot,
+    final_candidate_snapshot: PlayerSnapshot | None = None,
     save_refresh_telemetry: SaveRefreshTelemetry | None = None,
     actuation_elapsed_seconds: float = 0.0,
     verification_elapsed_seconds: float = 0.0,
@@ -945,6 +1000,10 @@ def _build_receipt(
         ),
         actuator_execution=actuator_execution,
         verifier_messages=list(verifier_messages),
+        contract_evidence=_build_contract_evidence(
+            before=snapshot_before,
+            after=final_candidate_snapshot,
+        ),
         claim_attempted=actuator_execution.claim_attempted,
         number_of_claim_taps=actuator_execution.number_of_claim_taps,
         claim_tap_timestamps=list(actuator_execution.claim_tap_timestamps),
@@ -957,6 +1016,108 @@ def _build_receipt(
         ad_exit_override_tap_timestamps=list(actuator_execution.ad_exit_override_tap_timestamps),
         ad_exit_override_activity=actuator_execution.ad_exit_override_activity,
     )
+
+
+def _build_contract_evidence(
+    *,
+    before: PlayerSnapshot,
+    after: PlayerSnapshot | None,
+) -> dict[str, object]:
+    return {
+        "standard_ad": {
+            "arksClaimed_before": before.ad.arks_claimed,
+            "arksClaimed_after": None if after is None else after.ad.arks_claimed,
+            "lastAdWatchedDate_before": _isoformat_or_none(before.ad.last_ad_watched_date),
+            "lastAdWatchedDate_after": (
+                None if after is None else _isoformat_or_none(after.ad.last_ad_watched_date)
+            ),
+            "arkRewardReadyToClaim_before": before.ad.ark_reward_ready_to_claim,
+            "arkRewardReadyToClaim_after": (
+                None if after is None else after.ad.ark_reward_ready_to_claim
+            ),
+            "cash_before": before.currencies.cash,
+            "cash_after": None if after is None else after.currencies.cash,
+            "darkMatter_before": before.currencies.dark_matter,
+            "darkMatter_after": None if after is None else after.currencies.dark_matter,
+            "beaconTokens_before": _optional_raw_int(before, "beaconTokens"),
+            "beaconTokens_after": None if after is None else _optional_raw_int(after, "beaconTokens"),
+        },
+        "boost": {
+            "adBoostActive_before": before.ad.ad_boost_active,
+            "adBoostActive_after": None if after is None else after.ad.ad_boost_active,
+            "adBoostStartDate_before": _isoformat_or_none(before.ad.ad_boost_start_date),
+            "adBoostStartDate_after": (
+                None if after is None else _isoformat_or_none(after.ad.ad_boost_start_date)
+            ),
+        },
+        "mining": {
+            "reward_id": _optional_raw_int(before, "rewardId")
+            if _optional_raw_int(before, "rewardId") is not None
+            else (None if after is None else _optional_raw_int(after, "rewardId")),
+            "reward_type": _optional_raw_str(before, "rewardType")
+            if _optional_raw_str(before, "rewardType") is not None
+            else (None if after is None else _optional_raw_str(after, "rewardType")),
+            "isClaimed_before": _optional_raw_bool(before, "rewardIsClaimed"),
+            "isClaimed_after": None if after is None else _optional_raw_bool(after, "rewardIsClaimed"),
+            "effect_fields": _effect_field_evidence(before, after),
+        },
+        "integrity": {
+            "serverTimeVerified_before": _optional_raw_bool(before, "serverTimeVerified"),
+            "serverTimeVerified_after": (
+                None if after is None else _optional_raw_bool(after, "serverTimeVerified")
+            ),
+            "deviceTimeWrong_before": _optional_raw_bool(before, "deviceTimeWrong"),
+            "deviceTimeWrong_after": (
+                None if after is None else _optional_raw_bool(after, "deviceTimeWrong")
+            ),
+        },
+    }
+
+
+def _effect_field_evidence(
+    before: PlayerSnapshot,
+    after: PlayerSnapshot | None,
+) -> dict[str, dict[str, object]]:
+    field_names = _effect_field_names(before, after)
+    return {
+        field_name: {
+            "before": before.raw_fields.get(field_name),
+            "after": None if after is None else after.raw_fields.get(field_name),
+        }
+        for field_name in field_names
+    }
+
+
+def _effect_field_names(
+    before: PlayerSnapshot,
+    after: PlayerSnapshot | None,
+) -> tuple[str, ...]:
+    candidate_names = set()
+    for field_name in before.raw_fields:
+        if field_name.startswith(("rewardEffect", "miningEffect")):
+            candidate_names.add(field_name)
+    if after is not None:
+        for field_name in after.raw_fields:
+            if field_name.startswith(("rewardEffect", "miningEffect")):
+                candidate_names.add(field_name)
+    return tuple(sorted(candidate_names))
+
+
+def _mining_effect_messages(
+    before: PlayerSnapshot,
+    after: PlayerSnapshot,
+) -> tuple[bool, list[str]]:
+    messages: list[str] = []
+    for field_name in _effect_field_names(before, after):
+        before_value = before.raw_fields.get(field_name)
+        after_value = after.raw_fields.get(field_name)
+        if before_value == after_value:
+            continue
+        messages.append(
+            "Mining reward effect observed: "
+            f"'{field_name}' changed from {before_value!r} to {after_value!r}."
+        )
+    return (bool(messages), messages)
 
 
 def _refresh_telemetry(
@@ -1020,6 +1181,41 @@ def _optional_int_field(fields: Mapping[str, object], field_name: str) -> int | 
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"Field '{field_name}' must be an int for action classification.")
     return value
+
+
+def _optional_raw_bool(snapshot: PlayerSnapshot, field_name: str) -> bool | None:
+    value = snapshot.raw_fields.get(field_name)
+    if value is None:
+        return None
+    if not isinstance(value, bool):
+        raise ValueError(f"Field '{field_name}' must be a bool for action classification.")
+    return value
+
+
+def _optional_raw_int(snapshot: PlayerSnapshot, field_name: str) -> int | None:
+    value = snapshot.raw_fields.get(field_name)
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"Field '{field_name}' must be an int for action classification.")
+    return value
+
+
+def _optional_raw_str(snapshot: PlayerSnapshot, field_name: str) -> str | None:
+    value = snapshot.raw_fields.get(field_name)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"Field '{field_name}' must be a str for action classification.")
+    return value
+
+
+def _isoformat_or_none(value: object) -> str | None:
+    if value is None:
+        return None
+    if not hasattr(value, "isoformat"):
+        raise ValueError("Receipt datetime evidence must support isoformat().")
+    return value.isoformat()
 
 
 def _resolve_actuator_action(action: str) -> str:

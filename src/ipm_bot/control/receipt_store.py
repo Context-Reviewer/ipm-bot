@@ -175,6 +175,7 @@ def _serialize_receipt(
         "save_source": _serialize_save_source(receipt),
         "receipt_written_at_utc": receipt_written_at_utc,
         "verifier_messages": list(receipt.verifier_messages),
+        "contract_evidence": dict(receipt.contract_evidence),
     }
 
 
