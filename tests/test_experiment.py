@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import io
 import json
 from pathlib import Path
@@ -17,7 +17,12 @@ if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
 from ipm_bot.actuator.boundary import ActuatorConfigSnapshot, ActuatorExecutionMetadata
-from ipm_bot.actuator.runner import ActionAttemptReceipt, FailureReason, ReceiptRuntimeContext
+from ipm_bot.actuator.runner import (
+    ActionAttemptReceipt,
+    FailureReason,
+    MiningVerificationMode,
+    ReceiptRuntimeContext,
+)
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.experiment_store import write_experiment_manifest
 from ipm_bot.control.receipt_schema import CURRENT_RECEIPT_SCHEMA_VERSION
@@ -229,6 +234,134 @@ class ExperimentHarnessTests(unittest.TestCase):
             self.assertTrue(receipt.runtime_context.action_override_used)
             self.assertEqual(receipt.runtime_context.action_override_requested_action, "claim_ark_reward")
 
+    def test_run_single_control_tick_threads_explicit_mining_settlement_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_path = root / "save.json"
+            output_dir = root / "logs" / "receipts"
+            started_at = datetime(2026, 3, 22, 14, 31, 5)
+            actuator = RecordingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                pending_reward_type=3,
+                free_rewards_claimed=[False, False, False],
+                reward_is_claimed=False,
+                reward_effect_value=10,
+            )
+
+            def _delayed_update() -> None:
+                time.sleep(0.1)
+                _write_save(
+                    save_path,
+                    ad_boost_active=True,
+                    ads_watched=1,
+                    save_timestamp=started_at + timedelta(seconds=5),
+                    ark_reward_ready_to_claim=False,
+                    pending_reward_type=0,
+                    free_rewards_claimed=[True, False, False],
+                    reward_is_claimed=False,
+                    reward_effect_value=11,
+                )
+
+            updater = threading.Thread(target=_delayed_update)
+            updater.start()
+
+            def _write_to_temp(receipt_to_write: ActionAttemptReceipt) -> Path:
+                return write_receipt(
+                    receipt_to_write,
+                    output_dir=output_dir,
+                    written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+                )
+
+            with patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp):
+                action, receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=1.0,
+                    poll_interval_seconds=0.05,
+                    actuator=actuator,
+                    save_source=LocalSaveSource(),
+                    mining_verification_mode=MiningVerificationMode.SETTLEMENT,
+                    action_override="claim_reward",
+                )
+
+            updater.join()
+
+            self.assertEqual(action, "claim_reward")
+            self.assertEqual(receipt.final_status, "PASS")
+            self.assertEqual(receipt.failure_reason, FailureReason.NONE)
+            self.assertEqual(actuator.actions, ["claim_ark_reward"])
+            self.assertEqual(receipt.contract_evidence["mining"]["isClaimed_after"], False)
+            self.assertTrue(
+                any("Mining reward effect observed" in message for message in receipt.verifier_messages)
+            )
+
+    def test_run_single_control_tick_threads_explicit_mining_user_claim_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            save_path = root / "save.json"
+            output_dir = root / "logs" / "receipts"
+            started_at = datetime(2026, 3, 22, 14, 31, 5)
+            actuator = RecordingActuator()
+            _write_save(
+                save_path,
+                ad_boost_active=True,
+                ads_watched=1,
+                save_timestamp=started_at,
+                ark_reward_ready_to_claim=False,
+                pending_reward_type=3,
+                reward_effect_value=5,
+            )
+
+            def _delayed_update() -> None:
+                time.sleep(0.1)
+                _write_save(
+                    save_path,
+                    ad_boost_active=True,
+                    ads_watched=1,
+                    save_timestamp=started_at + timedelta(seconds=5),
+                    ark_reward_ready_to_claim=False,
+                    pending_reward_type=0,
+                    reward_effect_value=6,
+                )
+
+            updater = threading.Thread(target=_delayed_update)
+            updater.start()
+
+            def _write_to_temp(receipt_to_write: ActionAttemptReceipt) -> Path:
+                return write_receipt(
+                    receipt_to_write,
+                    output_dir=output_dir,
+                    written_at=datetime(2026, 3, 22, 14, 31, 5, tzinfo=timezone.utc),
+                )
+
+            with patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp):
+                action, receipt, _ = run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=1.0,
+                    poll_interval_seconds=0.05,
+                    actuator=actuator,
+                    save_source=LocalSaveSource(),
+                    mining_verification_mode=MiningVerificationMode.USER_CLAIM,
+                    action_override="claim_reward",
+                )
+
+            updater.join()
+
+            self.assertEqual(action, "claim_reward")
+            self.assertEqual(receipt.final_status, "AMBIGUOUS")
+            self.assertEqual(receipt.failure_reason, FailureReason.AMBIGUOUS_TRANSITION)
+            self.assertEqual(receipt.contract_evidence["mining"]["isClaimed_after"], None)
+            self.assertTrue(
+                any(
+                    "'rewardIsClaimed' was unavailable" in message
+                    for message in receipt.verifier_messages
+                )
+            )
+
 
 def _sample_receipt(
     *,
@@ -300,6 +433,40 @@ class RecordingActuator:
             actuator_command_count=1,
             actuator_command_summary=[f"recording:{action}"],
         )
+
+
+def _write_save(
+    path: Path,
+    *,
+    ad_boost_active: bool,
+    ads_watched: int,
+    save_timestamp: datetime,
+    ark_reward_ready_to_claim: bool,
+    player_level: int = 5,
+    pending_reward_type: int | None = None,
+    free_rewards_claimed: list[bool] | None = None,
+    reward_is_claimed: bool | None = None,
+    reward_effect_value: int | None = None,
+) -> None:
+    payload: dict[str, object] = {
+        "cash": 0.0,
+        "darkMatter": 0,
+        "adBoostActive": ad_boost_active,
+        "adsWatched": ads_watched,
+        "arksClaimed": 0,
+        "saveTimestamp": save_timestamp.isoformat(),
+        "arkRewardReadyToClaim": ark_reward_ready_to_claim,
+        "playerLevel": player_level,
+    }
+    if pending_reward_type is not None:
+        payload["pendingRewardType"] = pending_reward_type
+    if free_rewards_claimed is not None:
+        payload["freeRewardsClaimed"] = free_rewards_claimed
+    if reward_is_claimed is not None:
+        payload["rewardIsClaimed"] = reward_is_claimed
+    if reward_effect_value is not None:
+        payload["rewardEffectValue"] = reward_effect_value
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 if __name__ == "__main__":

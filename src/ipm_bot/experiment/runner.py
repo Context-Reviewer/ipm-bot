@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 from typing import Sequence
 
+from ipm_bot.actuator.runner import MiningVerificationMode
 from ipm_bot.control.composition import add_tick_composition_arguments, build_actuator, build_save_source
 from ipm_bot.control.experiment_store import ExperimentManifest, normalize_utc_timestamp, write_experiment_manifest
 from ipm_bot.control.save_source import AdbPulledSaveSource
@@ -38,6 +39,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             actuator=actuator,
             save_source=save_source,
             action_override=args.action_override,
+            mining_verification_mode=(
+                None
+                if args.mining_verification_mode is None
+                else MiningVerificationMode(args.mining_verification_mode)
+            ),
             save_repull_interval_seconds=args.save_repull_interval_seconds,
             manual_observation_mode=args.manual_observation_mode,
         )
@@ -61,6 +67,7 @@ def run_experiment(
     actuator,
     save_source,
     action_override: str | None = None,
+    mining_verification_mode: MiningVerificationMode | None = None,
     save_repull_interval_seconds: float = 1.0,
     manual_observation_mode: bool = False,
 ) -> ExperimentRunResult:
@@ -89,6 +96,7 @@ def run_experiment(
         poll_interval_seconds=effective_poll_interval_seconds,
         actuator=actuator,
         save_source=save_source,
+        mining_verification_mode=mining_verification_mode,
         action_override=action_override,
         save_refresh_controller=save_refresh_controller,
         verification_timeout_starts_after_actuation=True,
@@ -134,6 +142,12 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=("activate_ad_boost", "claim_reward", "claim_ark_reward", "idle"),
         default=None,
         help="Experiment-only explicit action override that bypasses planner selection.",
+    )
+    parser.add_argument(
+        "--mining-verification-mode",
+        choices=tuple(mode.value for mode in MiningVerificationMode),
+        default=None,
+        help="Experiment-only explicit mining verification mode for claim vs settlement.",
     )
     parser.add_argument(
         "--save-repull-interval-seconds",

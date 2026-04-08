@@ -11,7 +11,11 @@ import sys
 from typing import Sequence
 
 from ipm_bot.actuator.boundary import ActionActuator
-from ipm_bot.actuator.runner import ActionAttemptReceipt, run_action_until_verified
+from ipm_bot.actuator.runner import (
+    ActionAttemptReceipt,
+    MiningVerificationMode,
+    run_action_until_verified,
+)
 from ipm_bot.control.composition import add_tick_composition_arguments, build_actuator, build_save_source
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.receipt_store import (
@@ -91,6 +95,7 @@ def run_single_control_tick(
     poll_interval_seconds: float,
     actuator: ActionActuator,
     save_source: SaveSource,
+    mining_verification_mode: MiningVerificationMode | None = None,
     action_override: str | None = None,
     save_refresh_controller: SaveRefreshController | None = None,
     verification_timeout_starts_after_actuation: bool = False,
@@ -147,6 +152,7 @@ def run_single_control_tick(
         save_refresh_controller=save_refresh_controller,
         verification_timeout_starts_after_actuation=verification_timeout_starts_after_actuation,
         manual_observation_mode=manual_observation_mode,
+        mining_verification_mode=mining_verification_mode,
     )
     exit_code = exit_code_for_status(receipt.final_status)
     receipt = _enrich_tick_receipt(
