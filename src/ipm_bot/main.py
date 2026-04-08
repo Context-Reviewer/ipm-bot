@@ -78,6 +78,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             poll_interval_seconds=args.poll_interval_seconds,
             actuator=actuator,
             save_source=save_source,
+            mining_verification_mode=(
+                None
+                if args.mining_verification_mode is None
+                else MiningVerificationMode(args.mining_verification_mode)
+            ),
         )
     except SystemExit:
         return int(ExitCode.ERROR)
@@ -111,6 +116,7 @@ def run_single_control_tick(
     if poll_interval_seconds <= 0:
         raise ValueError("--poll-interval-seconds must be greater than zero.")
 
+    claim_reward_suppressed = False
     if not ad_boost_suppressed:
         ad_boost_suppressed = check_ad_boost_suppressed(receipt_dir)
         claim_reward_suppressed = check_reward_claim_suppressed(receipt_dir)
@@ -243,6 +249,12 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Run one governed single control tick against a parsed save."
     )
     add_tick_composition_arguments(parser)
+    parser.add_argument(
+        "--mining-verification-mode",
+        choices=tuple(mode.value for mode in MiningVerificationMode),
+        default=None,
+        help="Explicit mining verification mode for claim vs settlement.",
+    )
     return parser
 
 

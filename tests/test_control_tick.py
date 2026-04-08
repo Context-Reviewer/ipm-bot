@@ -17,6 +17,7 @@ if str(PROJECT_SRC) not in sys.path:
 from ipm_bot.actuator.runner import (
     ActionAttemptReceipt,
     FailureReason,
+    MiningVerificationMode,
     ReceiptRuntimeContext,
 )
 from ipm_bot.actuator.boundary import (
@@ -447,6 +448,82 @@ class ControlTickTests(unittest.TestCase):
             enriched_receipt.runtime_context.planner_deferred_for_imminent_completion
         )
 
+    def test_run_single_control_tick_defaults_claim_reward_suppressed_when_ad_boost_is_pre_suppressed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_path = Path(tmpdir) / "save.json"
+            save_path.write_text(
+                json.dumps(
+                    {
+                        "adBoostActive": True,
+                        "adsWatched": 1,
+                        "saveTimestamp": "2026-03-22T14:31:05",
+                        "arkRewardReadyToClaim": False,
+                        "playerLevel": 5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            receipt = _sample_receipt(
+                action="idle",
+                final_status="PASS",
+                failure_reason=FailureReason.NONE,
+            )
+            player_snapshot = object()
+            planner_decision = PlannerDecision(
+                selected_action="idle",
+                decision_reason="no_action_needed",
+                actuation_required=False,
+            )
+
+            with (
+                patch("ipm_bot.main._load_snapshot", return_value=player_snapshot),
+                patch("ipm_bot.main.decide_next_action_details", return_value=planner_decision) as planner,
+                patch("ipm_bot.main.run_action_until_verified", return_value=receipt),
+                patch("ipm_bot.main.write_receipt", return_value=Path(tmpdir) / "receipt.json"),
+            ):
+                run_single_control_tick(
+                    save_path=save_path,
+                    timeout_seconds=None,
+                    poll_interval_seconds=0.5,
+                    actuator=StubActionActuator(),
+                    save_source=LocalSaveSource(),
+                    ad_boost_suppressed=True,
+                )
+
+        planner.assert_called_once_with(
+            player_snapshot,
+            save_snapshot=None,
+            unattended_safe=False,
+            ad_boost_suppressed=True,
+            claim_reward_suppressed=False,
+        )
+
+    def test_main_threads_explicit_mining_verification_mode_to_runner(self) -> None:
+        save_payload = {
+            "adBoostActive": True,
+            "adsWatched": 1,
+            "saveTimestamp": "2026-03-22T14:31:05",
+            "arkRewardReadyToClaim": True,
+            "playerLevel": 5,
+        }
+        receipt = _sample_receipt(
+            action="claim_reward",
+            final_status="PASS",
+            failure_reason=FailureReason.NONE,
+        )
+
+        exit_code, _, runner_mock, _, _ = _run_main_with_receipt(
+            save_payload=save_payload,
+            receipt=receipt,
+            argv_extra=["--mining-verification-mode", MiningVerificationMode.USER_CLAIM.value],
+        )
+
+        self.assertEqual(exit_code, int(ExitCode.PASS))
+        self.assertEqual(
+            runner_mock.call_args.kwargs["mining_verification_mode"],
+            MiningVerificationMode.USER_CLAIM,
+        )
+
 
 def _run_main_with_receipt(
     *,
@@ -454,6 +531,7 @@ def _run_main_with_receipt(
     receipt: ActionAttemptReceipt,
     ad_boost_suppressed: bool = False,
     claim_reward_suppressed: bool = False,
+    argv_extra: list[str] | None = None,
 ) -> tuple[int, str, object, list[Path], list[dict[str, object]]]:
     with tempfile.TemporaryDirectory() as tmpdir:
         root = Path(tmpdir)
@@ -476,7 +554,10 @@ def _run_main_with_receipt(
             patch("ipm_bot.main.run_action_until_verified", return_value=receipt) as runner_mock,
             patch("ipm_bot.main.write_receipt", side_effect=_write_to_temp),
         ):
-            exit_code = main([str(save_path)])
+            argv = [str(save_path)]
+            if argv_extra is not None:
+                argv.extend(argv_extra)
+            exit_code = main(argv)
 
         written_files = list(output_dir.glob("*.json"))
         payloads = [
