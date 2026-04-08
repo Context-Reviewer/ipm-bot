@@ -19,7 +19,12 @@ from ipm_bot.actuator.boundary import (
     ActuatorExecutionError,
     ActuatorExecutionMetadata,
 )
-from ipm_bot.actuator.runner import FailureReason, _evaluate_candidate, run_action_until_verified
+from ipm_bot.actuator.runner import (
+    FailureReason,
+    MiningVerificationMode,
+    _evaluate_candidate,
+    run_action_until_verified,
+)
 from ipm_bot.control.contracts import get_action_contract
 from ipm_bot.control.save_source import SaveRefreshTelemetry
 from ipm_bot.save import parse_player_snapshot
@@ -429,7 +434,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 any("Standard ad contract satisfied" in message for message in receipt.verifier_messages)
             )
 
-    def test_pass_receipt_for_claim_reward_when_event_reward_counter_changes(self) -> None:
+    def test_pass_receipt_for_claim_reward_when_explicit_mining_settlement_effect_is_observed(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / "save.json"
             started_at = datetime(2026, 3, 22, 12, 0, 0)
@@ -441,7 +446,9 @@ class RunnerReceiptTests(unittest.TestCase):
                 save_timestamp=started_at,
                 ark_reward_ready_to_claim=False,
                 pending_reward_type=3,
+                reward_is_claimed=False,
                 free_rewards_claimed=[False, False, False],
+                reward_effect_value=10,
             )
             snapshot_before = parse_player_snapshot(save_path)
 
@@ -456,7 +463,9 @@ class RunnerReceiptTests(unittest.TestCase):
                         save_timestamp=started_at + timedelta(seconds=5),
                         ark_reward_ready_to_claim=False,
                         pending_reward_type=0,
+                        reward_is_claimed=False,
                         free_rewards_claimed=[True, False, False],
+                        reward_effect_value=11,
                     ),
                 ),
             )
@@ -470,6 +479,7 @@ class RunnerReceiptTests(unittest.TestCase):
                 actuator=actuator,
                 poll_interval_s=0.05,
                 timeout_s=1.0,
+                mining_verification_mode=MiningVerificationMode.SETTLEMENT,
             )
 
             update_thread.join()
@@ -478,9 +488,10 @@ class RunnerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt.failure_reason, FailureReason.NONE)
             self.assertEqual(receipt.action, "claim_reward")
             self.assertEqual(actuator.actions, ["claim_ark_reward"])
+            self.assertEqual(receipt.contract_evidence["mining"]["isClaimed_after"], False)
             self.assertTrue(
                 any(
-                    "free_rewards_claimed_count' increased" in message
+                    "Mining reward effect observed" in message
                     for message in receipt.verifier_messages
                 )
             )
@@ -1292,12 +1303,46 @@ class CandidateContractTests(unittest.TestCase):
             after=after,
             contract=get_action_contract("claim_reward"),
             actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+            mining_verification_mode=MiningVerificationMode.USER_CLAIM,
         )
 
         self.assertEqual(evaluation.verification.status, "PASS")
         self.assertIsNone(evaluation.terminal_failure_reason)
 
-    def test_mining_claim_effect_first_is_ambiguous_then_passes_once_claim_flag_arrives(self) -> None:
+    def test_mining_claim_with_missing_claim_flag_is_ambiguous(self) -> None:
+        before = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                reward_id=22,
+                reward_type="boost",
+                reward_effect_value=5,
+            )
+        )
+        after = parse_player_snapshot(
+            _mapping_snapshot(
+                save_timestamp=datetime(2026, 3, 22, 12, 0, 5),
+                reward_id=22,
+                reward_type="boost",
+                reward_effect_value=6,
+            )
+        )
+
+        evaluation = _evaluate_candidate(
+            action="claim_reward",
+            before=before,
+            after=after,
+            contract=get_action_contract("claim_reward"),
+            actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+            mining_verification_mode=MiningVerificationMode.USER_CLAIM,
+        )
+
+        self.assertEqual(evaluation.verification.status, "AMBIGUOUS")
+        self.assertEqual(
+            evaluation.terminal_failure_reason,
+            FailureReason.AMBIGUOUS_TRANSITION,
+        )
+
+    def test_mining_claim_with_false_claim_flag_is_ambiguous(self) -> None:
         before = parse_player_snapshot(
             _mapping_snapshot(
                 save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
@@ -1316,49 +1361,33 @@ class CandidateContractTests(unittest.TestCase):
                 reward_effect_value=6,
             )
         )
-        final_after = parse_player_snapshot(
-            _mapping_snapshot(
-                save_timestamp=datetime(2026, 3, 22, 12, 0, 10),
-                reward_id=22,
-                reward_type="boost",
-                reward_is_claimed=True,
-                reward_effect_value=6,
-            )
-        )
-        actuator_execution = ClaimingActuator().execute("claim_ark_reward")
-
-        early_evaluation = _evaluate_candidate(
+        evaluation = _evaluate_candidate(
             action="claim_reward",
             before=before,
             after=early_after,
             contract=get_action_contract("claim_reward"),
-            actuator_execution=actuator_execution,
-        )
-        final_evaluation = _evaluate_candidate(
-            action="claim_reward",
-            before=before,
-            after=final_after,
-            contract=get_action_contract("claim_reward"),
-            actuator_execution=actuator_execution,
+            actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+            mining_verification_mode=MiningVerificationMode.USER_CLAIM,
         )
 
-        self.assertEqual(early_evaluation.verification.status, "AMBIGUOUS")
+        self.assertEqual(evaluation.verification.status, "AMBIGUOUS")
         self.assertEqual(
-            early_evaluation.terminal_failure_reason,
+            evaluation.terminal_failure_reason,
             FailureReason.AMBIGUOUS_TRANSITION,
         )
-        self.assertEqual(final_evaluation.verification.status, "PASS")
 
-    def test_mining_settlement_contract_passes_with_effect_without_claim_flag(self) -> None:
+    def test_mining_settlement_contract_passes_with_effect_when_claim_flag_stays_false(self) -> None:
         before = parse_player_snapshot(
             _mapping_snapshot(
                 save_timestamp=datetime(2026, 3, 22, 12, 0, 0),
+                reward_is_claimed=False,
                 reward_effect_value=10,
             )
         )
         after = parse_player_snapshot(
             _mapping_snapshot(
                 save_timestamp=datetime(2026, 3, 22, 12, 0, 5),
+                reward_is_claimed=False,
                 reward_effect_value=11,
             )
         )
@@ -1369,6 +1398,7 @@ class CandidateContractTests(unittest.TestCase):
             after=after,
             contract=get_action_contract("claim_reward"),
             actuator_execution=ClaimingActuator().execute("claim_ark_reward"),
+            mining_verification_mode=MiningVerificationMode.SETTLEMENT,
         )
 
         self.assertEqual(evaluation.verification.status, "PASS")

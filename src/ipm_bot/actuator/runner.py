@@ -40,6 +40,11 @@ class FailureReason(StrEnum):
     SAVE_WATCH_ERROR = "SAVE_WATCH_ERROR"
 
 
+class MiningVerificationMode(StrEnum):
+    USER_CLAIM = "mining_user_claim"
+    SETTLEMENT = "mining_settlement"
+
+
 @dataclass(frozen=True, slots=True)
 class ReceiptRuntimeContext:
     receipt_schema_version: int
@@ -241,6 +246,7 @@ def run_action_until_verified(
     save_refresh_controller: SaveRefreshController | None = None,
     verification_timeout_starts_after_actuation: bool = False,
     manual_observation_mode: bool = False,
+    mining_verification_mode: MiningVerificationMode | None = None,
 ) -> ActionAttemptReceipt:
     """Execute an action and verify it against successive updated saves."""
 
@@ -436,6 +442,7 @@ def run_action_until_verified(
             after=observation.snapshot,
             contract=contract,
             actuator_execution=actuator_execution,
+            mining_verification_mode=mining_verification_mode,
         )
         last_verifier_messages = evaluation.verification.messages
         if evaluation.verification.status == "PASS":
@@ -579,6 +586,7 @@ def _evaluate_candidate(
     after: PlayerSnapshot,
     contract: ActionContract,
     actuator_execution: ActuatorExecutionMetadata,
+    mining_verification_mode: MiningVerificationMode | None = None,
 ) -> CandidateEvaluation:
     base_result = verify_transition(before, after, dict(contract.expectations))
     try:
@@ -619,6 +627,7 @@ def _evaluate_candidate(
             claim_attempted=actuator_execution.claim_attempted,
             branch_attempted=actuator_execution.branch_attempted,
             branch_policy=actuator_execution.branch_policy,
+            mining_verification_mode=mining_verification_mode,
         )
         if reward_claim_evaluation is not None:
             return reward_claim_evaluation
@@ -647,6 +656,7 @@ def _evaluate_claim_proof(
     claim_attempted: bool,
     branch_attempted: bool,
     branch_policy: str,
+    mining_verification_mode: MiningVerificationMode | None,
 ) -> CandidateEvaluation | None:
     if action != "claim_reward" and not claim_attempted and not branch_attempted:
         return None
@@ -667,6 +677,7 @@ def _evaluate_claim_proof(
         before=before,
         after=after,
         base_result=base_result,
+        mining_verification_mode=mining_verification_mode,
     )
     if mining_evaluation is not None:
         return mining_evaluation
@@ -728,7 +739,11 @@ def _evaluate_mining_reward_contract(
     before: PlayerSnapshot,
     after: PlayerSnapshot,
     base_result: VerificationResult,
+    mining_verification_mode: MiningVerificationMode | None,
 ) -> CandidateEvaluation | None:
+    if mining_verification_mode is None:
+        return None
+
     before_free_rewards_claimed = _optional_int_field(
         before.flat_fields(),
         "free_rewards_claimed_count",
@@ -777,7 +792,7 @@ def _evaluate_mining_reward_contract(
     if after_claimed is True and before_claimed is not True:
         messages.append("Mining reward contract satisfied: 'rewardIsClaimed' became True.")
 
-    if messages and (after_claimed is True or not has_claim_flag_evidence):
+    if mining_verification_mode is MiningVerificationMode.SETTLEMENT and effect_observed:
         return CandidateEvaluation(
             verification=VerificationResult(
                 status="PASS",
@@ -786,16 +801,36 @@ def _evaluate_mining_reward_contract(
             )
         )
 
-    if effect_observed and has_claim_flag_evidence and after_claimed is not True:
+    if (
+        mining_verification_mode is MiningVerificationMode.USER_CLAIM
+        and effect_observed
+        and after_claimed is True
+    ):
+        return CandidateEvaluation(
+            verification=VerificationResult(
+                status="PASS",
+                success=True,
+                messages=base_result.messages + messages,
+            )
+        )
+
+    if (
+        mining_verification_mode is MiningVerificationMode.USER_CLAIM
+        and effect_observed
+        and after_claimed is not True
+    ):
+        claim_message = (
+            "Mining reward effect was observed, but 'rewardIsClaimed' was unavailable."
+            if not has_claim_flag_evidence
+            else "Mining reward effect was observed, but 'rewardIsClaimed' has not been persisted yet."
+        )
         return CandidateEvaluation(
             verification=VerificationResult(
                 status="AMBIGUOUS",
                 success=False,
                 messages=base_result.messages
                 + effect_messages
-                + [
-                    "Mining reward effect was observed, but 'rewardIsClaimed' has not been persisted yet."
-                ],
+                + [claim_message],
             ),
             terminal_failure_reason=FailureReason.AMBIGUOUS_TRANSITION,
         )
