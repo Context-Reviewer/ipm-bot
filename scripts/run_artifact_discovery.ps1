@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog", "il2cpp-name-hint-report", "il2cpp-manual-findings-report")]
+    [ValidateSet("census", "snapshot", "diff", "il2cpp-workspace", "il2cpp-input-report", "il2cpp-output-catalog", "il2cpp-name-hint-report", "il2cpp-assembly-priority-report", "il2cpp-manual-findings-report")]
     [string]$Command,
 
     [string]$PackageName = "com.TironiumTech.IdlePlanetMiner",
@@ -113,6 +113,15 @@ if ($Command -eq "diff") {
     if ($CaseSensitive.IsPresent) {
         $arguments += "--case-sensitive"
     }
+    $arguments += @("--output-root", $OutputRoot)
+    if (-not [string]::IsNullOrWhiteSpace($Notes)) {
+        $arguments += @("--notes", $Notes)
+    }
+} elseif ($Command -eq "il2cpp-assembly-priority-report") {
+    if ([string]::IsNullOrWhiteSpace($CatalogDir)) {
+        throw "-CatalogDir is required for il2cpp-assembly-priority-report."
+    }
+    $arguments += @("--catalog", $CatalogDir)
     $arguments += @("--output-root", $OutputRoot)
     if (-not [string]::IsNullOrWhiteSpace($Notes)) {
         $arguments += @("--notes", $Notes)

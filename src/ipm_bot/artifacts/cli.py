@@ -11,6 +11,7 @@ from .apk_report import DEFAULT_APK_REPORT_ROOT, run_apk_report
 from .diffing import run_diff
 from .discovery import DiscoveryOptions, run_discovery
 from .il2cpp_input_report import run_il2cpp_input_report
+from .il2cpp_assembly_priority_report import run_il2cpp_assembly_priority_report
 from .il2cpp_manual_findings_report import run_il2cpp_manual_findings_report
 from .il2cpp_name_hint_report import run_il2cpp_name_hint_report
 from .il2cpp_output_catalog import run_il2cpp_output_catalog
@@ -93,6 +94,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.catalog,
                 terms=args.term,
                 case_sensitive=args.case_sensitive,
+                output_root=args.output_root,
+                notes=args.notes,
+            )
+            print(str(output_dir))
+            return 0
+        if args.command == "il2cpp-assembly-priority-report":
+            output_dir = run_il2cpp_assembly_priority_report(
+                args.catalog,
                 output_root=args.output_root,
                 notes=args.notes,
             )
@@ -299,6 +308,28 @@ def _build_parser() -> argparse.ArgumentParser:
         "il2cpp-manual-findings-report",
         help="Record human-entered findings tied to a catalog or name-hint-report without validating semantics.",
     )
+    il2cpp_assembly_priority_report_parser = subparsers.add_parser(
+        "il2cpp-assembly-priority-report",
+        help="Rank dumped assemblies in an il2cpp-output-catalog by likely usefulness to the bot.",
+    )
+    il2cpp_assembly_priority_report_parser.add_argument(
+        "--catalog",
+        type=Path,
+        required=True,
+        help="Path to an existing il2cpp-output-catalog artifact directory.",
+    )
+    il2cpp_assembly_priority_report_parser.add_argument(
+        "--notes",
+        default=None,
+        help="Optional operator notes for this metadata-only assembly triage pass.",
+    )
+    il2cpp_assembly_priority_report_parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Base artifact root used for IL2CPP assembly priority reports.",
+    )
+
     il2cpp_manual_findings_source_group = il2cpp_manual_findings_report_parser.add_mutually_exclusive_group(
         required=True
     )
