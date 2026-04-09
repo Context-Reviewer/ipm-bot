@@ -18,6 +18,21 @@ data/captures/
 data/reports/
 archive/
 
+# Runtime pulled saves
+/data/pulled/
+
+# Extracted APK artifacts
+/base/
+/split_config.arm64_v8a/
+/base.zip
+/split_config.arm64_v8a.zip
+
+# Generated artifact reports
+/data/artifacts/il2cpp_assembly_priority_reports/
+
+# Scratch media / frame analysis
+/tmp/
+
 # OS
 Thumbs.db
 Desktop.ini
