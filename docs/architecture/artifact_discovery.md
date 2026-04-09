@@ -314,6 +314,45 @@ The report records:
 
 This is a metadata-only narrowing aid for manual analyst inspection. It does not parse file contents and does not make semantic claims about external reconstruction output.
 
+## IL2CPP assembly priority report
+
+Once you have a catalog of a dumped output tree, use `il2cpp-assembly-priority-report` to answer the practical question "which dumped assemblies should I open first for the bot?" This command is still metadata-only: it ranks `.dll` files by investigation value without opening them.
+
+Examples:
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-assembly-priority-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>"
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m ipm_bot.artifacts il2cpp-assembly-priority-report --catalog "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" --notes "rank assemblies for ad reward research"
+```
+
+```powershell
+.\scripts\run_artifact_discovery.ps1 -Command il2cpp-assembly-priority-report -CatalogDir "C:\dev\ipm-bot\data\artifacts\il2cpp_output_catalogs\<catalog>" -Notes "rank assemblies for ad reward research"
+```
+
+It writes to:
+
+```text
+data/artifacts/il2cpp_assembly_priority_reports/<timestamp>_il2cpp_assembly_priority_report_<catalog>/
+```
+
+Each report contains:
+
+- `manifest.json`
+- `summary.txt`
+
+The report is intended to steer manual research toward the highest-leverage assemblies:
+
+- `Assembly-CSharp.dll` first for game-owned logic, save schema anchors, and runtime field names
+- `Unity.LevelPlay.dll` for rewarded-ad callback vocabulary
+- `PlayFab.dll` for cloud/backend side paths
+- `Firebase.Firestore.dll` only to explain Firestore-backed properties
+- `Tapjoy.dll` only for offerwall-specific branches
+
+Framework/background assemblies such as `UnityEngine.*`, `System.*`, and `Il2CppDummyDll.dll` are intentionally deprioritized. This report is a triage aid only. Save-backed state remains the bot's authoritative truth source.
+
 ## IL2CPP manual findings report
 
 `il2cpp-manual-findings-report` is the first step where human semantic interpretation is recorded in the repo, but only as analyst-supplied notes tied to governed artifact manifests. The repo still does not open external reconstruction files or validate the correctness of those findings.

@@ -8,7 +8,11 @@ The bot is intentionally state-first:
 4. Execute through emulator / ADB input.
 5. Verify the resulting save transition.
 
-Computer vision is treated as a fallback, not the primary sensing layer.
+The production truth boundary is save-backed state, not UI observation.
+
+Current design notes:
+
+- [Ad/Reward Automation](ad_reward_automation.md)
 
 Supporting BlueStacks-side artifact notes:
 

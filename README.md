@@ -10,6 +10,12 @@ This repo is the new clean runtime project for the bot architecture:
 - `verifier`: post-action validation using save deltas
 - `ui`: thin visual helpers only when state cannot be inferred from save data
 
+The project is intentionally save-grounded and fail-closed:
+
+- save state is authoritative truth
+- UI/runtime are actuation surfaces, not truth sources
+- unsupported or unproven transitions must resolve to `FAIL` or `AMBIGUOUS`
+
 The reverse-engineering and experiment tooling remains in:
 
 - `C:\Users\lwpar\Desktop\ipm_project`
@@ -25,6 +31,15 @@ python -m ipm_bot.artifacts diff <before_snapshot_dir> <after_snapshot_dir>
 ```
 
 See `docs/architecture/artifact_discovery.md` for the safety model, output structure, and exact Windows commands.
+
+See `docs/architecture/ad_reward_automation.md` for the ad/reward automation objective and the research-vs-production boundary.
+
+For IL2CPP reverse-engineering output, the artifact pipeline now includes an assembly triage step so research starts in the right place:
+
+- `Assembly-CSharp.dll` first for game-owned schema and runtime/save field mapping
+- `Unity.LevelPlay.dll` for rewarded-ad callback vocabulary
+- `PlayFab.dll` and `Firebase.Firestore.dll` only for backend/cloud side paths
+- framework DLLs as background context only
 
 ## Layout
 

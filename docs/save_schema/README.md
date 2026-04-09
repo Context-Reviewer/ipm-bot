@@ -20,3 +20,5 @@ Initial mapping work should focus on:
 Working notes:
 
 - [Player Data Offset Notebook](player_data_offset_notebook.md)
+- [DummyDll PlayerData Anchor](dummydll_playerdata_anchor.md)
+- [Ads Class Runtime Notes](../experiments/ads_class_runtime_notes.md)
